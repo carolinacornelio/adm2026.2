@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CodeScript ERP - Crie sua conta para simplificar sua gestão.">
+    <title>CodeScript | Criar conta</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- CSS Integrado -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="auth-page">
+
+    <div class="auth-container">
+        <!-- PAINEL HERO (ESQUERDA) -->
+        <div class="auth-hero">
+            <div class="auth-hero-content">
+                <a href="index.html" class="logo auth-hero-logo">Code<span>Script</span></a>
+
+                <h1>Sua empresa mais<br><strong>organizada, produtiva<br>e lucrativa.</strong></h1>
+                <p>Centralize vendas, estoque, compras, financeiro e gestão da sua empresa em uma única plataforma.</p>
+
+                <!-- CARD DE PREVIEW/ILUSTRAÇÃO -->
+                <div class="auth-hero-preview">
+                    <div class="preview-badge">ERP Vision</div>
+                    <div class="preview-card">
+                        <small>SYNERGY ERP GLOBAL DASHBOARD - OCT 2023</small>
+                        <div class="preview-stats">
+                            <div><span>NetP</span><strong>R$ 1.450.320,00</strong></div>
+                            <div><span>Sa</span><strong>R$ 345.180,00</strong></div>
+                            <div><span>Units</span><strong>785 Units</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="auth-hero-footer">
+                    <strong>Seguro, confiável e sempre com você.</strong>
+                    <span>Seus dados protegidos na nuvem.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FORMULÁRIO (DIREITA) -->
+        <main class="auth-form-container">
+            <div class="auth-form-box">
+                <div class="auth-top-switch">
+                    <span>Já tem uma conta?</span>
+                    <a href="login.html" class="btn btn-secondary btn-small">Entrar</a>
+                </div>
+
+                <div class="auth-header">
+                    <h2>Criar conta</h2>
+                    <p>Digite seus dados abaixo para começar a usar o CodeScript</p>
+                </div>
+
+                <form class="auth-form" action="#" method="POST">
+                    <div class="form-group">
+                        <label for="fullname">Nome completo*</label>
+                        <input type="text" id="fullname" name="fullname" placeholder="Seu nome" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="company">Dados da empresa / Negócio*</label>
+                        <input type="text" id="company" name="company" placeholder="Ex: Minha Empresa Ltda." required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">E-mail*</label>
+                        <input type="email" id="email" name="email" placeholder="nome@email.com" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="password">Senha*</label>
+                            <input type="password" id="password" name="password" placeholder="Digite sua senha" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm-password">Confirmar senha*</label>
+                            <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirme sua senha" required>
+                        </div>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="checkbox-container">
+                            <input type="checkbox" name="terms" required>
+                            <span class="checkmark"></span>
+                            Li e aceito os <a href="#">Termos de uso</a> e a <a href="#">Política de privacidade</a>.
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full">Criar conta</button>
+                </form>
+
+                <div class="auth-footer">
+                    <div class="brand-footer">
+                        <strong>CodeScript</strong>
+                        <small>Gestão empresarial simplificada.</small>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+</body>
+</html>
