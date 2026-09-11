@@ -1,0 +1,15 @@
+INSERT INTO categorias (nome) VALUES ('Eletrônicos'), ('Papelaria'), ('Alimentos');
+
+INSERT INTO pessoas (tipo, cargo, nome, cpf_cnpj, telefone, email, senha_hash) VALUES
+(1, NULL, 'Cliente Teste', '000.000.000-00', '11999999999', 'cliente@teste.com', NULL),
+(2, NULL, 'Fornecedor Teste', '11.111.111/0001-11', '11888888888', 'fornecedor@teste.com', NULL),
+(3, 'chefe', 'Admin Chefe', '222.222.222-22', '11977777777', 'chefe@erp.com', 'hash_temporario'),
+(3, 'trabalhador', 'Funcionario Teste', '333.333.333-33', '11966666666', 'funcionario@erp.com', 'hash_temporario');
+
+INSERT INTO produtos (nome, codigo, preco, categoria_id) VALUES
+('Mouse sem fio', 'ELE001', 45.90, 1),
+('Caderno universitário', 'PAP001', 18.50, 2),
+('Café em pó 500g', 'ALI001', 22.00, 3);
+
+INSERT INTO estoque (produto_id, quantidade, estoque_minimo) VALUES
+(1, 50, 10), (2, 120, 20), (3, 80, 15);
