@@ -1,15 +1,35 @@
-INSERT INTO categorias (nome) VALUES ('Eletrônicos'), ('Papelaria'), ('Alimentos');
+-- 1. Criando a empresa contratante (ID 1)
+INSERT INTO empresas (nome_fantasia, documento, plano_assinatura) 
+VALUES ('Minha Empresa Teste', '99.999.999/0001-99', 'PREMIUM');
 
-INSERT INTO pessoas (tipo, cargo, nome, cpf_cnpj, telefone, email, senha_hash) VALUES
-(1, NULL, 'Cliente Teste', '000.000.000-00', '11999999999', 'cliente@teste.com', NULL),
-(2, NULL, 'Fornecedor Teste', '11.111.111/0001-11', '11888888888', 'fornecedor@teste.com', NULL),
-(3, 'chefe', 'Admin Chefe', '222.222.222-22', '11977777777', 'chefe@erp.com', 'hash_temporario'),
-(3, 'trabalhador', 'Funcionario Teste', '333.333.333-33', '11966666666', 'funcionario@erp.com', 'hash_temporario');
+-- 2. Categorias (Agora vinculadas à empresa 1)
+INSERT INTO categorias (empresa_id, nome) VALUES 
+(1, 'Eletrônicos'), 
+(1, 'Papelaria'), 
+(1, 'Alimentos');
 
-INSERT INTO produtos (nome, codigo, preco, categoria_id) VALUES
-('Mouse sem fio', 'ELE001', 45.90, 1),
-('Caderno universitário', 'PAP001', 18.50, 2),
-('Café em pó 500g', 'ALI001', 22.00, 3);
+-- 3. Distribuindo a antiga tabela 'pessoas'
+-- Cliente
+INSERT INTO clientes (empresa_id, nome, documento, telefone, email) VALUES
+(1, 'Cliente Teste', '000.000.000-00', '11999999999', 'cliente@teste.com');
 
-INSERT INTO estoque (produto_id, quantidade, estoque_minimo) VALUES
-(1, 50, 10), (2, 120, 20), (3, 80, 15);
+-- Fornecedor
+INSERT INTO fornecedores (empresa_id, nome, documento, telefone, email) VALUES
+(1, 'Fornecedor Teste', '11.111.111/0001-11', '11888888888', 'fornecedor@teste.com');
+
+-- Usuários (O antigo 'cargo' agora é mapeado para 'perfil')
+INSERT INTO usuarios (empresa_id, nome, email, senha_hash, perfil) VALUES
+(1, 'Admin Chefe', 'chefe@erp.com', 'hash_temporario', 'chefe'),
+(1, 'Funcionario Teste', 'funcionario@erp.com', 'hash_temporario', 'trabalhador');
+
+-- 4. Produtos (Vinculados à empresa 1)
+INSERT INTO produtos (empresa_id, nome, codigo, preco, categoria_id) VALUES
+(1, 'Mouse sem fio', 'ELE001', 45.90, 1),
+(1, 'Caderno universitário', 'PAP001', 18.50, 2),
+(1, 'Café em pó 500g', 'ALI001', 22.00, 3);
+
+-- 5. Estoque (Vinculados à empresa 1)
+INSERT INTO estoque (empresa_id, produto_id, quantidade, estoque_minimo) VALUES
+(1, 1, 50, 10), 
+(1, 2, 120, 20), 
+(1, 3, 80, 15);

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Nova Venda | ERP</title>
+    <link href="./css/tela.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="logo">ERP</div>
+            <nav class="menu">
+                <a class="" href="dashboard.html">🏠 Dashboard</a>
+                <a class="" href="pessoas-listagem.html">👥 Pessoas</a>
+                <a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
+                <a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
+                <a class="" href="produtos-listagem.html">📦 Produtos</a>
+                <a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
+                <a class="sub" href="produtos-listagem.html">↳ Listagem</a>
+                <a class="" href="compras.html">🛒 Compras</a>
+                <a class="ativo" href="vendas.html">💰 Vendas</a>
+                <a class="" href="estoque.html">📊 Estoque</a>
+            </nav>
+        </aside>
+        <main class="conteudo">
+            <header class="topo"><span class="usuario">👤 Usuário ▾</span><button class="botao secundario"
+                    data-logout="" type="button">Sair</button></header>
+            <section class="pagina">
+                <div class="titulo">
+                    <h1>Nova Venda</h1>
+                    <p>Registre uma venda e diminua o estoque automaticamente.</p>
+                </div>
+                <div class="painel">
+                    <div class="alerta">O sistema deverá verificar automaticamente se existe estoque suficiente antes de
+                        finalizar a venda.</div>
+                    <form class="formulario" id="formVenda">
+                        <div class="linha">
+                            <div class="campo"><label>Cliente</label><select>
+                                    <option value="">Selecione o cliente</option>
+                                </select></div>
+                            <div class="campo"><label>Data</label><input type="date" /></div>
+                        </div>
+                        <div class="produtos-compra">
+                            <table class="tabela">
+                                <thead>
+                                    <tr>
+                                        <th>Produto</th>
+                                        <th>Quantidade</th>
+                                        <th>Preço Unitário</th>
+                                        <th>Total</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr data-item="template">
+                                        <td><select name="produto">
+                                                <option value="">Selecione um produto</option>
+                                            </select></td>
+                                        <td><input min="1" name="quantidade" type="number" value="" /></td>
+                                        <td>0,00</td>
+                                        <td></td>
+                                        <td>❌</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <br /><button class="botao secundario" type="button">+ Adicionar produto</button>
+                        </div>
+                        <div class="total">Total: R$ 0,00</div>
+                        <div class="botoes"><a class="botao secundario" href="dashboard.html">Cancelar</a><button
+                                class="botao primario" type="button">Finalizar Venda</button></div>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>
