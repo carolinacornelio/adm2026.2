@@ -1,64 +1,48 @@
 <!DOCTYPE html>
 
 <html lang="pt-BR">
-
 <head>
-    <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Cadastro de Produtos | ERP</title>
-    <link href="./css/tela.css" rel="stylesheet" />
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cadastro de Produtos | ERP</title>
+<link href="./css/tela.css" rel="stylesheet"/>
 </head>
-
 <body>
-    <div class="layout">
-        <aside class="sidebar">
-            <div class="logo">ERP</div>
-            <nav class="menu">
-                <a class="" href="dashboard.html">🏠 Dashboard</a>
-                <a class="" href="pessoas-listagem.html">👥 Pessoas</a>
-                <a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
-                <a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
-                <a class="ativo" href="produtos-listagem.html">📦 Produtos</a>
-                <a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
-                <a class="sub" href="produtos-listagem.html">↳ Listagem</a>
-                <a class="" href="compras.html">🛒 Compras</a>
-                <a class="" href="vendas.html">💰 Vendas</a>
-                <a class="" href="estoque.html">📊 Estoque</a>
-            </nav>
-        </aside>
-        <main class="conteudo">
-            <header class="topo"><span class="usuario">👤 Usuário ▾</span><button class="botao secundario"
-                    data-logout="" type="button">Sair</button></header>
-            <section class="pagina">
-                <div class="titulo">
-                    <h1>Cadastro de Produto</h1>
-                    <p>Cadastre os produtos comercializados.</p>
-                </div>
-                <div class="painel">
-                    <form class="formulario" id="formProduto">
-                        <div class="campo"><label>Nome</label><input name="nome" placeholder="Digite o nome do produto"
-                                type="text" /></div>
-                        <div class="campo"><label>Código</label><input name="codigo" placeholder="Digite o código"
-                                type="text" /></div>
-                        <div class="campo"><label>Descrição</label><textarea name="descricao"
-                                placeholder="Digite a descrição"></textarea></div>
-                        <div class="linha">
-                            <div class="campo"><label>Preço de Compra</label><input name="precoCompra"
-                                    placeholder="0,00" type="number" /></div>
-                            <div class="campo"><label>Preço de Venda</label><input name="precoVenda" placeholder="0,00"
-                                    type="number" /></div>
-                        </div>
-                        <div class="campo"><label>Estoque Mínimo</label><input name="estoqueMinimo" placeholder="0"
-                                type="number" /></div>
-                        <div class="botoes"><a class="botao secundario" href="dashboard.html">Cancelar</a><button
-                                class="botao primario" type="button">Cadastrar</button></div>
-                    </form>
-                </div>
-            </section>
-        </main>
-    </div>
-    <script src="app.js"></script>
-    <script src="produtos.js"></script>
-</body>
-
+<div class="layout">
+<aside class="sidebar">
+<div class="logo">ERP</div>
+<nav class="menu">
+<a class="" href="dashboard.html">🏠 Dashboard</a>
+<a class="" href="pessoas-listagem.html">👥 Pessoas</a>
+<a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
+<a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
+<a class="ativo" href="produtos-listagem.html">📦 Produtos</a>
+<a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
+<a class="sub" href="produtos-listagem.html">↳ Listagem</a>
+<a class="" href="compras.html">🛒 Compras</a>
+<a class="" href="vendas.html">💰 Vendas</a>
+<a class="" href="estoque.html">📊 Estoque</a>
+</nav>
+</aside>
+<main class="conteudo">
+<header class="topo"><span class="usuario">👤 Usuário ▾</span><button class="botao secundario" data-logout="" type="button">Sair</button></header>
+<section class="pagina">
+<div class="titulo"><h1>Cadastro de Produto</h1><p>Cadastre os produtos comercializados.</p></div>
+<div class="painel">
+<form class="formulario" id="formProduto">
+<div class="campo"><label>Nome</label><input name="nome" placeholder="Digite o nome do produto" type="text"/></div>
+<div class="campo"><label>Código</label><input name="codigo" placeholder="Digite o código" type="text"/></div>
+<div class="campo"><label>Descrição</label><textarea name="descricao" placeholder="Digite a descrição"></textarea></div>
+<div class="linha">
+<div class="campo"><label>Preço de Compra</label><input name="precoCompra" placeholder="0,00" type="number"/></div>
+<div class="campo"><label>Preço de Venda</label><input name="precoVenda" placeholder="0,00" type="number"/></div>
+</div>
+<div class="campo"><label>Estoque Mínimo</label><input name="estoqueMinimo" placeholder="0" type="number"/></div>
+<div class="botoes"><a class="botao secundario" href="dashboard.html">Cancelar</a><button class="botao primario" type="button">Cadastrar</button></div>
+</form>
+</div>
+</section>
+</main>
+</div>
+<script type="module" src="./erp-js/app.js"></script><script type="module" src="./erp-js/produtos.js"></script></body>
 </html>
