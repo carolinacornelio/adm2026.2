@@ -1,4 +1,5 @@
 package com.erp;
+import java.time.LocalDate;
 
 public class Titulo {
     private String id;
@@ -6,13 +7,15 @@ public class Titulo {
     private boolean paga;
     private String pessoaId;
     private String tipoTitulo; // "a pagar" ou "a receber"
+    private LocalDate data;
 
-    public Titulo(String id, double quantidade, boolean paga, String pessoaId, String tipoTitulo) {
+    public Titulo(String id, double quantidade, boolean paga, String pessoaId, String tipoTitulo, LocalDate data) {
         this.id = id;
         this.quantidade = quantidade;
         this.paga = paga;
         this.pessoaId = pessoaId;
         this.tipoTitulo = tipoTitulo;
+        this.data = data;
     }
 
     public String getId() {
@@ -39,13 +42,17 @@ public class Titulo {
         return tipoTitulo;
     }
 
+    public LocalDate getData() {
+        return data;
+    }
+
     @Override
     public String toString() {
-        return id + "," + quantidade + "," + paga + "," + pessoaId + "," + tipoTitulo;
+        return id + "," + quantidade + "," + paga + "," + pessoaId + "," + tipoTitulo + "," + data.toString();
     }
 
     public static Titulo fromString(String str) {
         String[] parts = str.split(",");
-        return new Titulo(parts[0], Double.parseDouble(parts[1]), Boolean.parseBoolean(parts[2]), parts[3], parts[4]);
+        return new Titulo(parts[0], Double.parseDouble(parts[1]), Boolean.parseBoolean(parts[2]), parts[3], parts[4], LocalDate.parse(parts[5]));
     }
 }

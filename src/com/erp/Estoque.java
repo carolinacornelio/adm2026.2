@@ -2,6 +2,8 @@ package com.erp;
 
 import java.io.*;
 import java.util.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 public class Estoque {
 	private List<Produto> produtos;
@@ -31,6 +33,13 @@ public class Estoque {
 		scanner.nextLine();
 
 		Pessoa pessoa = new Pessoa(id, tipo, nome);
+		System.out.print("Documento (CPF/CNPJ): ");
+		pessoa.setDocumento(scanner.nextLine());
+		System.out.print("Telefone: ");
+		pessoa.setTelefone(scanner.nextLine());
+		System.out.print("E-mail: ");
+		pessoa.setEmail(scanner.nextLine());
+
 		pessoas.add(pessoa);
 		savePessoas();
 		System.out.println("Pessoa adicionada com sucesso.");
@@ -46,17 +55,43 @@ public class Estoque {
 		scanner.nextLine();
 
 		Produto produto = new Produto(id, nome, preco);
+		System.out.print("Categoria: ");
+		produto.setCategoria(scanner.nextLine());
+		System.out.print("Quantidade Inicial: ");
+		produto.setQuantidade(scanner.nextInt());
+		System.out.print("Estoque Mínimo (para alertas Plus/Premium): ");
+		produto.setEstoqueMinimo(scanner.nextInt());
+		scanner.nextLine(); 
 		produtos.add(produto);
 		saveProdutos();
 		System.out.println("Produto adicionado com sucesso.");
 	}
 
-	public void listaProdutos() {
-		System.out.println("Produtos:");
-		for (Produto produto : produtos) {
-			System.out.println(produto.getId() + " - " + produto.getNome() + " - R$ " + produto.getPreco());
-		}
-	}
+	public void listaProdutos(SessaoAtual sessao, Scanner scanner) {
+    String filtroCategoria = null;
+    
+    // Libera a pergunta de categoria apenas se for Plus ou Premium
+    if (sessao.getPlano().getPeso() >= 2) {
+        System.out.print("Deseja filtrar por categoria? (Digite a categoria ou deixe em branco para listar todos): ");
+        filtroCategoria = scanner.nextLine();
+    }
+
+    System.out.println("Produtos:");
+    for (Produto produto : produtos) {
+        boolean mostrar = true;
+        
+        // Aplica o filtro se ele existir e não for vazio
+        if (filtroCategoria != null && !filtroCategoria.trim().isEmpty()) {
+            if (!produto.getCategoria().equalsIgnoreCase(filtroCategoria)) {
+                mostrar = false;
+            }
+        }
+        
+        if (mostrar) {
+            System.out.println(produto.getId() + " - " + produto.getNome() + " - Qtd: " + produto.getQuantidade() + " - R$ " + produto.getPreco());
+        }
+    }
+}
 
 	public void listaPessoas() {
 		System.out.println("Produtos:");
@@ -84,17 +119,26 @@ public class Estoque {
 				return;
 			}
 
-			Titulo titulo = new Titulo(UUID.randomUUID().toString(), produto.getPreco(), false, fornecedor.getId(),
-					"a pagar");
+			System.out.print("Quantidade a comprar: ");
+			int quantidadeComprada = scanner.nextInt();
+			scanner.nextLine(); // Consumir nova linha
+
+			// 1. Gera o título multiplicando o preço pela quantidade
+			Titulo titulo = new Titulo(UUID.randomUUID().toString(), produto.getPreco() * quantidadeComprada, false, fornecedor.getId(), "a pagar", LocalDate.now());
 			titulos.add(titulo);
 			saveTitulos();
+
+			// 2. Adiciona ao estoque físico e salva
+			produto.setQuantidade(produto.getQuantidade() + quantidadeComprada);
+			saveProdutos();
+
 			System.out.println("Compra registrada. Título a pagar gerado: " + titulo.getId());
 		} else {
 			System.out.println("Produto não encontrado.");
 		}
 	}
 
-	public void vendaProduto(Scanner scanner) throws IOException {
+	public void vendaProduto(Scanner scanner, SessaoAtual sessao) throws IOException {
 		System.out.print("ID do Produto a vender: ");
 		String produtoId = scanner.nextLine();
 
@@ -113,14 +157,34 @@ public class Estoque {
 				return;
 			}
 
-			Titulo titulo = new Titulo(UUID.randomUUID().toString(), produto.getPreco(), false, cliente.getId(),
-					"a receber");
+			System.out.print("Quantidade a vender: ");
+			int quantidadeVendida = scanner.nextInt();
+			scanner.nextLine(); // Consumir nova linha
+
+			if (produto.getQuantidade() < quantidadeVendida) {
+				System.out.println("Estoque insuficiente para esta venda.");
+				return;
+			}
+
+			// 1. Gera o título multiplicando o preço pela quantidade
+			Titulo titulo = new Titulo(UUID.randomUUID().toString(), produto.getPreco() * quantidadeVendida, false, cliente.getId(), "a receber", LocalDate.now());
 			titulos.add(titulo);
 			saveTitulos();
+
+			// 2. Subtrai do estoque físico e salva
+			produto.setQuantidade(produto.getQuantidade() - quantidadeVendida);
+			saveProdutos();
+
 			System.out.println("Venda registrada. Título a receber gerado: " + titulo.getId());
+
+			// 3. Trava do plano: Verifica estoque baixo apenas para Plus ou Premium
+			if (sessao.getPlano().getPeso() >= 2) {
+				verificarEstoqueBaixo(produto);
+			}
 		} else {
 			System.out.println("Produto não encontrado.");
-		}
+}
+
 	}
 
 	public void fazPagamento(Scanner scanner) throws IOException {
@@ -152,6 +216,67 @@ public class Estoque {
 						+ title.getPessoaId() + " - Tipo: " + title.getTipoTitulo());
 			}
 		}
+	}
+
+	private void verificarEstoqueBaixo(Produto produto) {
+		if (produto.getQuantidade() <= produto.getEstoqueMinimo()) {
+			System.out.println("ALERTA PLUS/PREMIUM: O produto " + produto.getNome() + " está com estoque baixo! Restam apenas: " + produto.getQuantidade());
+		}
+	}
+
+	public void relatorioFaturamento(SessaoAtual sessao, Scanner scanner) {
+		if (sessao.getPlano().getPeso() < 2) {
+			System.out.println("Acesso Negado: Funcionalidade exclusiva para planos PLUS ou PREMIUM.");
+			return;
+		}
+
+		DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+		System.out.print("Data inicial (dd/MM/yyyy): ");
+		LocalDate inicio = LocalDate.parse(scanner.nextLine(), fmt);
+		System.out.print("Data final (dd/MM/yyyy): ");
+		LocalDate fim = LocalDate.parse(scanner.nextLine(), fmt);
+
+		double totalRecebido = 0;
+		for (Titulo t : titulos) {
+			if (t.getTipoTitulo().equals("a receber") && t.isPago()) {
+				if (!t.getData().isBefore(inicio) && !t.getData().isAfter(fim)) {
+					totalRecebido += t.getQuantidade();
+				}
+			}
+		}
+		System.out.println("Faturamento entre " + inicio.format(fmt) + " e " + fim.format(fmt) + ": R$ " + totalRecebido);
+	}
+
+	public void comparacaoFaturamento(SessaoAtual sessao, Scanner scanner) {
+		if (sessao.getPlano().getPeso() < 3) {
+			System.out.println("Acesso Negado: Funcionalidade exclusiva para plano PREMIUM.");
+			return;
+		}
+
+		DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+		System.out.println("--- Período 1 ---");
+		System.out.print("Data inicial 1: ");
+		LocalDate inicio1 = LocalDate.parse(scanner.nextLine(), fmt);
+		System.out.print("Data final 1: ");
+		LocalDate fim1 = LocalDate.parse(scanner.nextLine(), fmt);
+
+		System.out.println("--- Período 2 ---");
+		System.out.print("Data inicial 2: ");
+		LocalDate inicio2 = LocalDate.parse(scanner.nextLine(), fmt);
+		System.out.print("Data final 2: ");
+		LocalDate fim2 = LocalDate.parse(scanner.nextLine(), fmt);
+
+		double total1 = 0, total2 = 0;
+		for (Titulo t : titulos) {
+			if (t.getTipoTitulo().equals("a receber") && t.isPago()) {
+				if (!t.getData().isBefore(inicio1) && !t.getData().isAfter(fim1)) total1 += t.getQuantidade();
+				if (!t.getData().isBefore(inicio2) && !t.getData().isAfter(fim2)) total2 += t.getQuantidade();
+			}
+		}
+		
+		System.out.println("Total Período 1: R$ " + total1);
+		System.out.println("Total Período 2: R$ " + total2);
+		System.out.println("Diferença: R$ " + Math.abs(total2 - total1) + (total2 >= total1 ? " (Crescimento)" : " (Queda)"));
 	}
 
 	private Pessoa buscarPessoaPorTipo(Scanner scanner, int tipo) {
