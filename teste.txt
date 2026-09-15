@@ -1,6 +1,7 @@
--- 1. Criando a empresa contratante (ID 1)
+-- 1. Criando empresas contratantes (ID 1 e ID 2 para multi-tenant)
 INSERT INTO empresas (nome_fantasia, documento, plano_assinatura) 
-VALUES ('Minha Empresa Teste', '99.999.999/0001-99', 'PREMIUM');
+VALUES ('Minha Empresa Teste (Loja A)', '99.999.999/0001-99', 'PREMIUM'),
+       ('Segunda Empresa (Loja B)', '88.888.888/0001-88', 'BASE');
 
 -- 2. Categorias (Agora vinculadas à empresa 1)
 INSERT INTO categorias (empresa_id, nome) VALUES 

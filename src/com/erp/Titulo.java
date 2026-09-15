@@ -1,29 +1,52 @@
 package com.erp;
+
 import java.time.LocalDate;
 
 public class Titulo {
-    private String id;
-    private double quantidade;
+    private Integer id; // Gerado automaticamente pelo banco com SERIAL e descartando o UUID
+    private double quantidade; // Valor do título
     private boolean paga;
-    private String pessoaId;
+    private Integer pessoaId;
     private String tipoTitulo; // "a pagar" ou "a receber"
     private LocalDate data;
+    private String descricao;
 
-    public Titulo(String id, double quantidade, boolean paga, String pessoaId, String tipoTitulo, LocalDate data) {
+    public Titulo(double quantidade, boolean paga, Integer pessoaId, String tipoTitulo, LocalDate data) {
+        this(null, quantidade, paga, pessoaId, tipoTitulo, data, "Lançamento no sistema");
+    }
+
+    public Titulo(double quantidade, boolean paga, Integer pessoaId, String tipoTitulo, LocalDate data, String descricao) {
+        this(null, quantidade, paga, pessoaId, tipoTitulo, data, descricao);
+    }
+
+    public Titulo(Integer id, double quantidade, boolean paga, Integer pessoaId, String tipoTitulo, LocalDate data) {
+        this(id, quantidade, paga, pessoaId, tipoTitulo, data, "Lançamento no sistema");
+    }
+
+    public Titulo(Integer id, double quantidade, boolean paga, Integer pessoaId, String tipoTitulo, LocalDate data, String descricao) {
         this.id = id;
         this.quantidade = quantidade;
         this.paga = paga;
         this.pessoaId = pessoaId;
         this.tipoTitulo = tipoTitulo;
         this.data = data;
+        this.descricao = descricao;
     }
 
-    public String getId() {
+    public Integer getId() {
         return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public double getQuantidade() {
         return quantidade;
+    }
+
+    public void setQuantidade(double quantidade) {
+        this.quantidade = quantidade;
     }
 
     public boolean isPago() {
@@ -34,25 +57,40 @@ public class Titulo {
         this.paga = paga;
     }
 
-    public String getPessoaId() {
+    public Integer getPessoaId() {
         return pessoaId;
+    }
+
+    public void setPessoaId(Integer pessoaId) {
+        this.pessoaId = pessoaId;
     }
 
     public String getTipoTitulo() {
         return tipoTitulo;
     }
 
+    public void setTipoTitulo(String tipoTitulo) {
+        this.tipoTitulo = tipoTitulo;
+    }
+
     public LocalDate getData() {
         return data;
     }
 
-    @Override
-    public String toString() {
-        return id + "," + quantidade + "," + paga + "," + pessoaId + "," + tipoTitulo + "," + data.toString();
+    public void setData(LocalDate data) {
+        this.data = data;
     }
 
-    public static Titulo fromString(String str) {
-        String[] parts = str.split(",");
-        return new Titulo(parts[0], Double.parseDouble(parts[1]), Boolean.parseBoolean(parts[2]), parts[3], parts[4], LocalDate.parse(parts[5]));
+    public String getDescricao() {
+        return descricao;
+    }
+
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
+    }
+
+    @Override
+    public String toString() {
+        return "Título #" + (id != null ? id : "Novo") + " - R$ " + String.format("%.2f", quantidade)+ " - Tipo: " + tipoTitulo + " - Status: " + (paga ? "PAGO" : "EM ABERTO")+ " - Pessoa ID: " + (pessoaId != null ? pessoaId : "N/A") + " - Data: " + data;
     }
 }
