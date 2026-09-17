@@ -162,6 +162,14 @@ export const apiService = {
  *
  *   GET    /api/estoque              -> situação de estoque de todos os produtos
  *
+ *   GET    /api/categorias            -> categorias da empresa logada
+ *   POST   /api/categorias            -> cria categoria (se o produto permitir gestão)
+ *
  *   GET    /api/dashboard/indicadores -> totais exibidos nos cartões do dashboard
+ *   GET    /api/dashboard/faturamento?mesReferencia=2026-09
+ *                                      -> comparação de faturamento mensal
+ *
+ *   POST   /api/ia/perguntar          -> recebe pergunta + contexto permitido
+ *                                      e devolve resposta da IA
  * ---------------------------------------------------------------------------
  */

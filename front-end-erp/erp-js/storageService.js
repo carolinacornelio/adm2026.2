@@ -143,7 +143,9 @@ export const authStorage = {
     getUsuarioLogado() {
         const id = getUsuarioLogadoId();
         if (!id) return null;
-        return lerTabela(CHAVE_USUARIOS).find((u) => u.id === id) || null;
+        const usuario = lerTabela(CHAVE_USUARIOS).find((u) => u.id === id) || null;
+        if (usuario && !usuario.plano) usuario.plano = 'BASE';
+        return usuario;
     },
 
     estaAutenticado() {

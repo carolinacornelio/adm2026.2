@@ -28,6 +28,7 @@ export function toUsuarioCadastroDTO(formData) {
         empresa: formData.empresa.trim(),
         email: formData.email.trim().toLowerCase(),
         senha: formData.senha,
+        plano: formData.plano || 'BASE',
         // "confirmarSenha" e "terms" são validados só no front-end;
         // não fazem parte do DTO que vai para o backend.
     };
@@ -103,6 +104,7 @@ export function toProdutoDTO(formData) {
         precoCompra: Number(formData.precoCompra) || 0,
         precoVenda: Number(formData.precoVenda) || 0,
         estoqueMinimo: Number(formData.estoqueMinimo) || 0,
+        categoriaId: formData.categoriaId || null,
         // Todo produto novo nasce com estoque zerado; compras futuras
         // (Etapa seguinte) é que vão incrementar este valor no backend.
         quantidadeEstoque: 0,
@@ -128,6 +130,8 @@ export function fromProdutoDTO(produto) {
         estoqueMinimo,
         quantidadeEstoque,
         situacao,
+        categoriaId: produto.categoriaId ?? produto.categoria?.id ?? null,
+        categoriaNome: produto.categoriaNome ?? produto.categoria?.nome ?? '',
     };
 }
 

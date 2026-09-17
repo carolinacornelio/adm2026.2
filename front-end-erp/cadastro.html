@@ -45,6 +45,7 @@
 </div>
 <div class="auth-header">
 <h2>Criar conta</h2>
+<p id="planoSelecionado" class="plano-selecionado">Plano Básico</p>
 <p>Digite seus dados abaixo para começar a usar o CodeScript</p>
 </div>
 <form action="#" class="auth-form" id="formCadastro" method="POST" novalidate="False">
@@ -54,6 +55,7 @@
 </div>
 <div class="form-group">
 <label for="company">Dados da empresa / Negócio*</label>
+<input type="hidden" id="plano" name="plano" value="BASE"/>
 <input id="company" name="empresa" placeholder="Ex: Minha Empresa Ltda." required="" type="text"/>
 </div>
 <div class="form-group">

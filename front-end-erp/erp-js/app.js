@@ -16,6 +16,7 @@
  */
 
 import { estaAutenticado, getUsuarioLogado, logout } from './authService.js';
+import { aplicarControlePlanos, temAcesso, nomePlano } from './planService.js';
 
 const PAGINAS_PUBLICAS = ['login.html', 'cadastro.html', 'index.html', ''];
 
@@ -28,6 +29,13 @@ function protegerPaginaInterna() {
 
     if (!estaAutenticado()) {
         window.location.href = 'login.html';
+        return;
+    }
+
+    const planoMinimo = document.body?.dataset?.planoMinimo;
+    if (planoMinimo && !temAcesso(planoMinimo)) {
+        window.alert(`Esta página está disponível no ${nomePlano(planoMinimo)}.`);
+        window.location.href = 'dashboard.html';
     }
 }
 
@@ -59,4 +67,5 @@ protegerPaginaInterna();
 document.addEventListener('DOMContentLoaded', () => {
     exibirUsuarioLogado();
     configurarBotaoLogout();
+    aplicarControlePlanos();
 });

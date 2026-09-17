@@ -15,6 +15,7 @@
  */
 
 import { cadastrar, login } from './authService.js';
+import { nomePlano } from './planService.js';
 import { toUsuarioCadastroDTO, toUsuarioLoginDTO } from './dto.js';
 import { formParaObjeto, iniciarCarregando, pararCarregando, mostrarErro, limparMensagem } from './uiService.js';
 
@@ -38,7 +39,24 @@ function validarLogin(dados) {
     return null;
 }
 
+function configurarPlanoCadastro(formCadastro) {
+    const campoPlano = formCadastro.querySelector('[name="plano"]');
+    const textoPlano = document.getElementById('planoSelecionado');
+
+    const params = new URLSearchParams(window.location.search);
+    const plano = params.get('plano');
+
+    const permitidos = ['BASE', 'PLUS', 'PREMIUM'];
+    const planoSelecionado = permitidos.includes(String(plano || '').toUpperCase())
+        ? String(plano).toUpperCase()
+        : 'BASE';
+
+    if (campoPlano) campoPlano.value = planoSelecionado;
+    if (textoPlano) textoPlano.textContent = `Plano selecionado: ${nomePlano(planoSelecionado)}`;
+}
+
 function configurarFormularioCadastro(formCadastro) {
+    configurarPlanoCadastro(formCadastro);
     formCadastro.addEventListener('submit', async (evento) => {
         evento.preventDefault();
         limparMensagem(formCadastro);
