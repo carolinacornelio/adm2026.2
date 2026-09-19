@@ -162,3 +162,21 @@ input:focus, select:focus, textarea:focus { border-color: var(--azul); }
 .categoria-botoes { align-items: flex-end; }
 .categoria-lista-painel { margin-top: 18px; }
 .recurso-bloqueado { opacity: .65; }
+
+/* Dashboard econômico: comparação do faturamento mensal. */
+.recurso-aviso {
+  margin: 0 0 18px; padding: 10px 12px; border-radius: 7px;
+  background: #fff7e6; color: #9a5b00; font-size: 12px;
+}
+.dashboard-economico { margin-bottom: 20px; }
+.faturamento-titulo { margin-top: 28px; margin-bottom: 14px; }
+.faturamento-titulo h2 { margin-bottom: 5px; }
+.cartoes-faturamento { margin-top: 20px; grid-template-columns: repeat(3, 1fr); }
+.campo-mes { min-width: 180px; }
+.texto-secundario { color: var(--cinza); font-size: 13px; margin-top: 6px; }
+.analise-faturamento {
+  margin-top: 18px; padding: 15px; border-radius: 8px; background: var(--azul-claro);
+}
+.analise-faturamento p { margin-top: 6px; color: #344054; font-size: 13px; }
+@media (max-width: 900px) { .cartoes-faturamento { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 650px) { .cartoes-faturamento { grid-template-columns: 1fr; } }

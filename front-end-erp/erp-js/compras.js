@@ -2,7 +2,8 @@
  * compras.js
  * ---------------------------------------------------------------------------
  * Controller de compras.html. Permite escolher um fornecedor, adicionar
- * várias linhas de produto/quantidade/preço, calcular o total automaticamente
+ * várias linhas de produto/quantidade, usa o preço cadastrado automaticamente
+ * e calcula o total
  * e, ao finalizar, registrar a compra (o que também dá entrada no estoque —
  * ver comprasService.js).
  * ---------------------------------------------------------------------------
@@ -40,7 +41,7 @@ function popularSelectProdutos(selectElement) {
 /** Recalcula o subtotal de UMA linha (quantidade × preço) e devolve o valor numérico. */
 function recalcularSubtotalLinha(linha) {
     const quantidade = Number(linha.querySelector('[name="quantidade"]').value) || 0;
-    const preco = Number(linha.querySelector('[name="preco"]').value) || 0;
+    const preco = Number(linha.querySelector('.preco-unitario').dataset.preco) || 0;
     const subtotal = quantidade * preco;
     linha.querySelector('.coluna-subtotal').textContent = formatarMoeda(subtotal);
     return subtotal;
@@ -62,7 +63,8 @@ function adicionarLinha(tbody) {
 
     novaLinha.querySelector('[name="produto"]').value = '';
     novaLinha.querySelector('[name="quantidade"]').value = '';
-    novaLinha.querySelector('[name="preco"]').value = '';
+    novaLinha.querySelector('.preco-unitario').dataset.preco = '0';
+    novaLinha.querySelector('.preco-unitario').textContent = formatarMoeda(0);
     novaLinha.querySelector('.coluna-subtotal').textContent = formatarMoeda(0);
 
     tbody.appendChild(novaLinha);
@@ -74,7 +76,8 @@ function removerLinha(tbody, linha, elementoTotal) {
     if (linhas.length === 1) {
         linha.querySelector('[name="produto"]').value = '';
         linha.querySelector('[name="quantidade"]').value = '';
-        linha.querySelector('[name="preco"]').value = '';
+        linha.querySelector('.preco-unitario').dataset.preco = '0';
+        linha.querySelector('.preco-unitario').textContent = formatarMoeda(0);
     } else {
         linha.remove();
     }
@@ -87,7 +90,7 @@ function coletarItens(tbody) {
     tbody.querySelectorAll('tr').forEach((linha) => {
         const produtoId = linha.querySelector('[name="produto"]').value;
         const quantidade = Number(linha.querySelector('[name="quantidade"]').value);
-        const precoUnitario = Number(linha.querySelector('[name="preco"]').value);
+        const precoUnitario = Number(linha.querySelector('.preco-unitario').dataset.preco);
         if (produtoId && quantidade > 0) {
             itens.push({ produtoId, quantidade, precoUnitario });
         }
@@ -129,14 +132,17 @@ async function inicializarTelaCompras(form) {
             const produto = produtosDisponiveis.find(
                 (p) => String(p.id) === String(evento.target.value)
             );
-            linha.querySelector('[name="preco"]').value = produto ? produto.precoCompra : '';
+            const preco = Number(produto?.precoCompra) || 0;
+            const campoPreco = linha.querySelector('.preco-unitario');
+            campoPreco.dataset.preco = String(preco);
+            campoPreco.textContent = formatarMoeda(preco);
             recalcularTotalGeral(tbody, elementoTotal);
         }
     });
 
-    // Quantidade/preço mudando -> recalcula os totais.
+    // Somente a quantidade é editável; o preço vem do produto escolhido.
     tbody.addEventListener('input', (evento) => {
-        if (evento.target.matches('[name="quantidade"], [name="preco"]')) {
+        if (evento.target.matches('[name="quantidade"]')) {
             recalcularTotalGeral(tbody, elementoTotal);
         }
     });

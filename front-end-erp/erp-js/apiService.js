@@ -163,6 +163,7 @@ export const apiService = {
  *   GET    /api/estoque              -> situação de estoque de todos os produtos
  *
  *   GET    /api/dashboard/indicadores -> totais exibidos nos cartões do dashboard
+ *   GET    /api/dashboard/faturamento -> comparação mensal do plano PLUS
  *   POST   /api/ia/perguntar         -> análise do ERP (plano PLUS)
  * ---------------------------------------------------------------------------
  */

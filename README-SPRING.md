@@ -69,6 +69,7 @@ GET /api/estoque
 GET|POST /api/compras
 GET|POST /api/vendas
 GET /api/dashboard/indicadores
+GET /api/dashboard/faturamento?mesReferencia=AAAA-MM (plano PLUS)
 POST /api/ia/perguntar (plano PLUS)
 ```
 
@@ -97,6 +98,8 @@ WHERE id = SEU_ID_DA_EMPRESA;
 ```
 
 O assistente integrado nesta etapa é analítico: consulta o PostgreSQL e responde às perguntas suportadas, sem chamar um provedor externo de modelo de linguagem. A integração com uma API de IA externa pode ser adicionada depois, mantendo o mesmo endpoint `/api/ia/perguntar`.
+
+O dashboard econômico usa `GET /api/dashboard/faturamento` para comparar as vendas do mês escolhido com o mês anterior. O mês pode ser alterado no campo de referência; os valores, a variação percentual e o texto de análise são calculados com dados reais da empresa autenticada.
 
 ## Limitações conhecidas
 
