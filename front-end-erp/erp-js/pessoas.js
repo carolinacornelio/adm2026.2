@@ -70,7 +70,7 @@ function criarLinhaPessoa(pessoa) {
             <td>${escapeHtml(pessoa.telefone || '-')}</td>
             <td>
                 <div class="acoes-tabela">
-                    <button class="acao-mini excluir" data-excluir="${escapeHtml(pessoa.id)}" type="button">Excluir</button>
+                    <button class="acao-mini excluir" data-excluir="${escapeHtml(pessoa.id)}" data-tipo="${escapeHtml(pessoa.tipo)}" type="button">Excluir</button>
                 </div>
             </td>
         </tr>
@@ -111,7 +111,7 @@ function configurarListagem(tbody) {
         if (!confirmou) return;
 
         try {
-            await removerPessoa(botao.dataset.excluir);
+            await removerPessoa(botao.dataset.excluir, botao.dataset.tipo);
             carregarListagemPessoas(tbody, campoPesquisa?.value || '');
         } catch (erro) {
             window.alert(erro.message || 'Não foi possível excluir esta pessoa.');

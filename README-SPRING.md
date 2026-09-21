@@ -29,33 +29,34 @@ A versão legada foi preservada para consulta. A aplicação atual inicia em `Er
 ## Como executar
 
 1. Instale Maven e Java 21.
-2. Execute o `Script.sql` no PostgreSQL.
-3. Configure as variáveis `DATABASE_URL`, `DB_USER` e `DB_PASSWORD`, ou edite `application.properties`.
-4. Na raiz do projeto, execute:
+2. Configure as variáveis `DATABASE_URL`, `DB_USER` e `DB_PASSWORD` ou crie
+   `application-local.properties` na raiz a partir de
+   `application-local.properties.example`.
+3. Na raiz do projeto, execute:
 
 ```bash
-mvn spring-boot:run
+mvn package
+java -jar target/adm2026-1.0.0.jar
 ```
 
 Como o Maven deste ambiente não está no `PATH`, também funciona usando o executável instalado em `Downloads`:
 
 ```powershell
-& "C:\Users\aryel\Downloads\apache-maven-3.9.16-bin\apache-maven-3.9.16\bin\mvn.cmd" spring-boot:run
+& "C:\Users\aryel\Downloads\apache-maven-3.9.16-bin\apache-maven-3.9.16\bin\mvn.cmd" package
+java -jar target\adm2026-1.0.0.jar
 ```
 
-5. Sirva a pasta `front-end-erp` por HTTP (Live Server, por exemplo). Não abra os HTMLs com `file://`, pois os módulos JavaScript e o CORS podem falhar.
+4. Abra `http://localhost:8080/`. O JAR já contém a interface HTML, CSS e JavaScript.
+
+Na primeira inicialização, `schema.sql` cria a estrutura ausente e migra as
+colunas compatíveis sem apagar dados. O `Script.sql` continua disponível para
+execução manual no PostgreSQL, caso seja necessário.
 
 ## Acesso pela rede local
 
-O backend está configurado com `server.address=0.0.0.0` e o frontend usa automaticamente o hostname atual. Nesta máquina, o IPv4 identificado foi `192.168.3.10`.
-
-Inicie o frontend com:
-
-```powershell
-py -m http.server 5500 --directory front-end-erp
-```
-
-Os colegas podem acessar `http://192.168.3.10:5500/login.html` enquanto estiverem na mesma rede Wi-Fi.
+O backend está configurado com `server.address=0.0.0.0` e o JAR entrega a
+interface no mesmo endereço. Com o servidor em execução, os colegas na mesma
+rede Wi-Fi acessam `http://IP-DA-MAQUINA:8080/`.
 
 ## Endpoints atuais
 
@@ -87,7 +88,7 @@ Agora, o navegador envia JSON para Controllers REST. Os Controllers delegam o ac
 
 ## Controle de planos
 
-Novas empresas começam no plano `BASE`, definido em `empresas.plano_assinatura`. O login devolve o plano no objeto `usuario`, o frontend usa esse valor para ocultar recursos e o backend valida novamente o acesso. A validação do backend é a proteção efetiva; ocultar a opção no frontend serve apenas para melhorar a experiência.
+Novas empresas começam no plano escolhido no cadastro (`BASE`, `PLUS` ou `PREMIUM`), salvo em `empresas.plano_assinatura`. O login devolve o plano no objeto `usuario`, o frontend usa esse valor para ocultar recursos e o backend valida novamente o acesso.
 
 Para testar a interface da IA, promova uma empresa de teste para `PLUS` no PostgreSQL e faça login novamente para renovar os dados da sessão:
 
@@ -104,5 +105,5 @@ O dashboard econômico usa `GET /api/dashboard/faturamento` para comparar as ven
 ## Limitações conhecidas
 
 - O token atual fica em memória e é perdido quando o servidor reinicia. Para produção, substituir por JWT ou sessão persistente.
-- O schema atual possui apenas uma coluna `produtos.preco`; por compatibilidade, ela é devolvida como `precoCompra` e `precoVenda`. Se os preços forem diferentes, será necessário adicionar duas colunas e ajustar o SQL.
-- Ainda não foram adicionados testes automatizados e migrations versionadas (Flyway/Liquibase).
+- A coluna antiga `produtos.preco` foi preservada por compatibilidade; as operações atuais usam `preco_compra` e `preco_venda`.
+- Ainda não foram adicionados testes automatizados nem migrations versionadas (Flyway/Liquibase).

@@ -93,6 +93,14 @@ function configurarFormularioLogin(formLogin) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    const seletorPlano = document.querySelector('#formCadastro [name="plano"]');
+    if (seletorPlano) {
+        const planoSelecionado = new URLSearchParams(window.location.search).get('plano');
+        if (['BASE', 'PLUS', 'PREMIUM'].includes(planoSelecionado)) {
+            seletorPlano.value = planoSelecionado;
+        }
+    }
+
     const formCadastro = document.getElementById('formCadastro');
     if (formCadastro) configurarFormularioCadastro(formCadastro);
 

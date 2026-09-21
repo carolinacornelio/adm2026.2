@@ -48,6 +48,20 @@
     </dependencies>
 
     <build>
+        <!-- Empacota a interface HTML/CSS/JS junto do Spring Boot. Assim o
+             JAR disponibiliza o ERP completo em http://localhost:8080/. -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>front-end-erp</directory>
+                <targetPath>static</targetPath>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

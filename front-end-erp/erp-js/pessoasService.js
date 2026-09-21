@@ -52,9 +52,9 @@ export async function atualizarPessoa(id, pessoaDTO) {
 }
 
 /** Remove uma pessoa. */
-export async function removerPessoa(id) {
+export async function removerPessoa(id, tipo = 'CLIENTE') {
     // ===== ETAPA 3 (Spring Boot) =====
-    await apiService.delete(`/pessoas/${encodeURIComponent(id)}`);
+    await apiService.delete(`/pessoas/${encodeURIComponent(id)}?tipo=${encodeURIComponent(tipo)}`);
     return true;
 
     // ===== ETAPA 2 (localStorage) =====

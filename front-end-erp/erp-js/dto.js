@@ -28,6 +28,7 @@ export function toUsuarioCadastroDTO(formData) {
         empresa: formData.empresa.trim(),
         email: formData.email.trim().toLowerCase(),
         senha: formData.senha,
+        plano: formData.plano || 'BASE',
         // "confirmarSenha" e "terms" são validados só no front-end;
         // não fazem parte do DTO que vai para o backend.
     };

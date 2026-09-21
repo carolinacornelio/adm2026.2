@@ -36,8 +36,8 @@
 <div class="campo"><label>Código</label><input name="codigo" placeholder="Digite o código" type="text"/></div>
 <div class="campo"><label>Descrição</label><textarea name="descricao" placeholder="Digite a descrição"></textarea></div>
 <div class="linha">
-<div class="campo"><label>Preço de Compra</label><input name="precoCompra" placeholder="0,00" type="number"/></div>
-<div class="campo"><label>Preço de Venda</label><input name="precoVenda" placeholder="0,00" type="number"/></div>
+<div class="campo"><label>Preço de Compra</label><input min="0" name="precoCompra" placeholder="0,00" step="0.01" type="number"/></div>
+<div class="campo"><label>Preço de Venda</label><input min="0" name="precoVenda" placeholder="0,00" step="0.01" type="number"/></div>
 </div>
 <div class="linha">
 <div class="campo categoria-campo">
@@ -46,7 +46,7 @@
 <small class="ajuda-campo">Ex.: Celular, Computador, Periférico ou Acessório.</small>
 <div class="nova-categoria" id="novaCategoria" hidden><input id="nomeNovaCategoria" maxlength="100" placeholder="Nome da nova categoria" type="text"/><button class="acao-mini" id="salvarNovaCategoria" type="button">Salvar</button></div>
 </div>
-<div class="campo"><label>Estoque Mínimo</label><input name="estoqueMinimo" placeholder="0" type="number"/></div>
+<div class="campo"><label>Estoque Mínimo</label><input min="0" name="estoqueMinimo" placeholder="0" step="1" type="number"/></div>
 </div>
 <div class="botoes"><a class="botao secundario" href="dashboard.html">Cancelar</a><button class="botao primario" type="button">Cadastrar</button></div>
 </form>

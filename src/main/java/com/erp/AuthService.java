@@ -3,6 +3,7 @@ package com.erp;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -18,14 +19,21 @@ public class AuthService {
     public AuthService(JdbcTemplate db) { this.db = db; }
 
     /** Cria a empresa e o primeiro usuário; a senha é salva somente como hash BCrypt. */
+    @Transactional
     public Map<String,Object> cadastrar(Map<String,Object> d) {
         String email = texto(d, "email").toLowerCase();
+        if (!email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"))
+            throw new IllegalArgumentException("Informe um e-mail válido.");
+        String senha = texto(d, "senha");
+        if (senha.length() < 6)
+            throw new IllegalArgumentException("A senha deve ter pelo menos 6 caracteres.");
         if (db.queryForObject("SELECT COUNT(*) FROM usuarios WHERE email=?", Integer.class, email) > 0)
             throw new IllegalArgumentException("Já existe uma conta cadastrada com este e-mail.");
-        Number empresaId = db.queryForObject("INSERT INTO empresas (nome_fantasia) VALUES (?) RETURNING id", Number.class, texto(d,"empresa"));
-        Number usuarioId = db.queryForObject("INSERT INTO usuarios (empresa_id,nome,email,senha_hash,perfil) VALUES (?,?,?,?,?) RETURNING id", Number.class, empresaId, texto(d,"nome"), email, encoder.encode(texto(d,"senha")), "padrao");
+        String plano = PlanService.normalizar(d.getOrDefault("plano", "BASE"));
+        Number empresaId = db.queryForObject("INSERT INTO empresas (nome_fantasia, plano_assinatura) VALUES (?, ?) RETURNING id", Number.class, texto(d,"empresa"), plano);
+        Number usuarioId = db.queryForObject("INSERT INTO usuarios (empresa_id,nome,email,senha_hash,perfil) VALUES (?,?,?,?,?) RETURNING id", Number.class, empresaId, texto(d,"nome"), email, encoder.encode(senha), "padrao");
         return loginPorId(usuarioId.intValue(), empresaId.intValue(), texto(d,"nome"), email,
-                planoDaEmpresa(empresaId.intValue()));
+                plano);
     }
     /** Busca o usuário, compara o hash BCrypt e abre uma sessão. */
     public Map<String,Object> login(Map<String,Object> d) {

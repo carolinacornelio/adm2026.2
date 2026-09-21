@@ -20,7 +20,9 @@ let categoriasDisponiveis = [];
 function validarProduto(dados) {
     if (!dados.nome?.trim()) return 'Informe o nome do produto.';
     if (!dados.codigo?.trim()) return 'Informe o código do produto.';
+    if (dados.precoCompra === '' || Number(dados.precoCompra) < 0) return 'Informe um preço de compra válido.';
     if (dados.precoVenda === '' || Number(dados.precoVenda) < 0) return 'Informe um preço de venda válido.';
+    if (dados.estoqueMinimo === '' || !Number.isInteger(Number(dados.estoqueMinimo)) || Number(dados.estoqueMinimo) < 0) return 'Informe um estoque mínimo inteiro e não negativo.';
     return null;
 }
 
