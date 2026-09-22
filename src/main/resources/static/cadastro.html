@@ -1,0 +1,92 @@
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="CodeScript ERP - Crie sua conta para simplificar sua gestão." name="description"/>
+<title>CodeScript | Criar conta</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- CSS Integrado -->
+<link href="./css/style.css" rel="stylesheet"/>
+</head>
+<body class="auth-page">
+<div class="auth-container">
+<!-- PAINEL HERO (ESQUERDA) -->
+<div class="auth-hero">
+<div class="auth-hero-content">
+<a class="logo auth-hero-logo" href="index.html">Code<span>Script</span></a>
+<h1>Sua empresa mais<br/><strong>organizada, produtiva<br/>e lucrativa.</strong></h1>
+<p>Centralize vendas, estoque, compras, financeiro e gestão da sua empresa em uma única plataforma.</p>
+<!-- CARD DE PREVIEW/ILUSTRAÇÃO -->
+<div class="auth-hero-preview">
+<div class="preview-badge">ERP Vision</div>
+<div class="preview-card">
+<small>SYNERGY ERP GLOBAL DASHBOARD - OCT 2023</small>
+<div class="preview-stats">
+<div><span>NetP</span><strong>R$ 1.450.320,00</strong></div>
+<div><span>Sa</span><strong>R$ 345.180,00</strong></div>
+<div><span>Units</span><strong>785 Units</strong></div>
+</div>
+</div>
+</div>
+<div class="auth-hero-footer">
+<strong>Seguro, confiável e sempre com você.</strong>
+<span>Seus dados protegidos na nuvem.</span>
+</div>
+</div>
+</div>
+<!-- FORMULÁRIO (DIREITA) -->
+<main class="auth-form-container">
+<div class="auth-form-box">
+<div class="auth-top-switch">
+<span>Já tem uma conta?</span>
+<a class="btn btn-secondary btn-small" href="login.html">Entrar</a>
+</div>
+<div class="auth-header">
+<h2>Criar conta</h2>
+<p>Digite seus dados abaixo para começar a usar o CodeScript</p>
+</div>
+<form action="#" class="auth-form" id="formCadastro" method="POST" novalidate="False">
+<div class="form-group">
+<label for="fullname">Nome completo*</label>
+<input id="fullname" name="nome" placeholder="Seu nome" required="" type="text"/>
+</div>
+<div class="form-group">
+<label for="company">Dados da empresa / Negócio*</label>
+<input id="company" name="empresa" placeholder="Ex: Minha Empresa Ltda." required="" type="text"/>
+</div>
+<div class="form-group">
+<label for="email">E-mail*</label>
+<input id="email" name="email" placeholder="nome@email.com" required="" type="email"/>
+</div>
+<div class="form-row">
+<div class="form-group">
+<label for="password">Senha*</label>
+<input id="password" name="senha" placeholder="Digite sua senha" required="" type="password"/>
+</div>
+<div class="form-group">
+<label for="confirm-password">Confirmar senha*</label>
+<input id="confirm-password" name="confirmarSenha" placeholder="Confirme sua senha" required="" type="password"/>
+</div>
+</div>
+<div class="form-options">
+<label class="checkbox-container">
+<input name="terms" required="" type="checkbox"/>
+<span class="checkmark"></span>
+                            Li e aceito os <a href="#">Termos de uso</a> e a <a href="#">Política de privacidade</a>.
+                        </label>
+</div>
+<button class="btn btn-primary btn-full" type="submit">Criar conta</button>
+</form>
+<div class="auth-footer">
+<div class="brand-footer">
+<strong>CodeScript</strong>
+<small>Gestão empresarial simplificada.</small>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script type="module" src="./erp-js/app.js"></script><script type="module" src="./erp-js/auth.js"></script></body>
+</html>

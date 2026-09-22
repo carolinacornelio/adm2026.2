@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Controle de Estoque | ERP</title>
+<link href="./css/tela.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+<div class="logo">ERP</div>
+<nav class="menu">
+<a class="" href="dashboard.html">🏠 Dashboard</a>
+<a class="" href="pessoas-listagem.html">👥 Pessoas</a>
+<a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
+<a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
+<a class="" href="produtos-listagem.html">📦 Produtos</a>
+<a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
+<a class="sub" href="produtos-listagem.html">↳ Listagem</a>
+<a class="sub" data-plano-minimo="PLUS" data-plano-ocultar="true" href="categorias.html">↳ Categorias</a>
+<a class="" href="compras.html">🛒 Compras</a>
+<a class="" href="vendas.html">💰 Vendas</a>
+<a class="ativo" href="estoque.html">📊 Estoque</a>
+<a class="" href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">🤖 Assistente IA</a>
+</nav>
+</aside>
+<main class="conteudo">
+<header class="topo"><span class="usuario">👤 Usuário ▾</span><button class="botao secundario" data-logout="" type="button">Sair</button></header>
+<section class="pagina">
+<div class="titulo"><h1>Controle de Estoque</h1><p>Acompanhe a quantidade e os alertas dos produtos.</p></div>
+<div class="painel">
+<div class="barra-listagem"><input id="pesquisaEstoque" placeholder="🔍  Pesquisar produto..." type="search"/></div>
+<table class="tabela">
+<thead><tr><th>Produto</th><th>Estoque Atual</th><th>Estoque Mínimo</th><th>Situação</th></tr></thead>
+<tbody id="listaEstoque"></tbody></table>
+</div>
+</section>
+</main>
+</div>
+<script type="module" src="./erp-js/app.js"></script><script type="module" src="./erp-js/estoque.js"></script></body>
+</html>
