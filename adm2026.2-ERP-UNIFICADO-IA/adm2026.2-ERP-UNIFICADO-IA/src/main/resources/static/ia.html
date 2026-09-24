@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Assistente IA | ERP</title>
+<link href="./css/tela.css" rel="stylesheet"/>
+</head>
+<body data-plano-minimo="PLUS">
+<div class="layout">
+<aside class="sidebar">
+<div class="logo">ERP</div>
+<nav class="menu">
+<a href="dashboard.html">🏠 Dashboard</a>
+<a href="pessoas-listagem.html">👥 Pessoas</a>
+<a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
+<a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
+<a href="produtos-listagem.html">📦 Produtos</a>
+<a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
+<a class="sub" href="produtos-listagem.html">↳ Listagem</a>
+<a class="sub" data-plano-minimo="PLUS" data-plano-ocultar="true" href="categorias.html">↳ Categorias</a>
+<a href="compras.html">🛒 Compras</a>
+<a href="vendas.html">💰 Vendas</a>
+<a href="estoque.html">📊 Estoque</a>
+<a class="ativo" href="ia.html">🤖 Assistente IA</a>
+</nav>
+</aside>
+<main class="conteudo">
+<header class="topo"><span class="usuario">👤 Usuário ▾</span><button class="botao secundario" data-logout="" type="button">Sair</button></header>
+<section class="pagina">
+<div class="titulo">
+<h1>🤖 Assistente IA</h1>
+<p>Faça perguntas sobre os dados do seu negócio e receba análises baseadas nos números registrados no ERP.</p>
+</div>
+
+<div class="painel ia-painel">
+<div class="ia-aviso">
+<strong>Como funciona</strong>
+<span>O assistente entende perguntas livres, identifica quais dados do ERP precisa consultar e responde usando somente os dados da sua empresa. Você também pode continuar a conversa com perguntas de acompanhamento.</span>
+</div>
+
+<form id="formIA" class="formulario">
+<div class="campo">
+<label for="perguntaIA">Pergunta</label>
+<textarea id="perguntaIA" name="pergunta" rows="4" placeholder="Ex.: Como estão minhas vendas este mês e quais produtos estão com estoque baixo?"></textarea>
+</div>
+<div class="botoes">
+<button class="botao primario" id="btnPerguntarIA" type="submit">Perguntar à IA</button>
+</div>
+</form>
+
+<div id="respostaIA" class="ia-resposta" aria-live="polite">A resposta do assistente aparecerá aqui.</div>
+
+<div class="ia-exemplos">
+<strong>Exemplos de perguntas</strong><span class="texto-auxiliar">Você não precisa seguir um formato fixo. Escreva do seu jeito.</span>
+<div class="ia-exemplos-grid">
+<button type="button" class="acao-mini exemplo-ia" data-pergunta="Quais produtos estão com estoque baixo?">Estoque baixo</button>
+<button type="button" class="acao-mini exemplo-ia" data-pergunta="Quais produtos estão vendendo menos?">Produtos com baixa saída</button>
+<button type="button" class="acao-mini exemplo-ia" data-pergunta="Como está meu faturamento este mês em comparação ao mês anterior?">Comparar faturamento</button>
+<button type="button" class="acao-mini exemplo-ia" data-pergunta="Quais produtos merecem atenção com base nas vendas e no estoque?">Produtos que merecem atenção</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+<script type="module" src="./erp-js/app.js"></script>
+<script type="module" src="./erp-js/ia.js"></script>
+</body>
+</html>
