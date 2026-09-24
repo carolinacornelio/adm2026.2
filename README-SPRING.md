@@ -37,10 +37,10 @@ A versão legada foi preservada para consulta. A aplicação atual inicia em `Er
 mvn spring-boot:run
 ```
 
-Como o Maven deste ambiente não está no `PATH`, também funciona usando o executável instalado em `Downloads`:
+No Windows, use o mesmo comando no PowerShell:
 
 ```powershell
-& "C:\Users\aryel\Downloads\apache-maven-3.9.16-bin\apache-maven-3.9.16\bin\mvn.cmd" spring-boot:run
+mvn spring-boot:run
 ```
 
 5. Sirva a pasta `front-end-erp` por HTTP (Live Server, por exemplo). Não abra os HTMLs com `file://`, pois os módulos JavaScript e o CORS podem falhar.
