@@ -1,7 +1,0 @@
-bin/
-target/
-*.class
-db.properties
-application-local.properties
-.m2/
-.idea/

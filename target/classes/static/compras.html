@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nova Compra | ERP</title>
+<link href="./css/tela.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+<div class="logo">ERP</div>
+<nav class="menu">
+<a class="" href="dashboard.html">🏠 Dashboard</a>
+<a class="" href="pessoas-listagem.html">👥 Pessoas</a>
+<a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
+<a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
+<a class="" href="produtos-listagem.html">📦 Produtos</a>
+<a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
+<a class="sub" href="produtos-listagem.html">↳ Listagem</a>
+<a class="sub" data-plano-minimo="PLUS" data-plano-ocultar="true" href="categorias.html">↳ Categorias</a>
+<a class="ativo" href="compras.html">🛒 Compras</a>
+<a class="" href="vendas.html">💰 Vendas</a>
+<a class="" href="estoque.html">📊 Estoque</a>
+<a class="" href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">🤖 Assistente IA</a>
+</nav>
+</aside>
+<main class="conteudo">
+<header class="topo"><span class="usuario">👤 Usuário ▾</span><button class="botao secundario" data-logout="" type="button">Sair</button></header>
+<section class="pagina">
+<div class="titulo"><h1>Nova Compra</h1><p>Registre uma compra e aumente o estoque automaticamente.</p></div>
+<div class="painel">
+<form class="formulario" id="formCompra">
+<div class="linha">
+<div class="campo"><label>Fornecedor</label><select id="selectFornecedor" name="fornecedorId"><option value="">Selecione um fornecedor</option></select></div>
+<div class="campo"><label>Data</label><input id="inputDataCompra" name="data" type="date"/></div>
+</div>
+<div class="produtos-compra">
+<table class="tabela">
+<thead><tr><th>Produto</th><th>Quantidade</th><th>Preço Unitário</th><th>Total</th><th></th></tr></thead>
+<tbody id="corpoItensCompra"><tr data-item="template"><td><select name="produto"><option value="">Selecione um produto</option></select></td><td><input min="1" name="quantidade" type="number" value=""/></td><td class="preco-unitario" data-preco="0">R$ 0,00</td><td class="coluna-subtotal">R$ 0,00</td><td><button class="botao-remover-item" data-remover-item type="button" title="Remover item">❌</button></td></tr></tbody>
+</table>
+<br/><button class="botao secundario" id="btnAdicionarItemCompra" type="button">+ Adicionar produto</button>
+</div>
+<div class="total">Total: <span id="totalCompra">R$ 0,00</span></div>
+<div class="botoes"><a class="botao secundario" href="dashboard.html">Cancelar</a><button class="botao primario" id="btnFinalizarCompra" type="button">Finalizar Compra</button></div>
+</form>
+</div>
+</section>
+</main>
+</div>
+<script type="module" src="./erp-js/app.js"></script><script type="module" src="./erp-js/compras.js"></script></body>
+</html>
