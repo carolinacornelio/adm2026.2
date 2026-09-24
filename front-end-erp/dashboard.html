@@ -1,0 +1,110 @@
+
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Dashboard | ERP</title>
+<link href="./css/tela.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+<div class="logo">ERP</div>
+<nav class="menu">
+<a class="ativo" href="dashboard.html">🏠 Dashboard</a>
+<a class="" href="pessoas-listagem.html">👥 Pessoas</a>
+<a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
+<a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
+<a class="" href="produtos-listagem.html">📦 Produtos</a>
+<a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
+<a class="sub" href="produtos-listagem.html">↳ Listagem</a>
+<a class="" href="compras.html">🛒 Compras</a>
+<a class="" href="vendas.html">💰 Vendas</a>
+<a class="" href="estoque.html">📊 Estoque</a>
+<a class="" href="ia.html">🤖 Assistente IA</a>
+</nav>
+</aside>
+<main class="conteudo">
+<header class="topo"><span class="usuario">👤 Usuário ▾</span><button class="botao secundario" data-logout="" type="button">Sair</button></header>
+<section class="pagina">
+<div class="titulo"><h1>Bem-vindo!</h1><p>Visão geral do seu sistema ERP.</p></div>
+<div class="cartoes">
+<div class="cartao"><small>👥 Pessoas</small><div class="indicador">0</div><small>Total cadastradas</small></div>
+<div class="cartao"><small>📦 Produtos</small><div class="indicador">0</div><small>Total cadastrados</small></div>
+<div class="cartao"><small>🛒 Compras</small><div class="indicador">0</div><small>Registradas</small></div>
+<div class="cartao"><small>💰 Vendas</small><div class="indicador">0</div><small>Realizadas</small></div>
+</div>
+
+
+<div class="titulo faturamento-titulo" data-plano-minimo="PLUS">
+<h2>Dashboard econômico</h2>
+<p>Compare o faturamento mensal e acompanhe a variação do negócio.</p>
+</div>
+
+<section class="dashboard-economico" data-plano-minimo="PLUS" data-plano-ocultar="true">
+<div class="painel">
+<div class="barra-listagem">
+<div>
+<strong>Comparação de faturamento</strong>
+<p class="texto-secundario">Os valores reais virão do endpoint do Spring Boot.</p>
+</div>
+<div class="campo campo-mes">
+<label for="mesReferencia">Mês de referência</label>
+<input id="mesReferencia" type="month"/>
+</div>
+</div>
+
+<div class="cartoes cartoes-faturamento">
+<div class="cartao">
+<small id="mesAtualLabel">Mês atual</small>
+<div class="indicador" id="faturamentoAtual">R$ 0,00</div>
+<small>Faturamento</small>
+</div>
+<div class="cartao">
+<small id="mesAnteriorLabel">Mês anterior</small>
+<div class="indicador" id="faturamentoAnterior">R$ 0,00</div>
+<small>Faturamento</small>
+</div>
+<div class="cartao">
+<small>Variação</small>
+<div class="indicador" id="variacaoFaturamento">0,00%</div>
+<small>Em relação ao mês anterior</small>
+</div>
+</div>
+
+<div class="analise-faturamento">
+<strong>Leitura dos números</strong>
+<p id="analiseFaturamento">Carregando análise...</p>
+</div>
+</div>
+</section>
+
+<section class="painel recurso-ia-dashboard" data-plano-minimo="PLUS" data-plano-ocultar="true">
+<div>
+<strong>🤖 Assistente IA</strong>
+<p>Pergunte sobre vendas, estoque, faturamento e outros dados do seu ERP. A IA deverá analisar os números disponíveis antes de responder.</p>
+</div>
+<a class="botao primario" href="ia.html">Abrir Assistente IA</a>
+</section>
+
+<div class="recurso-aviso" data-plano-minimo="PLUS">
+🔒 Dashboard econômico e Assistente IA fazem parte do Plano Intermediário.
+</div>
+
+<div class="titulo"><h2>Acesso rápido</h2></div>
+<div class="acoes">
+<a class="acao" href="pessoas-cadastro.html"><div class="icone">👤</div><strong>Cadastrar Pessoas</strong><span>Novo cliente ou fornecedor</span></a>
+<a class="acao" href="pessoas-listagem.html"><div class="icone">☷</div><strong>Listar Pessoas</strong><span>Consultar cadastros</span></a>
+<a class="acao" href="produtos-cadastro.html"><div class="icone">📦</div><strong>Cadastrar Produtos</strong><span>Novo produto</span></a>
+<a class="acao" href="produtos-listagem.html"><div class="icone">☷</div><strong>Listar Produtos</strong><span>Consultar produtos</span></a>
+<a class="acao" href="compras.html"><div class="icone">🛒</div><strong>Nova Compra</strong><span>Entrada no estoque</span></a>
+<a class="acao" href="vendas.html"><div class="icone">🛒</div><strong>Nova Venda</strong><span>Saída do estoque</span></a>
+<a class="acao" href="estoque.html"><div class="icone">📊</div><strong>Consultar Estoque</strong><span>Ver situação dos produtos</span></a>
+</div>
+</section>
+</main>
+</div>
+<script type="module" src="./erp-js/app.js"></script><script type="module" src="./erp-js/dashboard.js"></script></body>
+</html>
