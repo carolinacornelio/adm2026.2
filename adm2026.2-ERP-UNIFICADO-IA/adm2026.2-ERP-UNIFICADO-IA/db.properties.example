@@ -1,4 +1,4 @@
-# Exemplo genérico. Não coloque credenciais reais neste arquivo.
-db.url=jdbc:postgresql://SEU-HOST/SEU-BANCO?sslmode=require
-db.user=SEU_USUARIO
-db.password=SUA_SENHA
+
+db.url=
+db.user=
+db.password=
