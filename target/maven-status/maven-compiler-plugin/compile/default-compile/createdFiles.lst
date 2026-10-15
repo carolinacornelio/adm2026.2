@@ -23,4 +23,5 @@ com\erp\ApiConfig$1.class
 com\erp\IAService$Periodo.class
 com\erp\OllamaClient.class
 com\erp\IAPlano.class
+com\erp\ChamadoController.class
 com\erp\IAConsulta.class

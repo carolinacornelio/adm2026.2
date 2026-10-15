@@ -122,7 +122,16 @@ CREATE TABLE IF NOT EXISTS contas_receber (
     venda_id INTEGER REFERENCES vendas(id), descricao VARCHAR(255), valor NUMERIC(10,2) NOT NULL,
     vencimento DATE NOT NULL, status VARCHAR(20) DEFAULT 'pendente', data_recebimento DATE
 );
-
+CREATE TABLE IF NOT EXISTS chamados (
+    id          SERIAL PRIMARY KEY,
+    empresa_id  INTEGER      NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+    cliente     VARCHAR(120) NOT NULL,
+    titulo      VARCHAR(160) NOT NULL,
+    descricao   TEXT         NOT NULL,
+    severidade  VARCHAR(10)  NOT NULL,   -- critica | alta | media
+    situacao    VARCHAR(20)  NOT NULL DEFAULT 'Aberto',
+    criado_em   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
 -- Migração de bases criadas antes de planos, categorias e preços separados.
 ALTER TABLE empresas ADD COLUMN IF NOT EXISTS plano_assinatura VARCHAR(20) DEFAULT 'BASE';
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS pergunta_seguranca_1 VARCHAR(50);
@@ -138,7 +147,8 @@ UPDATE produtos
    SET preco_compra = COALESCE(preco_compra, preco),
        preco_venda = COALESCE(preco_venda, preco)
  WHERE preco_compra IS NULL OR preco_venda IS NULL;
-
+ 
+CREATE INDEX IF NOT EXISTS idx_chamados_empresa ON chamados (empresa_id);
 CREATE INDEX IF NOT EXISTS idx_produtos_empresa_categoria ON produtos(empresa_id, categoria_id);
 CREATE INDEX IF NOT EXISTS idx_vendas_empresa_cliente ON vendas(empresa_id, cliente_id);
 CREATE INDEX IF NOT EXISTS idx_itens_venda_venda ON itens_venda(venda_id);
