@@ -82,5 +82,32 @@
 </div>
 </main>
 </div>
+<div class="two-factor-overlay" id="segundoFatorModal" hidden>
+<section aria-labelledby="segundo-fator-titulo" aria-modal="true" class="two-factor-dialog" role="dialog">
+<button aria-label="Fechar verificação" class="two-factor-close" id="fecharSegundoFator" type="button">&times;</button>
+<div class="two-factor-icon" aria-hidden="true">✓</div>
+<h2 id="segundo-fator-titulo">Autenticação de dois fatores</h2>
+<p id="segundoFatorDescricao">Responda às três perguntas para confirmar sua identidade.</p>
+<form class="auth-form" id="formSegundoFator" novalidate>
+<input id="segundoFatorDesafio" name="desafio" type="hidden"/>
+<div id="configurarPerguntasLogin" hidden>
+<p class="two-factor-notice">Esta conta ainda não possui perguntas. Escolha três perguntas diferentes para protegê-la.</p>
+</div>
+<div class="two-factor-question" data-question="1">
+<span>1</span><div class="form-group"><label for="pergunta-login-1">Pergunta de segurança</label><select id="pergunta-login-1" name="perguntaSeguranca1"></select></div>
+<div class="form-group"><label for="resposta-login-1">Resposta</label><input autocomplete="off" id="resposta-login-1" name="respostaSeguranca1" required type="password"/></div>
+</div>
+<div class="two-factor-question" data-question="2">
+<span>2</span><div class="form-group"><label for="pergunta-login-2">Pergunta de segurança</label><select id="pergunta-login-2" name="perguntaSeguranca2"></select></div>
+<div class="form-group"><label for="resposta-login-2">Resposta</label><input autocomplete="off" id="resposta-login-2" name="respostaSeguranca2" required type="password"/></div>
+</div>
+<div class="two-factor-question" data-question="3">
+<span>3</span><div class="form-group"><label for="pergunta-login-3">Pergunta de segurança</label><select id="pergunta-login-3" name="perguntaSeguranca3"></select></div>
+<div class="form-group"><label for="resposta-login-3">Resposta</label><input autocomplete="off" id="resposta-login-3" name="respostaSeguranca3" required type="password"/></div>
+</div>
+<button class="btn btn-primary btn-full" type="submit">Confirmar e entrar</button>
+</form>
+</section>
+</div>
 <script type="module" src="./erp-js/app.js"></script><script type="module" src="./erp-js/auth.js"></script></body>
 </html>

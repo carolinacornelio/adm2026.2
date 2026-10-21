@@ -15,11 +15,13 @@ public class ProdutoController {
     private final JdbcTemplate db;
     private final CurrentUser user;
     private final PlanService plans;
+    private final PosRealtimeService realtime;
 
-    public ProdutoController(JdbcTemplate db, CurrentUser user, PlanService plans) {
+    public ProdutoController(JdbcTemplate db, CurrentUser user, PlanService plans, PosRealtimeService realtime) {
         this.db = db;
         this.user = user;
         this.plans = plans;
+        this.realtime = realtime;
     }
 
     /** Lista produtos ativos e, opcionalmente, filtra por categoria. */
@@ -29,13 +31,14 @@ public class ProdutoController {
             @RequestParam(required = false) Integer categoriaId) {
         int empresaId = user.empresa(authorization);
         StringBuilder sql = new StringBuilder("""
-                SELECT p.id, p.nome, p.codigo, p.descricao,
+                SELECT p.id, p.nome, p.codigo, p.descricao, p.controla_validade AS "controlaValidade",
                        COALESCE(p.preco_venda, p.preco) AS "precoVenda",
                        COALESCE(p.preco_compra, p.preco) AS "precoCompra",
                        p.categoria_id AS "categoriaId",
                        COALESCE(c.nome, 'Sem Categoria') AS "categoriaNome",
-                       COALESCE(e.quantidade, 0) AS "quantidadeEstoque",
-                       COALESCE(e.estoque_minimo, 0) AS "estoqueMinimo"
+                       """ + InventarioService.DISPONIVEL_SQL + """
+                       AS "quantidadeEstoque",
+                       COALESCE(e.estoque_minimo, 0) AS "estoqueMinimo", COALESCE(e.quantidade,0) AS "quantidadeTotal"
                   FROM produtos p
              LEFT JOIN categorias c ON c.id = p.categoria_id
                                   AND c.empresa_id = p.empresa_id
@@ -54,7 +57,7 @@ public class ProdutoController {
         }
 
         sql.append(" ORDER BY p.id");
-        return db.queryForList(sql.toString(), parametros.toArray());
+        return ProdutoValidade.aplicar(db, empresaId, db.queryForList(sql.toString(), parametros.toArray()));
     }
 
     /** Busca um produto ativo, devolvendo também sua categoria. */
@@ -63,13 +66,14 @@ public class ProdutoController {
             @PathVariable int id,
             @RequestHeader("Authorization") String authorization) {
         List<Map<String, Object>> produtos = db.queryForList("""
-                SELECT p.id, p.nome, p.codigo, p.descricao,
+                SELECT p.id, p.nome, p.codigo, p.descricao, p.controla_validade AS "controlaValidade",
                        COALESCE(p.preco_venda, p.preco) AS "precoVenda",
                        COALESCE(p.preco_compra, p.preco) AS "precoCompra",
                        p.categoria_id AS "categoriaId",
                        COALESCE(c.nome, 'Sem Categoria') AS "categoriaNome",
-                       COALESCE(e.quantidade, 0) AS "quantidadeEstoque",
-                       COALESCE(e.estoque_minimo, 0) AS "estoqueMinimo"
+                       """ + InventarioService.DISPONIVEL_SQL + """
+                       AS "quantidadeEstoque",
+                       COALESCE(e.estoque_minimo, 0) AS "estoqueMinimo", COALESCE(e.quantidade,0) AS "quantidadeTotal"
                   FROM produtos p
              LEFT JOIN categorias c ON c.id = p.categoria_id
                                   AND c.empresa_id = p.empresa_id
@@ -80,7 +84,7 @@ public class ProdutoController {
                    AND p.ativo = true
                 """, id, user.empresa(authorization));
         if (produtos.isEmpty()) throw new IllegalArgumentException("Produto não encontrado.");
-        return produtos.get(0);
+        return ProdutoValidade.aplicar(db, user.empresa(authorization), produtos).get(0);
     }
 
     /** Cria o produto e seu registro inicial de estoque em uma transação. */
@@ -100,14 +104,15 @@ public class ProdutoController {
         if (codigo.isBlank()) codigo = "COD-" + System.currentTimeMillis();
 
         Number id = db.queryForObject("""
-                INSERT INTO produtos (empresa_id, nome, codigo, preco, preco_compra, preco_venda, categoria_id, descricao, ativo)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, true)
+                INSERT INTO produtos (empresa_id, nome, codigo, preco, preco_compra, preco_venda, categoria_id, descricao, ativo, controla_validade)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, true, ?)
                 RETURNING id
                 """, Number.class, empresaId, nome, codigo, precoVenda, precoCompra, precoVenda,
-                categoriaId, descricaoValida(dados));
+                categoriaId, descricaoValida(dados), Boolean.parseBoolean(String.valueOf(dados.getOrDefault("controlaValidade",false))));
 
         db.update("INSERT INTO estoque (empresa_id, produto_id, quantidade, estoque_minimo) VALUES (?, ?, 0, ?)",
                 empresaId, id, intNumero(dados, "estoqueMinimo"));
+        realtime.publicarDepoisDoCommit(empresaId, "catalogo-atualizado");
         return buscar(id.intValue(), authorization);
     }
 
@@ -130,23 +135,27 @@ public class ProdutoController {
 
         int alterados = db.update("""
                 UPDATE produtos
-                   SET nome=?, codigo=?, preco=?, preco_compra=?, preco_venda=?, categoria_id=?, descricao=?
+                   SET nome=?, codigo=?, preco=?, preco_compra=?, preco_venda=?, categoria_id=?, descricao=?, controla_validade=COALESCE(?,controla_validade)
                  WHERE id=? AND empresa_id=? AND ativo=true
                 """, nome, codigo, precoVenda, precoCompra, precoVenda, categoriaId,
-                descricaoValida(dados), id, empresaId);
+                descricaoValida(dados), dados.containsKey("controlaValidade") ? Boolean.parseBoolean(String.valueOf(dados.get("controlaValidade"))) : null, id, empresaId);
         if (alterados == 0) throw new IllegalArgumentException("Produto não encontrado.");
 
         db.update("UPDATE estoque SET estoque_minimo=? WHERE produto_id=? AND empresa_id=?",
                 intNumero(dados, "estoqueMinimo"), id, empresaId);
+        realtime.publicarDepoisDoCommit(empresaId, "catalogo-atualizado");
         return buscar(id, authorization);
     }
 
     /** Exclusão lógica: mantém o histórico de compras e vendas. */
     @DeleteMapping("/{id}")
+    @Transactional
     public void remover(@PathVariable int id, @RequestHeader("Authorization") String authorization) {
-        if (db.update("UPDATE produtos SET ativo=false WHERE id=? AND empresa_id=?", id, user.empresa(authorization)) == 0) {
+        int empresaId = user.empresa(authorization);
+        if (db.update("UPDATE produtos SET ativo=false WHERE id=? AND empresa_id=?", id, empresaId) == 0) {
             throw new IllegalArgumentException("Produto não encontrado.");
         }
+        realtime.publicarDepoisDoCommit(empresaId, "catalogo-atualizado");
     }
 
     private Integer categoriaId(Map<String, Object> dados, int empresaId) {

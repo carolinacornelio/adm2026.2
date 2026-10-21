@@ -5,25 +5,38 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Cadastro de Produtos | ERP</title>
+<script src="./erp-js/initialUi.js"></script>
 <link href="./css/tela.css" rel="stylesheet"/>
 </head>
 <body>
 <div class="layout">
 <aside class="sidebar">
 <div class="logo">ERP</div>
-<nav class="menu">
-<a class="" href="dashboard.html">🏠 Dashboard</a>
-<a class="" href="pessoas-listagem.html">👥 Pessoas</a>
-<a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
-<a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
-<a class="ativo" href="produtos-listagem.html">📦 Produtos</a>
-<a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
-<a class="sub" href="produtos-listagem.html">↳ Listagem</a>
-<a class="sub" data-plano-minimo="PLUS" data-plano-ocultar="true" href="categorias.html">↳ Categorias</a>
-<a class="" href="compras.html">🛒 Compras</a>
-<a class="" href="vendas.html">💰 Vendas</a>
-<a class="" href="estoque.html">📊 Estoque</a>
-<a class="" href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">🤖 Assistente IA</a>
+<nav class="menu" aria-label="Navegação principal">
+<a href="dashboard.html">Dashboard</a>
+<a href="pos.html" data-troca-sistema="true">POS</a>
+<details class="menu-pasta" data-pasta="cadastros" open>
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Cadastros</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="pessoas-listagem.html">Pessoas</a>
+<a href="pessoas-cadastro.html">Cadastrar pessoa</a>
+<a href="produtos-listagem.html">Produtos</a>
+<a href="produtos-cadastro.html" class="ativo" aria-current="page">Cadastrar produto</a>
+<a href="categorias.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Categorias</a>
+</div></details>
+<details class="menu-pasta" data-pasta="operacao">
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Operação</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="compras.html">Compras</a>
+<a href="vendas.html">Vendas</a>
+<a href="historico-vendas.html">Histórico de vendas</a>
+<a href="estoque.html">Estoque</a>
+</div></details>
+<details class="menu-pasta" data-pasta="ferramentas">
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Ferramentas</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Assistente IA</a>
+</div></details>
 </nav>
 </aside>
 <main class="conteudo">
@@ -48,6 +61,7 @@
 </div>
 <div class="campo"><label>Estoque Mínimo</label><input min="0" name="estoqueMinimo" placeholder="0" step="1" type="number"/></div>
 </div>
+<div class="campo"><label for="controlaValidade">Controle de validade</label><select id="controlaValidade" name="controlaValidade"><option value="false">Sem validade obrigatória</option><option value="true">Perecível — exigir lote e validade nas compras</option></select></div>
 <div class="botoes"><a class="botao secundario" href="dashboard.html">Cancelar</a><button class="botao primario" type="button">Cadastrar</button></div>
 </form>
 </div>

@@ -11,8 +11,8 @@ import java.util.*;
  */
 @RestController @RequestMapping("/api/pessoas")
 public class PessoaController {
-    private final JdbcTemplate db; private final CurrentUser user;
-    public PessoaController(JdbcTemplate db,CurrentUser user){this.db=db;this.user=user;}
+    private final JdbcTemplate db; private final CurrentUser user; private final PosRealtimeService realtime;
+    public PessoaController(JdbcTemplate db,CurrentUser user,PosRealtimeService realtime){this.db=db;this.user=user;this.realtime=realtime;}
     @GetMapping List<Map<String,Object>> listar(@RequestHeader("Authorization")String a){int e=user.empresa(a);List<Map<String,Object>> r=new ArrayList<>();r.addAll(db.queryForList("SELECT id,nome,documento,telefone,email,endereco,'CLIENTE' AS tipo FROM clientes WHERE empresa_id=? ORDER BY id",e));r.addAll(db.queryForList("SELECT id,nome,documento,telefone,email,NULL AS endereco,'FORNECEDOR' AS tipo FROM fornecedores WHERE empresa_id=? ORDER BY id",e));return r;}
     @GetMapping("/{id}") Map<String,Object> buscar(@PathVariable int id,@RequestHeader("Authorization")String a){int e=user.empresa(a);List<Map<String,Object>>r=db.queryForList("SELECT id,nome,documento,telefone,email,endereco,'CLIENTE' AS tipo FROM clientes WHERE id=? AND empresa_id=?",id,e);if(r.isEmpty())r=db.queryForList("SELECT id,nome,documento,telefone,email,NULL AS endereco,'FORNECEDOR' AS tipo FROM fornecedores WHERE id=? AND empresa_id=?",id,e);if(r.isEmpty())throw new IllegalArgumentException("Pessoa não encontrada.");return r.get(0);}
     /** Cria os dois registros quando a pessoa também for cliente e fornecedor. */
@@ -26,13 +26,15 @@ public class PessoaController {
         resposta.put("clienteId", clienteId); resposta.put("fornecedorId", fornecedorId);
         resposta.put("nome", AuthService.texto(d,"nome")); resposta.put("tipo", tipo);
         resposta.put("documento", opcional(d,"documento"));
+        realtime.publicarDepoisDoCommit(e,"catalogo-atualizado");
         return resposta;
     }
-    @PutMapping("/{id}") Map<String,Object> atualizar(@PathVariable int id,@RequestBody Map<String,Object>d,@RequestHeader("Authorization")String a){int e=user.empresa(a);String tipo=String.valueOf(d.getOrDefault("tipo","CLIENTE"));String tabela=tipo.contains("FORNECEDOR")&&!tipo.contains("CLIENTE")?"fornecedores":"clientes";String sql="UPDATE "+tabela+" SET nome=?,documento=?,telefone=?,email=?"+(tabela.equals("clientes")?",endereco=?":"")+" WHERE id=? AND empresa_id=?";List<Object>v=new ArrayList<>(List.of(AuthService.texto(d,"nome"),d.getOrDefault("documento",""),d.getOrDefault("telefone",""),d.getOrDefault("email","")));if(tabela.equals("clientes"))v.add(d.getOrDefault("endereco",""));v.add(id);v.add(e);if(db.update(sql,v.toArray())==0)throw new IllegalArgumentException("Pessoa não encontrada.");return buscar(id,a);}
+    @PutMapping("/{id}") @Transactional Map<String,Object> atualizar(@PathVariable int id,@RequestBody Map<String,Object>d,@RequestHeader("Authorization")String a){int e=user.empresa(a);String tipo=String.valueOf(d.getOrDefault("tipo","CLIENTE"));String tabela=tipo.contains("FORNECEDOR")&&!tipo.contains("CLIENTE")?"fornecedores":"clientes";String sql="UPDATE "+tabela+" SET nome=?,documento=?,telefone=?,email=?"+(tabela.equals("clientes")?",endereco=?":"")+" WHERE id=? AND empresa_id=?";List<Object>v=new ArrayList<>(List.of(AuthService.texto(d,"nome"),d.getOrDefault("documento",""),d.getOrDefault("telefone",""),d.getOrDefault("email","")));if(tabela.equals("clientes"))v.add(d.getOrDefault("endereco",""));v.add(id);v.add(e);if(db.update(sql,v.toArray())==0)throw new IllegalArgumentException("Pessoa não encontrada.");var resposta=buscar(id,a);realtime.publicarDepoisDoCommit(e,"catalogo-atualizado");return resposta;}
     /** O tipo acompanha a exclusão para não apagar um fornecedor de mesmo id que um cliente. */
     @DeleteMapping("/{id}") void remover(@PathVariable int id,@RequestParam(defaultValue="CLIENTE") String tipo,@RequestHeader("Authorization")String a){
         int e=user.empresa(a); String tabela = tipo(tipo).equals("FORNECEDOR") ? "fornecedores" : "clientes";
         if(db.update("DELETE FROM "+tabela+" WHERE id=? AND empresa_id=?",id,e)==0)throw new IllegalArgumentException("Pessoa não encontrada.");
+        realtime.publicarDepoisDoCommit(e,"catalogo-atualizado");
     }
     private Number inserir(String tabela, int empresaId, Map<String,Object> dados) {
         boolean cliente = tabela.equals("clientes");

@@ -6,36 +6,56 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Dashboard | ERP</title>
+<script src="./erp-js/initialUi.js"></script>
 <link href="./css/tela.css" rel="stylesheet"/>
+<link href="./css/alertas.css?v=20261021-3" rel="stylesheet"/>
 </head>
 <body>
 <div class="layout">
 <aside class="sidebar">
 <div class="logo">ERP</div>
-<nav class="menu">
-<a class="ativo" href="dashboard.html">🏠 Dashboard</a>
-<a class="" href="pessoas-listagem.html">👥 Pessoas</a>
-<a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
-<a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
-<a class="" href="produtos-listagem.html">📦 Produtos</a>
-<a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
-<a class="sub" href="produtos-listagem.html">↳ Listagem</a>
-<a class="sub" data-plano-minimo="PLUS" data-plano-ocultar="true" href="categorias.html">↳ Categorias</a>
-<a class="" href="compras.html">🛒 Compras</a>
-<a class="" href="vendas.html">💰 Vendas</a>
-<a class="" href="estoque.html">📊 Estoque</a>
-<a class="" href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">🤖 Assistente IA</a>
+<nav class="menu" aria-label="Navegação principal">
+<a href="dashboard.html" class="ativo" aria-current="page">Dashboard</a>
+<a href="pos.html" data-troca-sistema="true">POS</a>
+<details class="menu-pasta" data-pasta="cadastros">
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Cadastros</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="pessoas-listagem.html">Pessoas</a>
+<a href="pessoas-cadastro.html">Cadastrar pessoa</a>
+<a href="produtos-listagem.html">Produtos</a>
+<a href="produtos-cadastro.html">Cadastrar produto</a>
+<a href="categorias.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Categorias</a>
+</div></details>
+<details class="menu-pasta" data-pasta="operacao">
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Operação</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="compras.html">Compras</a>
+<a href="vendas.html">Vendas</a>
+<a href="historico-vendas.html">Histórico de vendas</a>
+<a href="estoque.html">Estoque</a>
+</div></details>
+<details class="menu-pasta" data-pasta="ferramentas">
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Ferramentas</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Assistente IA</a>
+</div></details>
 </nav>
 </aside>
 <main class="conteudo">
 <header class="topo"><span class="usuario">👤 Usuário ▾</span><button class="botao secundario" data-logout="" type="button">Sair</button></header>
 <section class="pagina">
 <div class="titulo"><h1>Bem-vindo!</h1><p>Visão geral do seu sistema ERP.</p></div>
+<section class="painel dashboard-alertas" aria-labelledby="alertasTitulo" hidden>
+<div class="alertas-cabecalho"><h2 id="alertasTitulo">Notificações não lidas</h2><button class="botao secundario" type="button" id="atualizarAlertas">Verificar agora</button></div>
+<p id="alertasEstado" role="status">Consultando notificações...</p>
+<div id="alertasNovos" aria-live="polite"></div>
+</section>
+
 <div class="cartoes" id="indicadoresGerais">
-<div class="cartao"><small>👥 Pessoas</small><div class="indicador">0</div><small>Total cadastradas</small></div>
-<div class="cartao"><small>📦 Produtos</small><div class="indicador">0</div><small>Total cadastrados</small></div>
-<div class="cartao"><small>🛒 Compras</small><div class="indicador">0</div><small>Registradas</small></div>
-<div class="cartao"><small>💰 Vendas</small><div class="indicador">0</div><small>Realizadas</small></div>
+<div class="cartao"><small>Pessoas</small><div class="indicador">—</div><small>Total cadastradas</small></div>
+<div class="cartao"><small>Produtos</small><div class="indicador">—</div><small>Total cadastrados</small></div>
+<div class="cartao"><small>Compras</small><div class="indicador">—</div><small>Registradas</small></div>
+<div class="cartao"><small>Vendas</small><div class="indicador">—</div><small>Realizadas</small></div>
 </div>
 <div class="titulo faturamento-titulo" data-plano-minimo="PLUS" data-plano-ocultar="true">
 <h2>Dashboard econômico</h2><p>Compare o faturamento mensal e acompanhe a variação do negócio.</p>
@@ -47,14 +67,14 @@
 <div class="campo campo-mes"><label for="mesReferencia">Mês de referência</label><input id="mesReferencia" type="month"/></div>
 </div>
 <div class="cartoes cartoes-faturamento">
-<div class="cartao"><small id="mesAtualLabel">Mês atual</small><div class="indicador" id="faturamentoAtual">R$ 0,00</div><small>Faturamento</small></div>
-<div class="cartao"><small id="mesAnteriorLabel">Mês anterior</small><div class="indicador" id="faturamentoAnterior">R$ 0,00</div><small>Faturamento</small></div>
-<div class="cartao"><small>Variação</small><div class="indicador" id="variacaoFaturamento">0,00%</div><small>Em relação ao mês anterior</small></div>
+<div class="cartao"><small id="mesAtualLabel">Mês atual</small><div class="indicador" id="faturamentoAtual">—</div><small>Faturamento</small></div>
+<div class="cartao"><small id="mesAnteriorLabel">Mês anterior</small><div class="indicador" id="faturamentoAnterior">—</div><small>Faturamento</small></div>
+<div class="cartao"><small>Variação</small><div class="indicador" id="variacaoFaturamento">—</div><small>Em relação ao mês anterior</small></div>
 </div>
 <div class="analise-faturamento"><strong>Leitura dos números</strong><p id="analiseFaturamento">Carregando análise...</p></div>
 </div>
 </section>
-<div class="recurso-aviso" data-plano-minimo="PLUS">🔒 Dashboard econômico e Assistente IA fazem parte do Plano Intermediário.</div>
+<div class="recurso-aviso" data-plano-minimo="PLUS">Dashboard econômico e Assistente IA fazem parte do Plano Intermediário.</div>
 <div class="titulo"><h2>Acesso rápido</h2></div>
 <div class="acoes">
 <a class="acao" href="pessoas-cadastro.html"><div class="icone">👤</div><strong>Cadastrar Pessoas</strong><span>Novo cliente ou fornecedor</span></a>
@@ -64,11 +84,16 @@
 <a class="acao" href="categorias.html" data-plano-minimo="PLUS" data-plano-ocultar="true"><div class="icone">🏷️</div><strong>Categorias</strong><span>Organizar produtos</span></a>
 <a class="acao" href="compras.html"><div class="icone">🛒</div><strong>Nova Compra</strong><span>Entrada no estoque</span></a>
 <a class="acao" href="vendas.html"><div class="icone">🛒</div><strong>Nova Venda</strong><span>Saída do estoque</span></a>
+<a class="acao" href="pos.html"><div class="icone">▣</div><strong>Frente de caixa</strong><span>Vender no balcão</span></a>
 <a class="acao" href="estoque.html"><div class="icone">📊</div><strong>Consultar Estoque</strong><span>Ver situação dos produtos</span></a>
 <a class="acao" href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true"><div class="icone">🤖</div><strong>Assistente IA</strong><span>Analisar estoque e vendas</span></a>
 </div>
+<section class="painel dashboard-alertas dashboard-alertas-historico" aria-label="Histórico de notificações lidas">
+<details id="historicoAlertas"><summary>Histórico de notificações lidas</summary><p>Após marcar uma notificação como lida, ela permanece salva neste histórico.</p><div id="alertasHistorico"></div><button type="button" class="botao secundario" id="maisAlertas" hidden>Carregar mais</button></details>
+</section>
 </section>
 </main>
 </div>
-<script type="module" src="./erp-js/app.js"></script><script type="module" src="./erp-js/dashboard.js"></script></body>
+<script type="module" src="./erp-js/app.js?v=20261021-3"></script><script type="module" src="./erp-js/dashboard.js"></script><script type="module" src="./erp-js/alertas.js?v=20261021-4"></script>
+</body>
 </html>

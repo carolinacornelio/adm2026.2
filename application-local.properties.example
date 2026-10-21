@@ -1,5 +1,0 @@
-# Copie este arquivo para application-local.properties e informe a conexão.
-# O arquivo real é local e não deve ser compartilhado com senhas.
-spring.datasource.url=jdbc:postgresql://SEU-HOST:5432/SEU_BANCO?sslmode=require
-spring.datasource.username=SEU_USUARIO
-spring.datasource.password=SUA_SENHA

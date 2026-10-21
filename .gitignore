@@ -1,6 +1,10 @@
 bin/
 target/
 *.class
+*.log
 db.properties
 application-local.properties
+.env
+.env.*
+!.env.example
 .m2/

@@ -35,7 +35,7 @@ function popularSelectProdutos(selectElement) {
     const opcoes = produtosDisponiveis
         .map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.nome)} (${escapeHtml(p.codigo)})</option>`)
         .join('');
-    selectElement.insertAdjacentHTML('beforeend', opcoes);
+    selectElement.innerHTML = `<option value="">Selecione um produto</option>${opcoes}`;
 }
 
 /** Recalcula o subtotal de UMA linha (quantidade × preço) e devolve o valor numérico. */
@@ -63,6 +63,8 @@ function adicionarLinha(tbody) {
 
     novaLinha.querySelector('[name="produto"]').value = '';
     novaLinha.querySelector('[name="quantidade"]').value = '';
+    novaLinha.querySelector('[name="lote"]').value = '';
+    novaLinha.querySelector('[name="validade"]').value = '';
     novaLinha.querySelector('.preco-unitario').dataset.preco = '0';
     novaLinha.querySelector('.preco-unitario').textContent = formatarMoeda(0);
     novaLinha.querySelector('.coluna-subtotal').textContent = formatarMoeda(0);
@@ -92,7 +94,7 @@ function coletarItens(tbody) {
         const quantidade = Number(linha.querySelector('[name="quantidade"]').value);
         const precoUnitario = Number(linha.querySelector('.preco-unitario').dataset.preco);
         if (produtoId && quantidade > 0) {
-            itens.push({ produtoId, quantidade, precoUnitario });
+            itens.push({ produtoId, quantidade, precoUnitario, lote: linha.querySelector('[name="lote"]').value.trim(), validade: linha.querySelector('[name="validade"]').value });
         }
     });
     return itens;
@@ -102,6 +104,11 @@ function validarCompra(fornecedorId, data, itens) {
     if (!fornecedorId) return 'Selecione um fornecedor.';
     if (!data) return 'Informe a data da compra.';
     if (itens.length === 0) return 'Adicione ao menos um produto com quantidade válida.';
+    for (const item of itens) {
+        const produto = produtosDisponiveis.find(p => String(p.id) === String(item.produtoId));
+        if (produto?.controlaValidade && (!item.lote || !item.validade)) return `Informe lote e validade para ${produto.nome}.`;
+        if (!Number.isInteger(item.quantidade)) return 'Informe quantidades inteiras.';
+    }
     return null;
 }
 

@@ -5,25 +5,38 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Nova Compra | ERP</title>
+<script src="./erp-js/initialUi.js"></script>
 <link href="./css/tela.css" rel="stylesheet"/>
 </head>
 <body>
 <div class="layout">
 <aside class="sidebar">
 <div class="logo">ERP</div>
-<nav class="menu">
-<a class="" href="dashboard.html">🏠 Dashboard</a>
-<a class="" href="pessoas-listagem.html">👥 Pessoas</a>
-<a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
-<a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
-<a class="" href="produtos-listagem.html">📦 Produtos</a>
-<a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
-<a class="sub" href="produtos-listagem.html">↳ Listagem</a>
-<a class="sub" data-plano-minimo="PLUS" data-plano-ocultar="true" href="categorias.html">↳ Categorias</a>
-<a class="ativo" href="compras.html">🛒 Compras</a>
-<a class="" href="vendas.html">💰 Vendas</a>
-<a class="" href="estoque.html">📊 Estoque</a>
-<a class="" href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">🤖 Assistente IA</a>
+<nav class="menu" aria-label="Navegação principal">
+<a href="dashboard.html">Dashboard</a>
+<a href="pos.html" data-troca-sistema="true">POS</a>
+<details class="menu-pasta" data-pasta="cadastros">
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Cadastros</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="pessoas-listagem.html">Pessoas</a>
+<a href="pessoas-cadastro.html">Cadastrar pessoa</a>
+<a href="produtos-listagem.html">Produtos</a>
+<a href="produtos-cadastro.html">Cadastrar produto</a>
+<a href="categorias.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Categorias</a>
+</div></details>
+<details class="menu-pasta" data-pasta="operacao" open>
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Operação</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="compras.html" class="ativo" aria-current="page">Compras</a>
+<a href="vendas.html">Vendas</a>
+<a href="historico-vendas.html">Histórico de vendas</a>
+<a href="estoque.html">Estoque</a>
+</div></details>
+<details class="menu-pasta" data-pasta="ferramentas">
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Ferramentas</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Assistente IA</a>
+</div></details>
 </nav>
 </aside>
 <main class="conteudo">
@@ -36,10 +49,10 @@
 <div class="campo"><label>Fornecedor</label><select id="selectFornecedor" name="fornecedorId"><option value="">Selecione um fornecedor</option></select></div>
 <div class="campo"><label>Data</label><input id="inputDataCompra" name="data" type="date"/></div>
 </div>
-<div class="produtos-compra">
+<p class="ajuda-campo">Produtos perecíveis exigem lote e validade. A validade de hoje é aceita; lotes vencidos não podem entrar.</p><div class="produtos-compra historico-tabela-scroll">
 <table class="tabela">
-<thead><tr><th>Produto</th><th>Quantidade</th><th>Preço Unitário</th><th>Total</th><th></th></tr></thead>
-<tbody id="corpoItensCompra"><tr data-item="template"><td><select name="produto"><option value="">Selecione um produto</option></select></td><td><input min="1" name="quantidade" type="number" value=""/></td><td class="preco-unitario" data-preco="0">R$ 0,00</td><td class="coluna-subtotal">R$ 0,00</td><td><button class="botao-remover-item" data-remover-item type="button" title="Remover item">❌</button></td></tr></tbody>
+<thead><tr><th>Produto</th><th>Lote</th><th>Validade</th><th>Quantidade</th><th>Preço Unitário</th><th>Total</th><th></th></tr></thead>
+<tbody id="corpoItensCompra"><tr data-item="template"><td><select name="produto"><option value="">Selecione um produto</option></select></td><td><input name="lote" maxlength="100" aria-label="Lote" placeholder="Código do lote"/></td><td><input name="validade" type="date" aria-label="Validade"/></td><td><input min="1" name="quantidade" type="number" value=""/></td><td class="preco-unitario" data-preco="0">R$ 0,00</td><td class="coluna-subtotal">R$ 0,00</td><td><button class="botao-remover-item" data-remover-item type="button" title="Remover item">×</button></td></tr></tbody>
 </table>
 <br/><button class="botao secundario" id="btnAdicionarItemCompra" type="button">+ Adicionar produto</button>
 </div>

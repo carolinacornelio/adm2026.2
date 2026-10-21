@@ -1,5 +1,8 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+html:not([data-plano-inicial="PLUS"]):not([data-plano-inicial="PREMIUM"]) [data-plano-minimo="PLUS"][data-plano-ocultar="true"] { display: none !important; }
+html:is([data-plano-inicial="PLUS"], [data-plano-inicial="PREMIUM"]) .recurso-aviso[data-plano-minimo="PLUS"] { display: none !important; }
 :root {
   --azul-escuro: #10243b;
   --azul: #1976d2;
@@ -20,17 +23,67 @@ body {
 a { text-decoration: none; color: inherit; }
 .layout { display: flex; min-height: 100vh; }
 .sidebar {
-  width: 220px; background: var(--azul-escuro); color: white;
-  padding: 22px 14px; position: fixed; inset: 0 auto 0 0;
+  width: 220px; background: linear-gradient(180deg, #10243b 0%, #0b1a2b 100%); color: white;
+  padding: 22px 12px; position: fixed; inset: 0 auto 0 0; overflow-y: auto;
+  border-right: 1px solid rgba(255,255,255,.08); scrollbar-width: thin;
+  scrollbar-color: rgba(186, 206, 231, .35) transparent;
 }
-.logo { font-size: 24px; font-weight: 800; margin: 0 10px 28px; }
-.menu { display: flex; flex-direction: column; gap: 5px; }
+.logo {
+  display: flex; align-items: center; min-height: 48px; margin: 0 8px 20px;
+  padding: 0 12px; border: 1px solid rgba(255,255,255,.11); border-radius: 12px;
+  background: rgba(255,255,255,.06); font-size: 21px; font-weight: 800; letter-spacing: .04em;
+}
+.logo::after { content: "GESTÃO EMPRESARIAL"; margin-left: 10px; color: #a7bad0; font-size: 8px; font-weight: 700; letter-spacing: .09em; }
+.menu { display: flex; flex-direction: column; gap: 4px; }
 .menu a {
-  padding: 11px 12px; border-radius: 7px; font-size: 14px;
-  color: #d9e4f2;
+  display: flex; align-items: center; min-height: 40px; padding: 9px 11px;
+  border-radius: 8px; font-size: 13px; font-weight: 500; color: #d9e4f2;
+  transition: background-color .16s ease, color .16s ease, transform .16s ease;
 }
-.menu a:hover, .menu a.ativo { background: var(--azul); color: white; }
-.menu .sub { padding-left: 30px; font-size: 13px; }
+.menu a:hover { background: rgba(255,255,255,.09); color: white; }
+.menu a.ativo { background: #1976d2; color: white; box-shadow: 0 5px 14px rgba(0,0,0,.16); }
+.menu > a[href="dashboard.html"], .menu > a[data-troca-sistema] {
+  min-height: 40px; border: 1px solid rgba(111, 183, 255, .24);
+  background: rgba(25, 118, 210, .14); color: #e8f3ff; font-weight: 700;
+}
+.menu > a[href="dashboard.html"] { margin-bottom: 2px; }
+.menu > a[data-troca-sistema] { margin-bottom: 11px; }
+.menu > a[href="dashboard.html"]:hover, .menu > a[data-troca-sistema]:hover { background: rgba(25, 118, 210, .29); }
+.menu > a[href="dashboard.html"].ativo, .menu > a[data-troca-sistema].ativo { background: #1976d2; border-color: #549de5; color: white; }
+.menu-pasta { margin: 2px 0; }
+.menu-pasta summary {
+  display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 0 11px;
+  border: 1px solid transparent; border-radius: 9px; color: #d9e4f2; cursor: pointer;
+  font-size: 13px; font-weight: 650; list-style: none; user-select: none;
+  transition: background-color .16s ease, border-color .16s ease, color .16s ease;
+}
+.menu-pasta summary::-webkit-details-marker { display: none; }
+.menu-pasta summary:hover, .menu-pasta[open] summary {
+  border-color: rgba(255,255,255,.08); background: rgba(255,255,255,.055); color: white;
+}
+.menu-pasta-icone {
+  position: relative; width: 15px; height: 10px; margin-top: 3px; border: 1px solid #8fb8e4;
+  border-radius: 2px; background: rgba(143,184,228,.1); flex: 0 0 15px;
+}
+.menu-pasta-icone::before {
+  position: absolute; content: ""; width: 6px; height: 3px; left: 0; top: -4px;
+  border: 1px solid #8fb8e4; border-bottom: 0; border-radius: 2px 2px 0 0;
+}
+.menu-pasta[open] .menu-pasta-icone { border-color: #a8d0fb; background: rgba(111,183,255,.26); }
+.menu-pasta[open] .menu-pasta-icone::before { border-color: #a8d0fb; }
+.menu-pasta-seta {
+  width: 7px; height: 7px; margin-left: auto; border-right: 1.5px solid #9fb1c6;
+  border-bottom: 1.5px solid #9fb1c6; transform: rotate(-45deg); transition: transform .16s ease;
+}
+.menu-pasta[open] .menu-pasta-seta { transform: rotate(45deg) translate(-2px, -2px); }
+.menu-pasta-itens {
+  display: grid; gap: 2px; margin: 3px 0 6px 19px; padding: 3px 0 4px 9px;
+  border-left: 1px solid rgba(159, 183, 210, .24);
+}
+.menu .menu-pasta-itens a { min-height: 35px; padding: 7px 10px; color: #b9c9dc; font-size: 12px; }
+.menu .menu-pasta-itens a:hover { background: rgba(255,255,255,.08); color: white; }
+.menu .menu-pasta-itens a.ativo { background: rgba(25,118,210,.24); color: #fff; box-shadow: inset 2px 0 #71b7ff; }
+.menu-pasta-itens a[hidden] { display: none; }
 .conteudo { margin-left: 220px; width: calc(100% - 220px); }
 .topo {
   height: 64px; background: white; border-bottom: 1px solid var(--borda);
@@ -94,6 +147,12 @@ input:focus, select:focus, textarea:focus { border-color: var(--azul); }
 }
 .normal { background: #dcfae6; color: #087443; }
 .baixo { background: #fef0c7; color: #b54708; }
+.estoque-minimo { background: #fee4e2; color: #b42318; }
+.estoque-esgotado { background: #111827; color: #fff; }
+.validade-bloqueada, .validade-prioridade { background: #fee4e2; color: #b42318; }
+.validade-importante { background: #ffead5; color: #9a3412; }
+.status-neutro { background: #f2f4f7; color: #475467; }
+.status-detalhe { display: block; margin-top: 4px; font-size: 11px; color: #667085; white-space: normal; }
 .sem-estoque { background: #fee4e2; color: #b42318; }
 .acoes-tabela { display: flex; gap: 6px; }
 .acao-mini { padding: 6px 8px; border: 0; border-radius: 5px; cursor: pointer; background: #eef4fb; }
@@ -113,7 +172,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--azul); }
   .sidebar { position: static; width: 100%; min-height: auto; }
   .layout { display: block; }
   .conteudo { margin-left: 0; width: 100%; }
-  .menu { display: grid; grid-template-columns: 1fr 1fr; }
+  .menu { display: flex; flex-direction: column; }
+  .sidebar { padding: 14px 12px; }
+  .logo { margin-bottom: 12px; }
   .topo { display: none; }
   .pagina { padding: 18px; }
   .cartoes, .acoes, .linha { grid-template-columns: 1fr; }
@@ -151,6 +212,13 @@ input:focus, select:focus, textarea:focus { border-color: var(--azul); }
 .ia-exemplos { margin-top: 20px; }
 .ia-exemplos-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .exemplo-ia { background: #eef4fb; }
+#formIA button:disabled, .exemplo-ia:disabled {
+  opacity: .55; cursor: not-allowed; pointer-events: none;
+}
+#perguntaIA:disabled {
+  background: #f1f5f9; color: #475467; cursor: wait; opacity: 1;
+}
+.ia-resposta[aria-busy="true"] { color: #475467; }
 
 /* Categorias de produtos e criação rápida no cadastro do produto. */
 .campo-com-acao { display: flex; gap: 8px; align-items: center; }
@@ -180,3 +248,56 @@ input:focus, select:focus, textarea:focus { border-color: var(--azul); }
 .analise-faturamento p { margin-top: 6px; color: #344054; font-size: 13px; }
 @media (max-width: 900px) { .cartoes-faturamento { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 650px) { .cartoes-faturamento { grid-template-columns: 1fr; } }
+
+/* Histórico completo de vendas no ERP. */
+.historico-filtros {
+  display: grid; grid-template-columns: repeat(3, minmax(130px, 1fr)) auto auto;
+  gap: 12px; align-items: end; margin-bottom: 18px;
+}
+.historico-filtros .botao { min-height: 41px; }
+.historico-filtros small { grid-column: 1 / -1; color: var(--cinza); }
+.historico-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.historico-topo h2 { font-size: 18px; }
+.historico-topo span { color: var(--cinza); font-size: 13px; }
+.historico-tabela-scroll { overflow: auto; }
+.historico-tabela-scroll .tabela { min-width: 680px; }
+.historico-dialog {
+  width: min(760px, calc(100vw - 32px)); max-height: 90dvh; overflow: auto;
+  margin: auto; padding: 24px; border: 1px solid var(--borda);
+  border-radius: 10px; color: var(--texto);
+}
+.historico-dialog::backdrop { background: #10243b80; }
+.historico-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 20px; margin-bottom: 18px; font-size: 13px; }
+.historico-meta strong { color: var(--cinza); font-weight: 600; }
+.historico-total { margin-top: 18px; text-align: right; font-size: 18px; }
+@media (max-width: 900px) { .historico-filtros { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 650px) {
+  .historico-filtros { grid-template-columns: 1fr 1fr; }
+  .historico-filtros .campo:first-child, .historico-filtros small { grid-column: 1 / -1; }
+  .historico-meta { grid-template-columns: 1fr; }
+}
+
+/* Inventário e impressão dos relatórios/comprovantes. */
+.inventario-relatorio { margin-top: 20px; }
+.inventario-filtros { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin: 16px 0; align-items: end; }
+.inventario-acoes { margin: 14px 0; }
+.inventario-acoes button { margin-right: 8px; }
+#estoqueResumoPainel { overflow-x:auto; }
+#estoqueResumoPainel .tabela { min-width: 650px; }
+@media(max-width:650px) { .inventario-filtros { grid-template-columns:1fr; } }
+@media print {
+  body[data-impressao="comprovante"] > .layout { display:none !important; }
+  body[data-impressao="comprovante"] #detalhesVenda[open] { display:block; position:static; width:100%; max-height:none; border:0; padding:0; overflow:visible; }
+  body[data-impressao="comprovante"] #detalhesVenda button, body[data-impressao="comprovante"] .comprovante-acoes { display:none !important; }
+  body[data-impressao="comprovante"] .historico-meta { grid-template-columns:1fr 1fr; }
+  body[data-impressao="comprovante"] .historico-tabela-scroll { overflow:visible; }
+  body[data-impressao="comprovante"] .tabela { min-width:0; }
+  body[data-impressao="inventario"] .sidebar, body[data-impressao="inventario"] .topo,
+  body[data-impressao="inventario"] #estoqueResumoPainel, body[data-impressao="inventario"] .pagina > .titulo,
+  body[data-impressao="inventario"] .inventario-filtros, body[data-impressao="inventario"] .inventario-acoes { display:none !important; }
+  body[data-impressao="inventario"] .conteudo { width:100%; margin:0; }
+  body[data-impressao="inventario"] .pagina, body[data-impressao="inventario"] #relatorioInventario { padding:0; margin:0; border:0; }
+  body[data-impressao="inventario"] .historico-tabela-scroll { overflow:visible; }
+  body[data-impressao="inventario"] .tabela { min-width:0; }
+  dialog::backdrop { display:none; }
+}

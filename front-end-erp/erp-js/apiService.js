@@ -21,7 +21,9 @@
 // Em rede local, usa automaticamente a máquina que está servindo o frontend.
 // Exemplo em ambiente local:      http://localhost:8080/api
 // Exemplo em produção (deploy):   https://SEU-DOMINIO.com/api
-const API_BASE_URL = `${window.location.protocol}//${window.location.hostname || 'localhost'}:8080/api`;
+const API_BASE_URL = ['5500', '5501', '8765'].includes(window.location.port)
+    ? `${window.location.protocol}//${window.location.hostname || 'localhost'}:8080/api`
+    : `${window.location.origin}/api`;
 
 /**
  * Erro customizado para falhas de API.
@@ -75,7 +77,7 @@ function mensagemParaStatus(status) {
  * devolve o JSON já pronto para uso. Todas as demais funções deste arquivo
  * (get/post/put/patch/del) passam por aqui.
  */
-async function request(endpoint, { method = 'GET', body, headers } = {}) {
+async function request(endpoint, { method = 'GET', body, headers, timeoutMs = 20000 } = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
 
     const config = {
@@ -88,15 +90,23 @@ async function request(endpoint, { method = 'GET', body, headers } = {}) {
     }
 
     let response;
+    const controller = new AbortController();
+    config.signal = controller.signal;
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
         response = await fetch(url, config);
     } catch (erroDeRede) {
+        if (erroDeRede?.name === 'AbortError') {
+            throw new ApiError('O servidor demorou a responder. Tente novamente.', 0, null);
+        }
         // Servidor fora do ar, sem internet, CORS bloqueado, etc.
         throw new ApiError(
             'Não foi possível conectar ao servidor. Verifique sua conexão.',
             0,
             null
         );
+    } finally {
+        clearTimeout(timeout);
     }
 
     // Requisições DELETE/PUT do Spring costumam devolver 204 (sem corpo).
@@ -129,10 +139,74 @@ async function request(endpoint, { method = 'GET', body, headers } = {}) {
  */
 export const apiService = {
     get: (endpoint) => request(endpoint, { method: 'GET' }),
-    post: (endpoint, body) => request(endpoint, { method: 'POST', body }),
+    post: (endpoint, body, options = {}) => request(endpoint, { method: 'POST', body, ...options }),
     put: (endpoint, body) => request(endpoint, { method: 'PUT', body }),
     patch: (endpoint, body) => request(endpoint, { method: 'PATCH', body }),
     delete: (endpoint) => request(endpoint, { method: 'DELETE' }),
+    /** Lê eventos autenticados do servidor para manter o catálogo do POS atualizado. */
+    events: async (endpoint, { signal, onEvent } = {}) => {
+        let response;
+        try {
+            response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                method: 'GET',
+                headers: montarHeaders({ Accept: 'text/event-stream' }),
+                signal,
+            });
+        } catch (error) {
+            if (signal?.aborted) return;
+            throw new ApiError('Conexão em tempo real interrompida. Tentando reconectar…', 0, null);
+        }
+        if (!response.ok) {
+            const data = await response.json().catch(() => null);
+            throw new ApiError((data && data.message) || mensagemParaStatus(response.status), response.status, data);
+        }
+        if (!response.body) throw new ApiError('Seu navegador não permite receber atualizações em tempo real.', 0, null);
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let eventName = 'message';
+        let dataLines = [];
+        const deliver = () => {
+            if (dataLines.length) {
+                const raw = dataLines.join('\n');
+                let data = raw;
+                try { data = JSON.parse(raw); } catch { /* Mantém mensagens simples como texto. */ }
+                onEvent?.(eventName, data);
+            }
+            eventName = 'message';
+            dataLines = [];
+        };
+        const line = (value) => {
+            if (!value) return deliver();
+            if (value.startsWith(':')) return;
+            const separator = value.indexOf(':');
+            const field = separator === -1 ? value : value.slice(0, separator);
+            const content = separator === -1 ? '' : value.slice(separator + 1).replace(/^ /, '');
+            if (field === 'event') eventName = content;
+            if (field === 'data') dataLines.push(content);
+        };
+        try {
+            while (true) {
+                const { value, done } = await reader.read();
+                buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+                let offset = 0;
+                for (let index = 0; index < buffer.length; index += 1) {
+                    if (buffer[index] !== '\n' && buffer[index] !== '\r') continue;
+                    if (buffer[index] === '\r' && index === buffer.length - 1 && !done) break;
+                    line(buffer.slice(offset, index));
+                    if (buffer[index] === '\r' && buffer[index + 1] === '\n') index += 1;
+                    offset = index + 1;
+                }
+                buffer = buffer.slice(offset);
+                if (done) {
+                    if (buffer) line(buffer);
+                    deliver();
+                    break;
+                }
+            }
+        } finally { reader.releaseLock(); }
+    },
 };
 
 /**

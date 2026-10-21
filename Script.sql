@@ -33,11 +33,7 @@ CREATE TABLE produtos (
     empresa_id INTEGER REFERENCES empresas(id) ON DELETE CASCADE,
     nome VARCHAR(150) NOT NULL,
     codigo VARCHAR(50), 
-    -- "preco" permanece por compatibilidade com a primeira versão do ERP.
-    -- As operações atuais usam preco_compra e preco_venda.
     preco NUMERIC(10,2) NOT NULL,
-    preco_compra NUMERIC(10,2) NOT NULL,
-    preco_venda NUMERIC(10,2) NOT NULL,
     categoria_id INTEGER REFERENCES categorias(id) ON DELETE SET NULL,
     descricao TEXT,
     ativo BOOLEAN DEFAULT TRUE, -- Substitui o DELETE. Marca como FALSE para ocultar, mantendo o histórico de vendas.

@@ -1,109 +1,53 @@
-# Integração Spring Boot + JavaScript
+# Backend e API
 
-## Estado da migração
+Instalação e execução: [README principal](README.md).
 
-O projeto agora possui duas versões do backend:
+- Backend: `src/main/java/com/erp/`, Java 21 + Spring Boot + PostgreSQL.
+- Frontend: `front-end-erp/`, servido na porta 8080 e incluído no JAR pelo Maven.
+- Configuração local: `application-local.properties` (fora do Git). Alternativa: `DATABASE_URL`, `DB_USER`, `DB_PASSWORD` no ambiente; `.env` não é carregado automaticamente.
+- Schema: `src/main/resources/schema.sql`, aplicado na inicialização. Faça backup antes de atualizar uma base importante.
+- `src/com/erp/` é a implementação antiga de terminal; não é o backend web.
 
-| Versão | Local | Função |
-|---|---|---|
-| Legada | `src/com/erp` | Aplicação de terminal com `Scanner` e JDBC manual |
-| Atual | `src/main/java/com/erp` | API REST Spring Boot consumida pelo frontend |
+## Autenticação
 
-A versão legada foi preservada para consulta. A aplicação atual inicia em `ErpApplication`.
+Cadastro/login inicia o segundo fator. Após a confirmação, envie `Authorization: Bearer TOKEN` nas rotas protegidas. O servidor valida a empresa da sessão; tokens expiram ao reiniciar o processo. Algumas funções exigem plano PLUS.
 
-## Principais funções
+## Rotas
 
-- `ErpApplication`: inicia o servidor HTTP na porta 8080.
-- `AuthController`/`AuthService`: cadastro, login, BCrypt e criação de token de sessão.
-- `CurrentUser`: lê o token `Bearer` e identifica usuário/empresa.
-- `ProdutoController`: CRUD de produtos e isolamento por empresa.
-- `PessoaController`: CRUD de clientes e fornecedores, que continuam em tabelas distintas.
-- `MovimentoController`: compras, vendas e estoque. A validação e atualização do estoque acontecem em uma transação.
-- `DashboardController`: calcula os indicadores diretamente no banco.
-- `PlanService`/`planService.js`: normalizam os planos `BASE`, `PLUS` e `PREMIUM` e controlam recursos por `data-plano-minimo`.
-- `CategoriaController`/`categoriasService.js`: CRUD de categorias de produtos, com isolamento por empresa e prevenção de nomes duplicados.
-- `IAController`: assistente analítico protegido pelo plano `PLUS`, com respostas de estoque, faturamento e saída de produtos.
-- `apiService.js`: único ponto do frontend que faz `fetch`, envia o token e trata erros HTTP.
-- `storageService.js`: implementação antiga baseada em `localStorage`, mantida como referência, mas não usada pelos services atuais.
+| Rota | Operação | Observação |
+| --- | --- | --- |
+| `/api/auth/cadastro` | `POST` | Cria empresa e usuário. |
+| `/api/auth/login` | `POST` | Verifica credenciais e inicia segundo fator. |
+| `/api/auth/segundo-fator` | `POST` | Conclui o desafio e inicia sessão autenticada. |
+| `/api/produtos` | `GET`, `POST` | Lista e cadastra produtos da empresa. |
+| `/api/produtos/{id}` | `GET`, `PUT`, `DELETE` | Consulta, atualiza e desativa produto. |
+| `/api/pessoas` | `GET`, `POST` | Lista e cadastra clientes e fornecedores. |
+| `/api/pessoas/{id}` | `GET`, `PUT`, `DELETE` | Consulta, altera e remove registros; a exclusão aceita `?tipo=CLIENTE` ou `?tipo=FORNECEDOR`. |
+| `/api/categorias` | `GET`, `POST` | Categorias disponíveis no plano PLUS. |
+| `/api/categorias/{id}` | `PUT`, `DELETE` | Atualiza ou remove categoria no plano PLUS. |
+| `/api/estoque` | `GET` | Situação do estoque dos produtos ativos. |
+| `/api/compras` | `GET`, `POST` | Consulta e registra compras com entrada de estoque. |
+| `/api/vendas` | `GET`, `POST` | Consulta todas as vendas do ERP e POS, com filtros opcionais `data`, `inicio` e `fim` em `AAAA-MM-DD`, e registra vendas pelo fluxo geral do ERP. |
+| `/api/vendas/{id}` | `GET` | Dados do comprovante, itens e lotes de uma venda da empresa autenticada. |
+| `/api/inventario/lotes?dias=30` | `GET` | Saldo por lote e classificação de validade; prazo de alerta de 0–365 dias. |
+| `/api/inventario/lotes/{id}/validade` | `PUT` | Regulariza lote sem data; corpo com `lote` e `validade` (`AAAA-MM-DD`). |
+| `/api/inventario/produtos/{id}/controle-validade` | `PUT` | Configura exigência de validade; corpo com `controlaValidade` booleano. |
+| `/api/alertas?pagina=0` | `GET` | Pendências do usuário e página de até 50 notificações lidas. |
+| `/api/alertas/verificar` | `POST` | Atualiza os alertas operacionais da empresa e retorna as notificações não lidas do usuário. |
+| `/api/alertas/lidos` | `POST` | Marca até 100 IDs enviados em uma lista JSON; leitura individual por usuário. |
+| `/api/pos/vendas` | `GET`, `POST` | Lista as 50 últimas vendas POS da empresa e registra uma venda concluída. |
+| `/api/pos/vendas/{id}` | `GET` | Retorna recibo e itens de uma venda POS da empresa. |
+| `/api/pos/eventos` | `GET` | Fluxo SSE autenticado e isolado por empresa; avisa sobre alterações confirmadas no estoque e catálogo. |
+| `/api/dashboard/indicadores` | `GET` | Indicadores que incluem as vendas POS. |
+| `/api/dashboard/faturamento` | `GET` | Requer PLUS; aceita `?mesReferencia=AAAA-MM`. |
+| `/api/ia/perguntar` | `POST` | Requer PLUS; consultas analíticas. |
 
-## Como executar
 
-1. Instale Maven e Java 21.
-2. Configure as variáveis `DATABASE_URL`, `DB_USER` e `DB_PASSWORD` ou crie
-   `application-local.properties` na raiz a partir de
-   `application-local.properties.example`.
-3. Na raiz do projeto, execute:
+## Regras de integração
 
-```bash
-mvn package
-java -jar target/adm2026-1.0.0.jar
-```
+- Compras de perecíveis exigem lote e validade. Vendas usam FEFO e não permitem lotes bloqueados.
+- POS grava venda, itens, recebimento e estoque em uma transação. Cada pedido usa uma `chaveOperacao` UUID; repetir o mesmo pedido com a mesma chave recupera a venda sem duplicá-la.
+- Eventos SSE são enviados após a confirmação no banco, separados por empresa.
+- Pix/cartão são confirmados pelo operador externamente. Não há cobrança integrada nem emissão fiscal.
 
-Como o Maven deste ambiente não está no `PATH`, também funciona usando o executável instalado em `Downloads`:
-
-```powershell
-& "C:\Users\aryel\Downloads\apache-maven-3.9.16-bin\apache-maven-3.9.16\bin\mvn.cmd" package
-java -jar target\adm2026-1.0.0.jar
-```
-
-4. Abra `http://localhost:8080/`. O JAR já contém a interface HTML, CSS e JavaScript.
-
-Na primeira inicialização, `schema.sql` cria a estrutura ausente e migra as
-colunas compatíveis sem apagar dados. O `Script.sql` continua disponível para
-execução manual no PostgreSQL, caso seja necessário.
-
-## Acesso pela rede local
-
-O backend está configurado com `server.address=0.0.0.0` e o JAR entrega a
-interface no mesmo endereço. Com o servidor em execução, os colegas na mesma
-rede Wi-Fi acessam `http://IP-DA-MAQUINA:8080/`.
-
-## Endpoints atuais
-
-```text
-POST /api/auth/cadastro
-POST /api/auth/login
-GET|POST|PUT|DELETE /api/produtos
-GET|POST|PUT|DELETE /api/categorias (plano PLUS)
-GET|POST|PUT|DELETE /api/pessoas
-GET /api/estoque
-GET|POST /api/compras
-GET|POST /api/vendas
-GET /api/dashboard/indicadores
-GET /api/dashboard/faturamento?mesReferencia=AAAA-MM (plano PLUS)
-POST /api/ia/perguntar (plano PLUS)
-```
-
-Depois do login, as chamadas protegidas precisam do header:
-
-```text
-Authorization: Bearer TOKEN_RECEBIDO_NO_LOGIN
-```
-
-## Diferença entre o código antigo e o atual
-
-Antes, `Main` perguntava dados pelo terminal, `Estoque` aplicava as regras e os repositories abriam conexões JDBC manualmente. No frontend, `storageService` simulava banco e autenticação no navegador.
-
-Agora, o navegador envia JSON para Controllers REST. Os Controllers delegam o acesso ao banco via `JdbcTemplate`; a sessão define a empresa do usuário; e compras/vendas atualizam estoque no servidor, dentro de transação. Assim, o browser não escolhe o `empresaId` e não controla a regra de estoque.
-
-## Controle de planos
-
-Novas empresas começam no plano escolhido no cadastro (`BASE`, `PLUS` ou `PREMIUM`), salvo em `empresas.plano_assinatura`. O login devolve o plano no objeto `usuario`, o frontend usa esse valor para ocultar recursos e o backend valida novamente o acesso.
-
-Para testar a interface da IA, promova uma empresa de teste para `PLUS` no PostgreSQL e faça login novamente para renovar os dados da sessão:
-
-```sql
-UPDATE empresas
-SET plano_assinatura = 'PLUS'
-WHERE id = SEU_ID_DA_EMPRESA;
-```
-
-O assistente integrado nesta etapa é analítico: consulta o PostgreSQL e responde às perguntas suportadas, sem chamar um provedor externo de modelo de linguagem. A integração com uma API de IA externa pode ser adicionada depois, mantendo o mesmo endpoint `/api/ia/perguntar`.
-
-O dashboard econômico usa `GET /api/dashboard/faturamento` para comparar as vendas do mês escolhido com o mês anterior. O mês pode ser alterado no campo de referência; os valores, a variação percentual e o texto de análise são calculados com dados reais da empresa autenticada.
-
-## Limitações conhecidas
-
-- O token atual fica em memória e é perdido quando o servidor reinicia. Para produção, substituir por JWT ou sessão persistente.
-- A coluna antiga `produtos.preco` foi preservada por compatibilidade; as operações atuais usam `preco_compra` e `preco_venda`.
-- Ainda não foram adicionados testes automatizados nem migrations versionadas (Flyway/Liquibase).
+`mvn test` executa testes com PostgreSQL temporário separado. Detalhes de uso: [POS](POS-README.md) · [IA](IA-ASSISTENTE-README.md) · [Inventário](docs/inventario/ENTREGA.md).

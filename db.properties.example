@@ -1,3 +1,4 @@
-db.url=jdbc:postgresql://ep-calm-rice-achtad77-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require
-db.user=neondb_owner
-db.password=COLOQUE_SUA_SENHA_AQUI
+
+db.url=
+db.user=
+db.password=

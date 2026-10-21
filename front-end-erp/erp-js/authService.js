@@ -31,12 +31,17 @@ export async function cadastrar(usuarioCadastroDTO) {
  * @param {object} usuarioLoginDTO - ver dto.js -> toUsuarioLoginDTO
  */
 export async function login(usuarioLoginDTO) {
-    // ATUAL: o token é mantido apenas na sessão do navegador.
-    const resposta = await apiService.post('/auth/login', usuarioLoginDTO);
-    salvarSessao(resposta);
-    return resposta.usuario;
+    // A senha inicia um desafio; a sessão só será criada após o segundo fator.
+    return apiService.post('/auth/login', usuarioLoginDTO);
 
     // ANTIGO: comparava a senha diretamente no localStorage.
+}
+
+/** Confirma as perguntas de segurança e guarda a sessão liberada pelo backend. */
+export async function verificarSegundoFator(dados) {
+    const resposta = await apiService.post('/auth/segundo-fator', dados);
+    salvarSessao(resposta);
+    return resposta.usuario;
 }
 
 /** Encerra a sessão do usuário atual e o redireciona para o login. */

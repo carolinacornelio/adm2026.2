@@ -12,10 +12,12 @@ import {
     renderizarTabela,
     tratarErro,
     classeStatusEstoque,
+    badgeValidade,
     escapeHtml,
 } from './uiService.js';
 
 let categoriasDisponiveis = [];
+let ultimaListagem = 0;
 
 function validarProduto(dados) {
     if (!dados.nome?.trim()) return 'Informe o nome do produto.';
@@ -118,15 +120,18 @@ function criarLinhaProduto(produto) {
             <td>${escapeHtml(produto.nome)}</td>
             <td>${escapeHtml(produto.categoriaNome || 'Sem categoria')}</td>
             <td>${formatarMoeda(produto.precoVenda)}</td>
-            <td>${escapeHtml(produto.quantidadeEstoque)}</td>
+            <td title="Saldo vendável; o saldo físico pode incluir mercadoria bloqueada">${escapeHtml(produto.quantidadeEstoque)}<small class="status-detalhe">Físico: ${escapeHtml(produto.quantidadeTotal)} · Mínimo: ${escapeHtml(produto.estoqueMinimo)}</small></td>
             <td><span class="status ${classeStatusEstoque(produto.situacao)}">${escapeHtml(produto.situacao)}</span></td>
+            <td>${badgeValidade(produto)}</td>
             <td><div class="acoes-tabela"><button class="acao-mini excluir" data-excluir="${escapeHtml(produto.id)}" type="button">Excluir</button></div></td>
         </tr>`;
 }
 
 async function carregarListagemProdutos(tbody, termoBusca = '', categoriaId = '') {
+    const consulta = ++ultimaListagem;
     try {
         const produtos = (await listarProdutos({ categoriaId })).map(fromProdutoDTO);
+        if (consulta !== ultimaListagem) return;
         const termo = termoBusca.trim().toLowerCase();
         const filtrados = produtos.filter((produto) => {
             if (!termo) return true;
@@ -136,8 +141,9 @@ async function carregarListagemProdutos(tbody, termoBusca = '', categoriaId = ''
         });
         renderizarTabela(tbody, filtrados, criarLinhaProduto, 'Nenhum produto encontrado com esses filtros.');
     } catch (erro) {
+        if (consulta !== ultimaListagem) return;
         console.error(erro);
-        tbody.innerHTML = `<tr><td colspan="7">${escapeHtml(erro.message || 'Não foi possível carregar a lista de produtos.')}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8">${escapeHtml(erro.message || 'Não foi possível carregar a lista de produtos.')}</td></tr>`;
     }
 }
 
@@ -149,6 +155,16 @@ async function configurarListagem(tbody) {
     recarregar();
     campoPesquisa?.addEventListener('input', recarregar);
     filtroCategoria?.addEventListener('change', recarregar);
+    // A listagem não pode manter o saldo/status da abertura após uma venda em outra tela.
+    let atualizando = false;
+    const atualizarSaldos = async () => {
+        if (atualizando || document.hidden) return;
+        atualizando = true;
+        try { await recarregar(); } finally { atualizando = false; }
+    };
+    window.setInterval(atualizarSaldos, 15000);
+    window.addEventListener('focus', atualizarSaldos);
+    document.addEventListener('visibilitychange', atualizarSaldos);
 
     tbody.addEventListener('click', async (evento) => {
         const botao = evento.target.closest('[data-excluir]');
