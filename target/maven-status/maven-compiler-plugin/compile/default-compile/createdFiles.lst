@@ -18,6 +18,7 @@ com\erp\IAService$1.class
 com\erp\IAService.class
 com\erp\AuthService.class
 com\erp\AuthController.class
+com\erp\ProdutoLoteController.class
 com\erp\ApiConfig.class
 com\erp\ApiConfig$1.class
 com\erp\IAService$Periodo.class
