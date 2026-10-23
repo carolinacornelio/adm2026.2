@@ -112,6 +112,7 @@ a { text-decoration: none; color: inherit; }
 }
 .acao:hover { transform: translateY(-2px); border-color: var(--azul); }
 .icone { font-size: 25px; margin-bottom: 10px; }
+.icone-imagem { display: block; width: 64px; height: 64px; object-fit: contain; margin: 0 auto 12px; }
 .acao strong { display: block; margin-bottom: 5px; }
 .acao span { color: var(--cinza); font-size: 12px; }
 .painel {

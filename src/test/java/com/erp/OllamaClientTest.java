@@ -42,7 +42,7 @@ class OllamaClientTest {
         assertEquals("gemma3:4b",json.path("model").asText());
         assertEquals("15m",json.path("keep_alive").asText());
         assertTrue(json.path("format").path("properties").has("resposta"));
-        assertEquals(4096,json.path("options").path("num_ctx").asInt());
+        assertEquals(6144,json.path("options").path("num_ctx").asInt());
     }
     @Test void finalDenialNeverExposesItsText() {
         resposta.set("{\"permitido\":false,\"resposta\":\"Conteudo que nao deve aparecer\"}");
