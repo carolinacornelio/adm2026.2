@@ -40,7 +40,7 @@
 </nav>
 </aside>
 <main class="conteudo">
-<header class="topo"><span class="usuario">👤 Usuário ▾</span><button class="botao secundario" data-logout="" type="button">Sair</button></header>
+<header class="topo"><span class="usuario">👤 Usuário ▾</span><a href="atendimento.html" class="atalho-atendimento" title="Central de atendimento" aria-label="Central de atendimento"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="12" width="4" height="7" rx="2"/><rect x="17" y="12" width="4" height="7" rx="2"/><path d="M19 19v1a2 2 0 0 1-2 2h-4"/></svg></a><button class="botao secundario" data-logout="" type="button">Sair</button></header>
 <section class="pagina">
 <div class="titulo"><h1>Controle de Estoque</h1><p>Acompanhe a quantidade e os alertas dos produtos.</p></div>
 <div class="painel" id="estoqueResumoPainel">
@@ -65,9 +65,18 @@
 <div class="historico-tabela-scroll"><table class="tabela"><thead><tr><th>Produto</th><th>Lote</th><th>Validade</th><th>Saldo</th><th>Situação</th><th class="inventario-acoes">Ação</th></tr></thead><tbody id="listaLotes"></tbody></table></div>
 <p class="ajuda-campo">O total físico inclui vencidos. A venda usa somente lotes válidos, em ordem de vencimento. Produtos com validade obrigatória e data pendente ficam bloqueados.</p>
 </section>
+<section class="painel inventario-relatorio" id="inventarioFisicoPainel" aria-labelledby="tituloInventarioFisico">
+<div class="historico-topo"><div><h2 id="tituloInventarioFisico">Conferência de estoque físico</h2><p>Conte os produtos no depósito, compare com o saldo do sistema e registre ajustes auditáveis.</p></div><button class="botao primario" id="novoInventarioFisico" type="button">Iniciar contagem</button></div>
+<div class="inventario-filtros"><div class="campo"><label for="seletorInventarioFisico">Inventário</label><select id="seletorInventarioFisico"><option value="">Selecione um inventário</option></select></div><div class="campo"><label for="observacaoNovoInventario">Observação da contagem (opcional)</label><input id="observacaoNovoInventario" maxlength="500" placeholder="Ex.: contagem do depósito principal"/></div><button class="botao secundario" id="atualizarInventariosFisicos" type="button">Atualizar lista</button></div>
+<p id="estadoInventarioFisico" role="status" class="recurso-aviso">Inicie uma contagem para conferir o estoque físico.</p>
+<div id="resumoInventarioFisico" class="inventario-resumo"></div>
+<div class="historico-tabela-scroll"><table class="tabela"><thead><tr><th>Produto</th><th>No sistema</th><th>Contagem física</th><th>Diferença</th><th>Valor estimado</th><th>Observação</th><th>Ação</th></tr></thead><tbody id="listaItensInventarioFisico"><tr><td colspan="7" class="estado-vazio">Nenhum inventário selecionado.</td></tr></tbody></table></div>
+<div class="inventario-acoes"><button class="botao primario" id="aprovarInventarioFisico" type="button" disabled>Conferir e aplicar ajustes</button><button class="botao secundario" id="imprimirInventarioFisico" type="button" disabled>Imprimir relatório</button></div>
+<p class="ajuda-campo">Por segurança, o sistema exige que todos os produtos sejam contados, inclusive os que têm quantidade zero. Se o estoque mudar durante a contagem, a aprovação será bloqueada para evitar correções incorretas. Sobras de produtos com validade obrigatória ficam bloqueadas para venda até a regularização do lote.</p>
+</section>
 </section>
 </main>
 </div>
 <dialog class="historico-dialog" id="regularizarLote" aria-labelledby="tituloRegularizar"><h2 id="tituloRegularizar">Informar validade do lote</h2><form id="formRegularizar" class="formulario"><input id="loteId" type="hidden"/><div class="campo"><label for="codigoLote">Lote</label><input id="codigoLote" maxlength="100" required/></div><div class="campo"><label for="dataLote">Validade real da mercadoria</label><input id="dataLote" type="date" required/></div><p class="ajuda-campo">Confira a embalagem antes de informar a data. Uma validade já registrada não poderá ser alterada por esta tela.</p><p id="erroLote" role="alert"></p><div class="botoes"><button class="botao secundario" id="cancelarLote" type="button">Cancelar</button><button class="botao primario" type="submit">Salvar</button></div></form></dialog>
-<script type="module" src="./erp-js/app.js"></script><script type="module" src="./erp-js/estoque.js"></script></body>
+<script type="module" src="./erp-js/app.js"></script><script type="module" src="./erp-js/estoque.js"></script><script type="module" src="./erp-js/inventarioFisico.js"></script></body>
 </html>

@@ -64,7 +64,7 @@ public class CategoriaController {
         int empresaId = user.empresa(authorization);
         plans.exigir(empresaId, "PLUS");
         String nome = nomeValido(dados);
-
+        db.queryForList("SELECT pg_advisory_xact_lock(74129, ?)",empresaId);
         if (existe(empresaId, nome, null)) {
             throw new IllegalArgumentException("Já existe uma categoria com esse nome.");
         }
@@ -86,7 +86,7 @@ public class CategoriaController {
         int empresaId = user.empresa(authorization);
         plans.exigir(empresaId, "PLUS");
         String nome = nomeValido(dados);
-
+        db.queryForList("SELECT pg_advisory_xact_lock(74129, ?)",empresaId);
         if (existe(empresaId, nome, id)) {
             throw new IllegalArgumentException("Já existe outra categoria com esse nome.");
         }

@@ -25,9 +25,9 @@ public class InventarioService {
         var saldo=rows.get(0);
         int id=((Number)saldo.get("id")).intValue();
         int total=((Number)saldo.get("quantidade")).intValue();
-        int lotes=db.queryForObject("SELECT COALESCE(SUM(quantidade),0) FROM estoque_lotes WHERE estoque_id=?",Integer.class,id);
+        long lotes=db.queryForObject("SELECT COALESCE(SUM(quantidade),0) FROM estoque_lotes WHERE estoque_id=?",Long.class,id);
         if(lotes>total) throw new IllegalArgumentException("Saldo de lotes inconsistente. Confira o inventário.");
-        if(total>lotes) db.update("INSERT INTO estoque_lotes(empresa_id,produto_id,estoque_id,codigo,quantidade,legado) VALUES (?,?,?,'LEGADO-'||?::text,?,true) ON CONFLICT (estoque_id) WHERE legado=true DO UPDATE SET quantidade=estoque_lotes.quantidade+EXCLUDED.quantidade",empresa,produto,id,id,total-lotes);
+        if(total>lotes) db.update("INSERT INTO estoque_lotes(empresa_id,produto_id,estoque_id,codigo,quantidade,legado) VALUES (?,?,?,'SALDO-SEM-LOTE-'||?::text,?,false)",empresa,produto,id,id,total-lotes);
         return saldo;
     }
 
@@ -35,6 +35,8 @@ public class InventarioService {
     public void entrada(int empresa,int produto,int quantidade,int compra,String codigo,LocalDate validade) {
         var saldo=bloquear(empresa,produto);
         if(quantidade<=0) throw new IllegalArgumentException("Quantidade inválida.");
+        if(((Number)saldo.get("quantidade")).longValue()+quantidade>Integer.MAX_VALUE)
+            throw new IllegalArgumentException("A entrada excede o saldo máximo permitido para o produto.");
         codigo=codigo==null?"":codigo.trim();
         if(codigo.length()>100) throw new IllegalArgumentException("O lote deve ter até 100 caracteres.");
         if(Boolean.TRUE.equals(saldo.get("controla_validade")) && (codigo.isBlank() || validade==null))

@@ -2,6 +2,8 @@
 
 **Equipe:** Nielson e Aryell. **Rodada:** 2 — desafio 2. **Verificação técnica:** 16/10/2026.
 
+Este resumo registra a entrega acadêmica daquela data. Para instalar e usar a versão atual do ERP, consulte o [guia principal](../../README.md).
+
 O módulo acrescenta controle de lotes e vencimentos ao ERP existente. A entrada em Compras registra quantidade, lote e validade; produtos perecíveis exigem essas informações. O saldo anterior é preservado como legado, sem datas fictícias, e pode ser regularizado após conferência da mercadoria.
 
 As vendas do ERP e do POS usam FEFO: consomem primeiro o lote válido que vence antes. Lotes vencidos e perecíveis sem validade não são vendáveis. A operação registra venda, distribuição dos lotes e baixa de estoque em transação, com proteção contra concorrência e dupla baixa no POS.

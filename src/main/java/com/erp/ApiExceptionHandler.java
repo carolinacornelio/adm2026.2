@@ -18,6 +18,10 @@ public class ApiExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     Map<String, String> badRequest(IllegalArgumentException e) { return Map.of("message", e.getMessage()); }
+    @ExceptionHandler({org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
+            org.springframework.web.bind.MissingServletRequestParameterException.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    Map<String,String> invalidParameter(Exception e) { return Map.of("message","Parâmetro inválido. Confira números, identificadores e datas no formato AAAA-MM-DD."); }
     @ExceptionHandler(SecurityException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     Map<String, String> unauthorized(SecurityException e) { return Map.of("message", e.getMessage()); }

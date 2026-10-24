@@ -27,19 +27,22 @@ public class AuthService {
             "RUA_INFANCIA", "Em qual rua você morou na infância?");
     private final JdbcTemplate db;
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-    private final Map<String, Map<String,Object>> sessoes = new ConcurrentHashMap<>();
+    private final Map<String, Sessao> sessoes = new ConcurrentHashMap<>();
     private final Map<String, SegundoFatorPendente> segundosFatores = new ConcurrentHashMap<>();
     public AuthService(JdbcTemplate db) { this.db = db; }
 
     /** Cria a empresa e o primeiro usuário; a senha é salva somente como hash BCrypt. */
     @Transactional
     public Map<String,Object> cadastrar(Map<String,Object> d) {
-        String email = texto(d, "email").toLowerCase();
+        String email = texto(d, "email").toLowerCase(Locale.ROOT);
+        if(email.length()>150 || texto(d,"nome").length()>150 || texto(d,"empresa").length()>150)
+            throw new IllegalArgumentException("Nome, empresa e e-mail devem ter até 150 caracteres.");
         if (!email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"))
             throw new IllegalArgumentException("Informe um e-mail válido.");
         String senha = texto(d, "senha");
         if (senha.length() < 6)
             throw new IllegalArgumentException("A senha deve ter pelo menos 6 caracteres.");
+        validarTamanhoBCrypt(senha,"senha");
         if (db.queryForObject("SELECT COUNT(*) FROM usuarios WHERE email=?", Integer.class, email) > 0)
             throw new IllegalArgumentException("Já existe uma conta cadastrada com este e-mail.");
         List<String> perguntas = List.of(
@@ -73,7 +76,8 @@ public class AuthService {
     }
     /** Busca o usuário, compara o hash BCrypt e abre uma sessão. */
     public Map<String,Object> login(Map<String,Object> d) {
-        String email = texto(d,"email").toLowerCase();
+        String email = texto(d,"email").toLowerCase(Locale.ROOT);
+        validarTamanhoBCrypt(texto(d,"senha"),"senha");
         List<Map<String,Object>> rows = db.queryForList("""
                 SELECT u.id, u.empresa_id, u.nome, u.email, u.senha_hash,
                        u.pergunta_seguranca_1, u.resposta_seguranca_hash_1,
@@ -91,10 +95,12 @@ public class AuthService {
     @Transactional
     public Map<String,Object> verificarSegundoFator(Map<String,Object> d) {
         String desafio = texto(d, "desafio");
-        SegundoFatorPendente pendente = segundosFatores.remove(desafio);
+        SegundoFatorPendente pendente = segundosFatores.get(desafio);
         if (pendente == null || Instant.now().isAfter(pendente.expiraEm()))
             throw new SecurityException("A verificação expirou. Informe e-mail e senha novamente.");
-
+        synchronized(pendente) {
+        if(segundosFatores.get(desafio)!=pendente || !Instant.now().isBefore(pendente.expiraEm()))
+            throw new SecurityException("A verificação expirou. Informe e-mail e senha novamente.");
         if (pendente.configuracaoNecessaria()) {
             List<String> perguntas = perguntasRecebidas(d);
             List<String> respostas = respostasRecebidas(d);
@@ -112,21 +118,42 @@ public class AuthService {
         } else {
             List<String> respostas = respostasRecebidas(d);
             for (int i = 0; i < 3; i++) {
-                if (!encoder.matches(respostas.get(i), pendente.respostasHash().get(i)))
-                    throw new SecurityException("Uma ou mais respostas de segurança estão incorretas.");
+                if (!encoder.matches(respostas.get(i), pendente.respostasHash().get(i))) {
+                    int restantes=3-pendente.tentativas().incrementAndGet();
+                    if(restantes<=0)segundosFatores.remove(desafio,pendente);
+                    throw new SecurityException(restantes>0?"Uma ou mais respostas estão incorretas. Restam "+restantes+" tentativa(s).":"A verificação expirou após três tentativas. Informe e-mail e senha novamente.");
+                }
             }
         }
+        segundosFatores.remove(desafio,pendente);
         return loginPorId(pendente.usuarioId(), pendente.empresaId(), pendente.nome(),
                 pendente.email(), pendente.plano());
+        }
     }
-    public Map<String,Object> usuario(String token) { Map<String,Object> u=sessoes.get(token); if(u==null) throw new SecurityException("Sessão inválida ou expirada."); return u; }
+    public Map<String,Object> usuario(String token) {
+        Sessao sessao=sessoes.get(token);
+        if(sessao==null || !Instant.now().isBefore(sessao.expiraEm())) {
+            if(sessao!=null)sessoes.remove(token,sessao);
+            throw new SecurityException("Sessão inválida ou expirada.");
+        }
+        return sessao.usuario();
+    }
+    public void sair(String authorization) {
+        if(authorization!=null && authorization.startsWith("Bearer "))sessoes.remove(authorization.substring(7));
+    }
+    @org.springframework.scheduling.annotation.Scheduled(fixedDelay=300000)
+    public void limparExpirados() {
+        Instant agora=Instant.now();
+        sessoes.entrySet().removeIf(e->!agora.isBefore(e.getValue().expiraEm()));
+        segundosFatores.entrySet().removeIf(e->!agora.isBefore(e.getValue().expiraEm()));
+    }
     private String planoDaEmpresa(int empresaId) {
         return PlanService.normalizar(db.queryForObject(
                 "SELECT COALESCE(plano_assinatura, 'BASE') FROM empresas WHERE id=?",
                 String.class,
                 empresaId));
     }
-    private Map<String,Object> loginPorId(int id,int empresa,String nome,String email,String plano) { String token=UUID.randomUUID().toString(); Map<String,Object> u=Map.of("id",id,"empresaId",empresa,"nome",nome,"email",email,"plano",PlanService.normalizar(plano)); sessoes.put(token,u); return Map.of("token",token,"usuario",u); }
+    private Map<String,Object> loginPorId(int id,int empresa,String nome,String email,String plano) { String token=UUID.randomUUID().toString(); Map<String,Object> u=Map.of("id",id,"empresaId",empresa,"nome",nome,"email",email,"plano",PlanService.normalizar(plano)); sessoes.put(token,new Sessao(u,Instant.now().plusSeconds(43200))); return Map.of("token",token,"usuario",u); }
     private Map<String,Object> iniciarSegundoFator(Map<String,Object> u) {
         List<String> perguntas = List.of(
                 valorOuVazio(u.get("pergunta_seguranca_1")),
@@ -142,7 +169,7 @@ public class AuthService {
         SegundoFatorPendente pendente = new SegundoFatorPendente(
                 ((Number)u.get("id")).intValue(), ((Number)u.get("empresa_id")).intValue(),
                 (String)u.get("nome"), (String)u.get("email"), String.valueOf(u.get("plano")),
-                perguntas, hashes, configurar, Instant.now().plusSeconds(300));
+                perguntas, hashes, configurar, Instant.now().plusSeconds(300),new java.util.concurrent.atomic.AtomicInteger());
         segundosFatores.put(desafio, pendente);
 
         Map<String,Object> resposta = new LinkedHashMap<>();
@@ -173,10 +200,16 @@ public class AuthService {
                 .replaceAll("\\s+", " ");
         if (resposta.length() < 2)
             throw new IllegalArgumentException("As respostas de segurança devem ter pelo menos 2 caracteres.");
+        validarTamanhoBCrypt(resposta,"resposta de segurança");
         return resposta;
+    }
+    private static void validarTamanhoBCrypt(String texto,String campo) {
+        if(texto.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>72)
+            throw new IllegalArgumentException("O campo "+campo+" deve ocupar no máximo 72 bytes em UTF-8.");
     }
     static String texto(Map<String,Object> d,String k) { Object v=d.get(k); if(v==null || v.toString().isBlank()) throw new IllegalArgumentException("Campo obrigatório: "+k); return v.toString().trim(); }
     private record SegundoFatorPendente(int usuarioId, int empresaId, String nome, String email,
                                         String plano, List<String> perguntas, List<String> respostasHash,
-                                        boolean configuracaoNecessaria, Instant expiraEm) {}
+                                        boolean configuracaoNecessaria, Instant expiraEm,java.util.concurrent.atomic.AtomicInteger tentativas) {}
+    private record Sessao(Map<String,Object> usuario,Instant expiraEm) {}
 }

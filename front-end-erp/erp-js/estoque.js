@@ -50,7 +50,7 @@ const controller = new AbortController();
 function exportar() {
     // Evita que nomes/códigos sejam interpretados como fórmulas na planilha.
     const celula = value => '"'+String(value??'').replace(/^[=+@\-\t\r]/,"'$&").replaceAll('"','""')+'"';
-    const linhas=[['Produto','Código','Lote','Validade','Quantidade','Situação'],...filtrados.map(l=>[l.nome,l.codigoProduto,l.lote,l.validade||'',l.quantidade,l.situacao,l.nivelValidade,l.vendavel ? 'Sim' : 'Não'])];
+    const linhas=[['Produto','Código','Lote','Validade','Quantidade','Situação','Nível de alerta','Disponível para venda'],...filtrados.map(l=>[l.nome,l.codigoProduto,l.lote,l.validade||'',l.quantidade,l.situacao,l.nivelValidade,l.vendavel ? 'Sim' : 'Não'])];
     const url=URL.createObjectURL(new Blob(['\ufeff'+linhas.map(l=>l.map(celula).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
     const a=document.createElement('a');a.href=url;a.download='inventario-validade.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }

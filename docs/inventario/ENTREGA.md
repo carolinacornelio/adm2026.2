@@ -4,6 +4,8 @@ Data da verificação técnica: 16/10/2026. Cliente da simulação: RyuTech.
 Fonte do escopo: Guia Rodada 2 de ADM2, desafio 2, páginas impressas 12–13.
 Estado: implementação e verificação técnica concluídas; aceite do representante e registros da apresentação dependem da simulação da equipe.
 
+Este relatório preserva os requisitos e resultados da entrega acadêmica verificada em 16/10/2026. As instruções atuais para instalar e iniciar o ERP estão no [guia principal](../../README.md); o manual da contagem física está em [Inventário físico](../integracao/INVENTARIO-FISICO.md).
+
 ## Escopo e requisitos
 
 | ID | Requisito e critério de aceite | Implementação/evidência |

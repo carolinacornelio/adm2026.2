@@ -90,12 +90,18 @@ async function request(endpoint, { method = 'GET', body, headers, timeoutMs = 20
     }
 
     let response;
+    let dados = null;
     const controller = new AbortController();
     config.signal = controller.signal;
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
         response = await fetch(url, config);
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) dados = await response.json();
     } catch (erroDeRede) {
+        if (erroDeRede instanceof SyntaxError) {
+            throw new ApiError('O servidor retornou uma resposta inválida. Tente novamente.', response?.status || 0, null);
+        }
         if (erroDeRede?.name === 'AbortError') {
             throw new ApiError('O servidor demorou a responder. Tente novamente.', 0, null);
         }
@@ -110,13 +116,12 @@ async function request(endpoint, { method = 'GET', body, headers, timeoutMs = 20
     }
 
     // Requisições DELETE/PUT do Spring costumam devolver 204 (sem corpo).
-    let dados = null;
-    const contentType = response.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
-        dados = await response.json().catch(() => null);
-    }
-
     if (!response.ok) {
+        if (response.status === 401 && !endpoint.startsWith('/auth/')) {
+            sessionStorage.removeItem('authToken');
+            sessionStorage.removeItem('usuario');
+            window.location.href = 'login.html';
+        }
         // Se o Spring devolver um corpo de erro (ex: {"message": "..."}),
         // priorizamos essa mensagem; senão usamos uma mensagem genérica.
         const mensagem = (dados && dados.message) || mensagemParaStatus(response.status);

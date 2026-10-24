@@ -17,18 +17,31 @@ public class PosRealtimeService {
 
     public SseEmitter assinar(int empresa) {
         var emitter = new SseEmitter(0L);
-        var clientes = clientesPorEmpresa.computeIfAbsent(empresa, ignored -> ConcurrentHashMap.newKeySet());
-        clientes.add(emitter);
-        Runnable remover = () -> {
-            clientes.remove(emitter);
-            if (clientes.isEmpty()) clientesPorEmpresa.remove(empresa, clientes);
-        };
+        clientesPorEmpresa.compute(empresa,(chave,clientes)->{
+            if(clientes==null)clientes=ConcurrentHashMap.newKeySet();
+            clientes.add(emitter);return clientes;
+        });
+        Runnable remover = () -> remover(empresa,emitter);
         emitter.onCompletion(remover);
         emitter.onTimeout(remover);
         emitter.onError(ignored -> remover.run());
         try { emitter.send(SseEmitter.event().name("conectado").data(Map.of("empresaId", empresa))); }
         catch (IOException erro) { remover.run(); emitter.completeWithError(erro); }
         return emitter;
+    }
+
+    private void remover(int empresa,SseEmitter emitter) {
+        clientesPorEmpresa.computeIfPresent(empresa,(chave,clientes)->{
+            clientes.remove(emitter);return clientes.isEmpty()?null:clientes;
+        });
+    }
+
+    @org.springframework.scheduling.annotation.Scheduled(fixedDelay=30000)
+    public void manterConexoes() {
+        clientesPorEmpresa.forEach((empresa,clientes)->clientes.forEach(emitter->{
+            try { emitter.send(SseEmitter.event().comment("manter-conexao")); }
+            catch(IOException | IllegalStateException erro) { remover(empresa,emitter);emitter.completeWithError(erro); }
+        }));
     }
 
     public void publicarDepoisDoCommit(int empresa, String evento) {
@@ -47,7 +60,7 @@ public class PosRealtimeService {
         for (var emitter : clientes) {
             try { emitter.send(SseEmitter.event().name(evento).data(dados)); }
             catch (IOException | IllegalStateException erro) {
-                clientes.remove(emitter);
+                remover(empresa,emitter);
                 emitter.completeWithError(erro);
             }
         }

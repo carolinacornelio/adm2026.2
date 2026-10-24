@@ -87,9 +87,24 @@ a { text-decoration: none; color: inherit; }
 .conteudo { margin-left: 220px; width: calc(100% - 220px); }
 .topo {
   height: 64px; background: white; border-bottom: 1px solid var(--borda);
+  position: sticky; top: 0; z-index: 50;
   display: flex; align-items: center; justify-content: flex-end; padding: 0 30px;
 }
-.usuario { font-size: 13px; color: var(--cinza); }
+.usuario {
+  min-width: 0; max-width: min(42vw, 320px); overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+  font-size: 13px; color: var(--cinza);
+}
+.atalho-atendimento {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; flex-shrink: 0; border-radius: 9px;
+  color: var(--cinza); border: 1px solid var(--borda);
+  transition: background .15s, color .15s;
+}
+.atalho-atendimento:hover, .atalho-atendimento[aria-current="page"] {
+  background: var(--azul-claro); color: var(--azul);
+}
+.atalho-atendimento:focus-visible { outline: 2px solid var(--azul); outline-offset: 3px; }
 .pagina { padding: 30px; max-width: 1250px; margin: auto; }
 .titulo { margin-bottom: 22px; }
 .titulo h1 { font-size: 24px; margin-bottom: 6px; }
@@ -176,7 +191,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--azul); }
   .menu { display: flex; flex-direction: column; }
   .sidebar { padding: 14px 12px; }
   .logo { margin-bottom: 12px; }
-  .topo { display: none; }
+  .topo { display: flex; height: 56px; padding: 0 14px; }
   .pagina { padding: 18px; }
   .cartoes, .acoes, .linha { grid-template-columns: 1fr; }
   .barra-listagem { flex-direction: column; }
@@ -301,4 +316,28 @@ input:focus, select:focus, textarea:focus { border-color: var(--azul); }
   body[data-impressao="inventario"] .historico-tabela-scroll { overflow:visible; }
   body[data-impressao="inventario"] .tabela { min-width:0; }
   dialog::backdrop { display:none; }
+}
+
+/* Inventário físico e conciliação */
+.inventario-resumo { margin: 14px 0; }
+.inventario-resumo-grade { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.inventario-resumo-grade > div { background:var(--fundo-card, #f7f8fa); border:1px solid var(--borda, #e5e7eb); border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:6px; min-width:0; }
+.inventario-resumo-grade small { color:var(--texto-secundario, #64748b); }
+.inventario-resumo-grade strong { overflow-wrap:anywhere; }
+#listaItensInventarioFisico input { width:110px; min-width:90px; }
+#listaItensInventarioFisico .observacao-contagem { width:160px; }
+#listaItensInventarioFisico td small { display:block; color:var(--texto-secundario, #64748b); margin-top:3px; }
+#listaItensInventarioFisico .salvar-contagem { padding:6px 10px; }
+.status-ok { background:#dcfce7; color:#166534; }
+.status-erro { background:#fee2e2; color:#991b1b; }
+.status-alerta { background:#fef3c7; color:#92400e; }
+@media(max-width:800px) { .inventario-resumo-grade { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:520px) { .inventario-resumo-grade { grid-template-columns:1fr; } }
+@media print {
+  body[data-impressao="inventario-fisico"] .sidebar, body[data-impressao="inventario-fisico"] .topo,
+  body[data-impressao="inventario-fisico"] #estoqueResumoPainel, body[data-impressao="inventario-fisico"] .pagina > .titulo,
+  body[data-impressao="inventario-fisico"] #relatorioInventario, body[data-impressao="inventario-fisico"] #novoInventarioFisico,
+  body[data-impressao="inventario-fisico"] #atualizarInventariosFisicos, body[data-impressao="inventario-fisico"] .inventario-acoes { display:none !important; }
+  body[data-impressao="inventario-fisico"] .conteudo { width:100%; margin:0; }
+  body[data-impressao="inventario-fisico"] .pagina, body[data-impressao="inventario-fisico"] #inventarioFisicoPainel { padding:0; margin:0; border:0; }
 }

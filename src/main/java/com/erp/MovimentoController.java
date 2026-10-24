@@ -105,20 +105,21 @@ public class MovimentoController {
    bruto.forEach((chave, valor) -> i.put(String.valueOf(chave), valor));
    int p=inteiro(i.get("produtoId")),q=inteiro(i.get("quantidade"));
    if(q<=0 || q>1000000)throw new IllegalArgumentException("A quantidade deve ser maior que zero.");
-   List<Map<String,Object>> produto=db.queryForList("SELECT e.quantidade,p.nome,p.codigo,"+colunaPreco+" AS preco FROM estoque e JOIN produtos p ON p.id=e.produto_id WHERE e.produto_id=? AND e.empresa_id=? AND p.ativo=true FOR UPDATE OF e",p,e);
-   if(produto.isEmpty())throw new IllegalArgumentException("Produto não encontrado para esta empresa.");
+   List<Map<String,Object>> produto=db.queryForList("SELECT e.quantidade,p.nome,p.codigo,"+colunaPreco+" AS preco FROM estoque e JOIN produtos p ON p.id=e.produto_id AND p.empresa_id=e.empresa_id WHERE e.produto_id=? AND e.empresa_id=? AND p.ativo=true ORDER BY e.id FOR UPDATE OF e,p",p,e);
+   if(produto.size()!=1)throw new IllegalArgumentException("Produto não encontrado ou estoque inconsistente para esta empresa.");
    int atual=((Number)produto.get(0).get("quantidade")).intValue();
    if(venda&&atual<q)throw new IllegalArgumentException("Estoque insuficiente para o produto "+p+".");
    // O preço é sempre o que está cadastrado no produto; o navegador não decide o valor da compra.
    java.math.BigDecimal preco=(java.math.BigDecimal)produto.get(0).get("preco");
    total=total.add(preco.multiply(java.math.BigDecimal.valueOf(q)));
+   if(preco.signum()<0 || total.compareTo(new java.math.BigDecimal("99999999.99"))>0)throw new IllegalArgumentException("O total excede o valor máximo permitido para uma movimentação.");
    if(venda) {
     db.update("INSERT INTO itens_venda(venda_id,produto_id,quantidade,preco_unitario,pos_nome_produto,pos_codigo_produto) VALUES(?,?,?,?,?,?)",mov,p,q,preco,produto.get(0).get("nome"),produto.get(0).get("codigo"));
     inventario.baixar(e,p,q,mov.intValue());
    } else {
     db.update("INSERT INTO itens_compra(compra_id,produto_id,quantidade,preco_unitario) VALUES(?,?,?,?)",mov,p,q,preco);
     LocalDate validade=i.get("validade")==null || i.get("validade").toString().isBlank()?null:data(i.get("validade"));
-    inventario.entrada(e,p,q,mov.intValue(),String.valueOf(i.getOrDefault("lote","")),validade);
+    inventario.entrada(e,p,q,mov.intValue(),Objects.toString(i.get("lote"),""),validade);
    }
   }
   db.update("UPDATE "+tabela+" SET total=?,status='concluida' WHERE id=? AND empresa_id=?",total,mov,e);
@@ -131,7 +132,7 @@ public class MovimentoController {
   return itens;
  }
  private LocalDate data(Object valor) {
-  if (valor == null || valor.toString().isBlank()) return LocalDate.now();
+  if (valor == null || valor.toString().isBlank()) return InventarioService.hoje();
   try { return LocalDate.parse(valor.toString()); }
   catch (RuntimeException erro) { throw new IllegalArgumentException("Data inválida. Use o formato AAAA-MM-DD."); }
  }

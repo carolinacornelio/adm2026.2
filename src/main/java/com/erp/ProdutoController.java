@@ -96,19 +96,19 @@ public class ProdutoController {
         int empresaId = user.empresa(authorization);
         String nome = AuthService.texto(dados, "nome");
         validarTextoProduto(nome, "nome", 150);
-        String codigo = String.valueOf(dados.getOrDefault("codigo", "")).trim();
+        String codigo = java.util.Objects.toString(dados.get("codigo"), "").trim();
         validarTextoProduto(codigo, "código", 50);
-        double precoCompra = precoValido(dados, "precoCompra");
-        double precoVenda = precoValido(dados, "precoVenda");
+        java.math.BigDecimal precoCompra = precoValido(dados, "precoCompra");
+        java.math.BigDecimal precoVenda = precoValido(dados, "precoVenda");
         Integer categoriaId = categoriaId(dados, empresaId);
-        if (codigo.isBlank()) codigo = "COD-" + System.currentTimeMillis();
+        if (codigo.isBlank()) codigo = "COD-" + java.util.UUID.randomUUID();
 
         Number id = db.queryForObject("""
                 INSERT INTO produtos (empresa_id, nome, codigo, preco, preco_compra, preco_venda, categoria_id, descricao, ativo, controla_validade)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, true, ?)
                 RETURNING id
                 """, Number.class, empresaId, nome, codigo, precoVenda, precoCompra, precoVenda,
-                categoriaId, descricaoValida(dados), Boolean.parseBoolean(String.valueOf(dados.getOrDefault("controlaValidade",false))));
+                categoriaId, descricaoValida(dados), Boolean.TRUE.equals(controleValidade(dados)));
 
         db.update("INSERT INTO estoque (empresa_id, produto_id, quantidade, estoque_minimo) VALUES (?, ?, 0, ?)",
                 empresaId, id, intNumero(dados, "estoqueMinimo"));
@@ -124,21 +124,22 @@ public class ProdutoController {
             @RequestBody Map<String, Object> dados,
             @RequestHeader("Authorization") String authorization) {
         int empresaId = user.empresa(authorization);
+        bloquearProduto(id,empresaId);
         Integer categoriaId = categoriaId(dados, empresaId);
         String nome = AuthService.texto(dados, "nome");
         validarTextoProduto(nome, "nome", 150);
-        String codigo = String.valueOf(dados.getOrDefault("codigo", "")).trim();
+        String codigo = java.util.Objects.toString(dados.get("codigo"), "").trim();
         if (codigo.isBlank()) codigo = "COD-" + id;
         validarTextoProduto(codigo, "código", 50);
-        double precoCompra = precoValido(dados, "precoCompra");
-        double precoVenda = precoValido(dados, "precoVenda");
+        java.math.BigDecimal precoCompra = precoValido(dados, "precoCompra");
+        java.math.BigDecimal precoVenda = precoValido(dados, "precoVenda");
 
         int alterados = db.update("""
                 UPDATE produtos
                    SET nome=?, codigo=?, preco=?, preco_compra=?, preco_venda=?, categoria_id=?, descricao=?, controla_validade=COALESCE(?,controla_validade)
                  WHERE id=? AND empresa_id=? AND ativo=true
                 """, nome, codigo, precoVenda, precoCompra, precoVenda, categoriaId,
-                descricaoValida(dados), dados.containsKey("controlaValidade") ? Boolean.parseBoolean(String.valueOf(dados.get("controlaValidade"))) : null, id, empresaId);
+                descricaoValida(dados), controleValidade(dados), id, empresaId);
         if (alterados == 0) throw new IllegalArgumentException("Produto não encontrado.");
 
         db.update("UPDATE estoque SET estoque_minimo=? WHERE produto_id=? AND empresa_id=?",
@@ -152,6 +153,7 @@ public class ProdutoController {
     @Transactional
     public void remover(@PathVariable int id, @RequestHeader("Authorization") String authorization) {
         int empresaId = user.empresa(authorization);
+        bloquearProduto(id,empresaId);
         if (db.update("UPDATE produtos SET ativo=false WHERE id=? AND empresa_id=?", id, empresaId) == 0) {
             throw new IllegalArgumentException("Produto não encontrado.");
         }
@@ -164,8 +166,9 @@ public class ProdutoController {
         plans.exigir(empresaId, "PLUS");
         int id;
         try {
-            id = valor instanceof Number numero ? numero.intValue() : Integer.parseInt(valor.toString());
-        } catch (NumberFormatException erro) {
+            id = new java.math.BigDecimal(valor.toString()).intValueExact();
+            if(id<=0) throw new NumberFormatException();
+        } catch (ArithmeticException | NumberFormatException erro) {
             throw new IllegalArgumentException("Categoria inválida.");
         }
         validarCategoria(id, empresaId);
@@ -197,16 +200,23 @@ public class ProdutoController {
         return (int) valor;
     }
 
-    private double precoValido(Map<String, Object> dados, String chave) {
-        double valor = numero(dados, chave);
-        if (valor < 0 || valor > 99_999_999.99d) {
-            throw new IllegalArgumentException("Preço inválido: " + chave);
+    private java.math.BigDecimal precoValido(Map<String, Object> dados, String chave) {
+        try {
+            var valor=new java.math.BigDecimal(String.valueOf(dados.getOrDefault(chave,0)).replace(',','.'))
+                    .setScale(2,java.math.RoundingMode.UNNECESSARY);
+            if(valor.signum()<0 || valor.compareTo(new java.math.BigDecimal("99999999.99"))>0)throw new NumberFormatException();
+            return valor;
+        } catch (ArithmeticException | NumberFormatException erro) {
+            throw new IllegalArgumentException("Preço inválido: " + chave + ". Informe até duas casas decimais.");
         }
-        return valor;
+    }
+
+    private void bloquearProduto(int id,int empresa) {
+        db.queryForList("SELECT e.id FROM estoque e JOIN produtos p ON p.id=e.produto_id AND p.empresa_id=e.empresa_id WHERE p.id=? AND p.empresa_id=? ORDER BY e.id FOR UPDATE OF e,p",id,empresa);
     }
 
     private String descricaoValida(Map<String, Object> dados) {
-        String descricao = String.valueOf(dados.getOrDefault("descricao", "")).trim();
+        String descricao = java.util.Objects.toString(dados.get("descricao"), "").trim();
         if (descricao.length() > 10_000) {
             throw new IllegalArgumentException("A descrição deve ter até 10000 caracteres.");
         }
@@ -217,5 +227,11 @@ public class ProdutoController {
         if (valor.length() > tamanhoMaximo) {
             throw new IllegalArgumentException("O campo " + campo + " deve ter até " + tamanhoMaximo + " caracteres.");
         }
+    }
+    private Boolean controleValidade(Map<String,Object> dados) {
+        Object valor=dados.get("controlaValidade");
+        if(valor==null)return null;
+        if(valor instanceof Boolean controle)return controle;
+        throw new IllegalArgumentException("Informe verdadeiro ou falso para o controle de validade.");
     }
 }

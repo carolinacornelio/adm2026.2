@@ -188,7 +188,7 @@ public class OllamaClient {
                 "fim", Map.of("type", List.of("string", "null"), "pattern", "^[0-9]{4}-[0-9]{2}-[0-9]{2}$", "maxLength", 10),
                 "produtos", Map.of("type", "array", "maxItems", 10, "items", Map.of("type", "string", "maxLength", 150)),
                 "dias", Map.of("type", "integer", "minimum", 0, "maximum", 365),
-                "situacao", Map.of("type", "string", "enum", List.of("TODOS","VENCIDO","A_VENCER","VENCIDOS_E_A_VENCER","PENDENTE","SEM_VALIDADE")));
+                "situacao", Map.of("type", "string", "enum", IATool.situacoesPlanejaveis()));
         Object consultaBase = Map.of("type", "object", "properties", campos, "required", List.of("ferramenta"), "additionalProperties", false);
         Object consulta = vendaIds.isEmpty() ? consultaBase : Map.of("anyOf", List.of(consultaBase,
                 Map.of("type", "object", "properties", Map.of(

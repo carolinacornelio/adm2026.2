@@ -315,17 +315,18 @@ class PosIntegrationTest {
             contexto.set(invocation.getArgument(0)); return "Resposta redigida pelo modelo a partir da consulta.";
         });
         assertEquals("Resposta redigida pelo modelo a partir da consulta.", perguntarIA("Quais produtos estão com estoque baixo?",token));
-        assertTrue(contexto.get().contains("\"quantidade_vendavel\":3"),contexto.get());
-        assertTrue(contexto.get().contains("\"quantidade_total\":10"),contexto.get());
+        assertTrue(contexto.get().contains("\"quantidadeEstoque\":3"),contexto.get());
+        assertTrue(contexto.get().contains("\"quantidadeTotal\":10"),contexto.get());
         assertTrue(contexto.get().contains("\"quantidade_bloqueada\":7"),contexto.get());
         perguntarIA("Quais produtos exigem validade?",token);
         assertTrue(contexto.get().contains("Café"),contexto.get());
-        assertTrue(contexto.get().contains("\"vendavel\":3"),contexto.get());
+        assertTrue(contexto.get().contains("\"quantidadeEstoque\":3"),contexto.get());
         perguntarIA("Quais lotes estão vencidos ou a vencer nos próximos 7 dias?",token);
         assertTrue(contexto.get().contains("\"lote\":\"VENCIDO\""),contexto.get());
         assertTrue(contexto.get().contains("\"lote\":\"ALERTA\""),contexto.get());
         assertTrue(contexto.get().contains("lotes_liberados_para_venda"),contexto.get());
-        assertTrue(contexto.get().contains("LIBERADO PARA VENDA: está dentro da validade"),contexto.get());
+        assertTrue(contexto.get().contains("\"vendavel\":true"),contexto.get());
+        assertTrue(contexto.get().contains("\"status_validade\":\"Vence em 5 dia(s)\""),contexto.get());
         assertFalse(contexto.get().contains("\"lote\":\"PENDENTE\""),contexto.get());
         assertFalse(contexto.get().contains("\"situacao\":\"PENDENTE\""),contexto.get());
         var outra=account("outra-ia");
@@ -415,6 +416,92 @@ class PosIntegrationTest {
         assertEquals("Análise com indicação de amostra limitada.",perguntarIA("Analise meu estoque",token));
         assertTrue(contexto.get().contains("\"limitado_pelo_contexto\":true"));
         assertTrue(contexto.get().length()<16000,"O contexto excedeu o limite esperado");
+    }
+    @Test void logoutRevogaTokenNoServidor() {
+        assertEquals(HttpStatus.OK,erpPost("/api/auth/logout",Map.of()).getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED,http.exchange("/api/produtos",HttpMethod.GET,authorized(token),Map.class).getStatusCode());
+    }
+    Map<String,Object> respostas(String desafio,String primeira) {
+        return Map.of("desafio",desafio,"respostaSeguranca1",primeira,"respostaSeguranca2","resposta dois","respostaSeguranca3","resposta tres");
+    }
+    @Test void segundoFatorPermiteCorrigirErroESoPodeSerUsadoUmaVez() {
+        var desafio=auth.login(Map.of("email","operador@pos.test","senha","senha-teste-123"));
+        String codigo=(String)desafio.get("desafio");
+        assertThrows(SecurityException.class,()->auth.verificarSegundoFator(respostas(codigo,"errada")));
+        assertNotNull(auth.verificarSegundoFator(respostas(codigo,"resposta um")).get("token"));
+        assertThrows(SecurityException.class,()->auth.verificarSegundoFator(respostas(codigo,"resposta um")));
+    }
+    @Test void segundoFatorExpiraAposTresErros() {
+        String codigo=(String)auth.login(Map.of("email","operador@pos.test","senha","senha-teste-123")).get("desafio");
+        for(int n=0;n<3;n++)assertThrows(SecurityException.class,()->auth.verificarSegundoFator(respostas(codigo,"errada")));
+        assertThrows(SecurityException.class,()->auth.verificarSegundoFator(respostas(codigo,"resposta um")));
+    }
+    @Test void atualizarFornecedorNaoDevolveClienteComMesmoId() {
+        int comum=900001;
+        db.update("INSERT INTO clientes(id,empresa_id,nome) VALUES (?,?,'Cliente preservado')",comum,empresa);
+        db.update("INSERT INTO fornecedores(id,empresa_id,nome) VALUES (?,?,'Fornecedor antigo')",comum,empresa);
+        HttpHeaders headers=new HttpHeaders();headers.setBearerAuth(token);
+        var response=http.exchange("/api/pessoas/"+comum,HttpMethod.PUT,
+                new HttpEntity<>(Map.of("nome","Fornecedor atualizado","tipo","FORNECEDOR"),headers),Map.class);
+        assertEquals(HttpStatus.OK,response.getStatusCode(),String.valueOf(response.getBody()));
+        assertEquals("FORNECEDOR",response.getBody().get("tipo"));
+        assertEquals("Fornecedor atualizado",response.getBody().get("nome"));
+        assertEquals("Cliente preservado",db.queryForObject("SELECT nome FROM clientes WHERE id=?",String.class,comum));
+        assertEquals("FORNECEDOR",http.exchange("/api/pessoas/"+comum+"?tipo=FORNECEDOR",HttpMethod.GET,authorized(token),Map.class).getBody().get("tipo"));
+        assertEquals(HttpStatus.BAD_REQUEST,http.exchange("/api/pessoas/"+comum+"?tipo=INVALIDO",HttpMethod.GET,authorized(token),Map.class).getStatusCode());
+    }
+    @Test void pessoasSemDocumentoNaoConflitamEAtualizacaoAceitaNulos() {
+        int pessoa=((Number)erpPost("/api/pessoas",Map.of("nome","Pessoa A","tipo","CLIENTE")).getBody().get("id")).intValue();
+        assertEquals(HttpStatus.OK,erpPost("/api/pessoas",Map.of("nome","Pessoa B","tipo","CLIENTE")).getStatusCode());
+        var dados=new HashMap<String,Object>();dados.put("nome","Pessoa alterada");dados.put("tipo","CLIENTE");dados.put("documento",null);dados.put("telefone",null);dados.put("email",null);
+        HttpHeaders headers=new HttpHeaders();headers.setBearerAuth(token);
+        var atualizado=http.exchange("/api/pessoas/"+pessoa,HttpMethod.PUT,new HttpEntity<>(dados,headers),Map.class);
+        assertEquals(HttpStatus.OK,atualizado.getStatusCode(),String.valueOf(atualizado.getBody()));
+        dados.put("nome","x".repeat(151));
+        assertEquals(HttpStatus.BAD_REQUEST,http.exchange("/api/pessoas/"+pessoa,HttpMethod.PUT,new HttpEntity<>(dados,headers),Map.class).getStatusCode());
+    }
+    @Test void produtoRecusaPrecoFracionarioDemaisECategoriaTruncada() {
+        assertEquals(HttpStatus.BAD_REQUEST,erpPost("/api/produtos",Map.of("nome","Produto","precoVenda","10.123")).getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST,erpPost("/api/produtos",Map.of("nome","Produto","controlaValidade","qualquer texto")).getStatusCode());
+        db.update("UPDATE empresas SET plano_assinatura='PLUS' WHERE id=?",empresa);
+        int categoria=db.queryForObject("INSERT INTO categorias(empresa_id,nome) VALUES (?,'Categoria') RETURNING id",Integer.class,empresa);
+        assertEquals(HttpStatus.BAD_REQUEST,erpPost("/api/produtos",Map.of("nome","Produto","categoriaId",new BigDecimal(categoria+".5"))).getStatusCode());
+        assertEquals(1,count("produtos"));
+    }
+    @Test void entradaETotalForaDoLimiteRevertemMovimentacao() {
+        int fornecedor=db.queryForObject("INSERT INTO fornecedores(empresa_id,nome) VALUES (?,'Fornecedor') RETURNING id",Integer.class,empresa);
+        db.update("UPDATE produtos SET preco_compra=1000000 WHERE id=?",produto);
+        var compra=Map.<String,Object>of("fornecedorId",fornecedor,"itens",List.of(Map.of("produtoId",produto,"quantidade",1000000)));
+        assertEquals(HttpStatus.BAD_REQUEST,erpPost("/api/compras",compra).getStatusCode());
+        assertEquals(0,count("compras"));assertEquals(10,stock());
+        db.update("UPDATE estoque SET quantidade=? WHERE produto_id=?",Integer.MAX_VALUE,produto);
+        compra=Map.of("fornecedorId",fornecedor,"itens",List.of(Map.of("produtoId",produto,"quantidade",1)));
+        assertEquals(HttpStatus.BAD_REQUEST,erpPost("/api/compras",compra).getStatusCode());
+        assertEquals(Integer.MAX_VALUE,stock());assertEquals(0,count("compras"));
+    }
+    @Test void saldoSemLoteNaoHerdaValidadeDoLegado() {
+        db.update("UPDATE produtos SET controla_validade=true WHERE id=?",produto);
+        db.update("INSERT INTO estoque_lotes(empresa_id,produto_id,estoque_id,codigo,quantidade,legado,validade) SELECT empresa_id,produto_id,id,'LEGADO',5,true,CURRENT_DATE+30 FROM estoque WHERE produto_id=?",produto);
+        assertEquals(HttpStatus.BAD_REQUEST,post(sale(6),token).getStatusCode());
+        assertEquals(HttpStatus.OK,post(sale(5),token).getStatusCode());
+        assertEquals(5,stock());
+        assertEquals(5,db.queryForObject("SELECT SUM(quantidade)::integer FROM estoque_lotes WHERE validade IS NULL",Integer.class));
+    }
+    @Test void parametrosMalformadosRetornamErroDeValidacao() {
+        assertEquals(HttpStatus.BAD_REQUEST,http.exchange("/api/produtos/abc",HttpMethod.GET,authorized(token),Map.class).getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST,http.exchange("/api/vendas?inicio=ontem",HttpMethod.GET,authorized(token),Map.class).getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST,http.exchange("/api/inventario/lotes?dias=abc",HttpMethod.GET,authorized(token),Map.class).getStatusCode());
+    }
+    @Test void categoriasSimultaneasNaoDuplicamNomeNaEmpresa() throws Exception {
+        db.update("UPDATE empresas SET plano_assinatura='PLUS' WHERE id=?",empresa);
+        var iniciar=new CountDownLatch(1);
+        try(var executor=Executors.newFixedThreadPool(2)) {
+            var primeira=executor.submit(()->{iniciar.await();return erpPost("/api/categorias",Map.of("nome","Bebidas")).getStatusCode();});
+            var segunda=executor.submit(()->{iniciar.await();return erpPost("/api/categorias",Map.of("nome","bebidas")).getStatusCode();});
+            iniciar.countDown();
+            assertEquals(Set.of(HttpStatus.OK,HttpStatus.BAD_REQUEST),Set.of(primeira.get(10,TimeUnit.SECONDS),segunda.get(10,TimeUnit.SECONDS)));
+            assertEquals(1,db.queryForObject("SELECT COUNT(*) FROM categorias WHERE empresa_id=? AND lower(nome)='bebidas'",Integer.class,empresa));
+        }
     }
     @Test void migrationPreservesLegacyStockAndCanRunAgainWithoutDuplicatingLots() {
         var script=new org.springframework.jdbc.datasource.init.ResourceDatabasePopulator(new org.springframework.core.io.ClassPathResource("schema.sql"));

@@ -88,7 +88,8 @@ function configurarFormularioCadastro(formProduto) {
     carregarCategorias(selectCategoria);
     configurarNovaCategoria(formProduto, selectCategoria);
 
-    botaoCadastrar.addEventListener('click', async () => {
+    formProduto.addEventListener('submit', async (evento) => {
+        evento.preventDefault();
         limparMensagem(formProduto);
         const dados = formParaObjeto(formProduto);
         const erroValidacao = validarProduto(dados);

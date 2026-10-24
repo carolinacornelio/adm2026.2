@@ -1,34 +1,31 @@
-# POS — guia rápido
+# Frente de caixa (POS)
 
-Para instalar e iniciar: [README principal](README.md). O POS usa o mesmo banco do ERP e não precisa do Ollama.
+O POS registra vendas no balcão e usa o mesmo catálogo e estoque do ERP. Para instalar e iniciar o sistema, siga o [guia principal](README.md). O POS não precisa do Ollama.
 
-## Fazer uma venda
+## Registrar uma venda
 
-1. Após o login, escolha **POS**. Use **Dashboard** para voltar ao ERP.
-2. Busque o produto por nome/código, adicione ao carrinho e ajuste as quantidades.
-3. Informe cliente (opcional), desconto e forma de pagamento.
-4. Confirme o recebimento e finalize. O servidor grava a venda e baixa o estoque na mesma transação.
-5. Abra o comprovante para imprimir ou salvar em PDF.
+1. Entre no sistema e escolha **POS**. Use **Dashboard** para voltar ao ERP.
+2. Pesquise pelo nome ou código do produto. `F2` leva à busca.
+3. Adicione os produtos, ajuste quantidades e, se necessário, informe o cliente e o desconto.
+4. Escolha a forma de pagamento, confirme o recebimento e finalize. `F9` também finaliza a venda.
+5. Abra **Histórico de vendas** para consultar o comprovante e imprimir ou salvar em PDF.
 
-Atalhos: **F2** busca; **F9** finalização. Alterações de catálogo e estoque chegam automaticamente aos caixas conectados.
+O sistema grava a venda e atualiza o estoque na mesma transação. Alterações de produtos e estoque chegam aos caixas conectados.
 
-## Pagamentos e histórico
+## Pagamentos e comprovantes
 
-- **Dinheiro:** registra recebido e calcula troco.
-- **Pix/cartão:** cobre pelo banco/maquininha e confirme a aprovação no POS. Não há cobrança automática integrada.
-- **Comprovante:** informativo, não fiscal; não substitui NFC-e.
-- **Histórico POS:** últimas 50 vendas POS.
-- **Histórico ERP:** todas as vendas, com filtros de data e comprovantes em **Operação → Histórico de vendas**.
+- **Dinheiro:** informe o valor recebido; o POS calcula o troco.
+- **Pix e cartão:** confirme o recebimento no banco ou na maquininha e marque a confirmação no POS. O sistema não gera cobranças.
+- O comprovante é informativo e não substitui NFC-e ou outro documento fiscal.
+- O histórico do POS mostra as 50 vendas mais recentes. O **Histórico de vendas** do ERP permite consultar vendas do ERP e POS por data.
 
-## Estoque e cuidados
+## Estoque e conexão
 
-- A venda usa primeiro os lotes válidos que vencem antes (FEFO).
-- Lotes vencidos e produtos com validade obrigatória pendente ficam bloqueados; vencimento hoje ainda permite venda.
-- Estoque vendável: esgotado, abaixo/no mínimo, próximo do mínimo ou OK. O total físico pode incluir unidades bloqueadas.
-- **Venda guardada:** carrinho salvo na aba, sem reservar estoque. Ao retomar, preços e estoque são conferidos.
-- **Falha de rede ao finalizar:** use “Verificar venda / tentar novamente”. A chave da operação evita duplicar a venda.
-- É necessário estar conectado ao servidor; não há venda offline.
+- As vendas consomem primeiro os lotes válidos com vencimento mais próximo (FEFO). Lotes vencidos ou com validade obrigatória pendente não podem ser vendidos.
+- A validade do dia ainda permite venda; a partir do dia seguinte o lote fica vencido.
+- O saldo físico pode incluir unidades bloqueadas. O catálogo do POS mostra a quantidade disponível para venda.
+- **Guardar venda** salva o carrinho nesta aba, sem reservar produtos. Ao retomar, preços e estoque são verificados novamente.
+- Se a conexão falhar durante a finalização, use **Verificar venda / tentar novamente** para conferir ou reenviar a mesma operação sem duplicá-la.
+- O POS exige conexão com o servidor; não há operação offline.
 
-Alertas não lidos aparecem no início do dashboard; após a leitura, ficam no histórico ao fim da página. Validade: aviso em até 30 dias, importante em até 15 e prioridade em até 3.
-
-Detalhes: [API](README-SPRING.md) · [Inventário e documentação de entrega](docs/inventario/ENTREGA.md).
+Alertas de estoque e validade aparecem no ERP. Para consultar lotes e contagens físicas, veja **Operação → Estoque**. Os detalhes da API estão em [README-SPRING.md](README-SPRING.md).

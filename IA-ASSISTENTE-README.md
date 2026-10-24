@@ -1,48 +1,53 @@
-# Assistente IA — guia rápido
+# Assistente de IA
 
-Em **Ferramentas → Assistente IA**, consulte os dados da sua empresa (plano PLUS). Usa **Gemma 3 4B local**, via Ollama. Instalação do projeto: [README](README.md).
+O assistente responde perguntas analíticas sobre os dados da empresa. Ele usa **Gemma 3 4B pelo Ollama** e está disponível no plano PLUS. O ERP continua funcionando sem a IA.
 
-## Preparar
+## Preparar o modelo
 
-1. Instale o [Ollama](https://ollama.com/download) no computador que executa o ERP.
-2. Execute `ollama pull gemma3:4b` uma vez.
-3. Mantenha o Ollama aberto e inicie o ERP com `mvn spring-boot:run`.
+1. Instale o [Ollama](https://ollama.com/download) no computador que executa o backend.
+2. Baixe o modelo uma vez:
 
-O padrão já é `http://localhost:11434` e `gemma3:4b`. Para mudar a conexão, use `application-local.properties`:
-
-```properties
-erp.ia.ollama.enabled=true
-erp.ia.ollama.url=http://localhost:11434
-erp.ia.ollama.model=gemma3:4b
+```powershell
+ollama pull gemma3:4b
 ```
 
-## O que perguntar
+3. Inicie o ERP pela [instrução principal](README.md#executar-o-erp) e abra **Ferramentas → Assistente IA**.
 
-| Assunto | Exemplo |
+O padrão é `http://localhost:11434`. No Windows, o ERP tenta iniciar o Ollama instalado no local padrão quando uma pergunta é enviada. Se ele não estiver instalado nesse local, inicie-o manualmente. A primeira resposta pode demorar enquanto o modelo carrega.
+
+Para usar outra instalação, configure `erp.ia.ollama.url`, `erp.ia.ollama.model` e `erp.ia.ollama.enabled` em `application-local.properties`. Edite somente essas linhas, preservando a configuração de banco já existente. A URL também pode ser definida por `OLLAMA_URL`; veja [a arquitetura](IA-ARQUITETURA-GEMMA.md) para detalhes.
+
+## Exemplos de perguntas
+
+| Tema | Pergunta de exemplo |
 | --- | --- |
-| Menor saída | Quais produtos venderam menos neste mês, incluindo os sem vendas? |
-| Estoque | Quais produtos estão próximos, no mínimo ou abaixo do mínimo? |
-| Validade | Quais lotes estão vencidos ou vencem nos próximos 15 dias? |
-| Pendências | Há lotes sem a validade obrigatória? |
-| Vendas e datas | Quais vendas ocorreram em 20/10/2026? |
-| Faturamento | Compare o faturamento deste mês com o mês passado. |
-| Histórico | Quanto faturei em cada mês e o que foi vendido? |
-| Atenção | Quais produtos merecem atenção por baixa saída, estoque ou validade? |
+| Vendas | Quais produtos venderam menos neste mês, incluindo os sem vendas? |
+| Estoque | Quais produtos estão no mínimo ou abaixo dele? |
+| Validade | Quais lotes vencem nos próximos 15 dias? |
+| Compras | Quanto compramos neste mês? |
+| Faturamento | Compare o faturamento deste mês com o anterior. |
+| Inventário físico | Quantos inventários foram concluídos neste mês? |
+| Divergências | Quais produtos tiveram faltas ou sobras nas contagens deste mês? |
+| Atendimento | Quantos chamados estão abertos por prioridade? |
 
-Sem período informado, vendas/compras usam o mês atual. Estoque e lotes mostram a situação atual. Menor saída inclui produtos ativos sem vendas no período; isso não significa que nunca venderam.
+Vendas, compras, inventário físico e chamados usam o mês atual quando você não informa um período. Estoque e validade mostram a situação atual. Nas contagens físicas, divergências são estimativas e sessões diferentes podem incluir os mesmos produtos.
 
-## Como funciona
+## Dados e limites
 
-O modelo interpreta a pergunta, o backend consulta o PostgreSQL e o modelo escreve a análise. Os dados são lidos novamente a cada pedido. O assistente não altera registros e não recebe dados pessoais de clientes/funcionários nem credenciais. Perguntas externas ao ERP e sobre código interno são bloqueadas.
+- A pergunta e o histórico recente são enviados ao modelo configurado. Por padrão, o Ollama roda localmente no computador do backend; se você configurar outra URL, os dados seguem para esse endereço. Evite digitar senhas ou outros dados sigilosos na pergunta.
+- As consultas são limitadas à empresa autenticada. A IA não recebe credenciais, senhas de usuários, documentos, telefones, e-mails ou endereços da base.
+- Para chamados, a IA consulta somente números, prioridade, situação e datas. Ela não recebe o nome do cliente, o título ou a descrição do chamado.
+- Para inventário físico, os nomes dos responsáveis e as observações livres não são enviados. As consultas podem incluir nomes de produtos, quantidades e valores necessários à resposta.
+- A IA não abre nem altera chamados, não salva contagens e não aprova ajustes. Ela pode interpretar os resultados incorretamente; confira as telas do ERP antes de tomar decisões importantes.
+- Listas extensas podem ser limitadas para caber no contexto do modelo. A resposta informa quando isso ocorre.
 
-Durante a consulta, aparece **“Buscando dados...”**; pergunta, botão e sugestões ficam bloqueados. A velocidade depende da máquina e do carregamento inicial. Listas grandes podem ser resumidas; consulte as telas do ERP para detalhes completos. A interpretação do modelo pode falhar.
+## Solução de problemas
 
-## Se não responder
+| Sintoma | O que fazer |
+| --- | --- |
+| Modelo não encontrado | Execute `ollama list`; se faltar `gemma3:4b`, execute `ollama pull gemma3:4b`. |
+| Ollama indisponível | Abra o Ollama ou execute `ollama serve`. |
+| Resposta lenta | A primeira pergunta pode carregar o modelo. Verifique memória disponível com `ollama ps`. |
+| Pergunta falhou | Tente novamente; erros de conexão, timeout ou resposta inválida são exibidos sem inventar uma resposta alternativa. |
 
-- Execute `ollama list` e confira o modelo; `ollama ps` mostra os modelos carregados.
-- Se o serviço estiver parado, abra o Ollama ou execute `ollama serve`.
-- No Windows, o ERP também pode iniciar o Ollama instalado em segundo plano: fechar a janela não necessariamente para o serviço.
-- Há uma consulta por vez por instância. Falta de memória, timeout ou resposta inválida geram erro explícito, sem resposta pronta substituta.
-- Após atualizar o código, reinicie o ERP. Logs do Ollama iniciado pelo ERP: `%LOCALAPPDATA%/ADM-ERP/logs/ollama-local.log`.
-
-Detalhes técnicos: [arquitetura da IA](IA-ARQUITETURA-GEMMA.md).
+Após alterar o código, reinicie o ERP. Logs do Ollama iniciado automaticamente no Windows ficam em `%LOCALAPPDATA%/ADM-ERP/logs/ollama-local.log`.

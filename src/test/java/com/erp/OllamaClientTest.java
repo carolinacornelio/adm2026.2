@@ -60,5 +60,9 @@ class OllamaClientTest {
         var formato=mapper.readTree(enviado.get()).path("format");
         assertTrue(formato.path("required").toString().contains("permitido"));
         assertFalse(formato.toString().contains("CLIENTES_RANKING"));
+        assertTrue(formato.toString().contains("ATENDIMENTO_RESUMO"));
+        assertTrue(formato.toString().contains("INVENTARIO_FISICO_ITENS"));
+        assertTrue(formato.toString().contains("EM_ATENDIMENTO"));
+        assertTrue(formato.toString().contains("CONCLUIDO"));
     }
 }

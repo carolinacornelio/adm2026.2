@@ -1,53 +1,83 @@
 # Backend e API
 
-Instalação e execução: [README principal](README.md).
+Este guia é para quem desenvolve ou integra outros sistemas. Para instalar e iniciar o ERP, comece pelo [guia principal](README.md).
 
-- Backend: `src/main/java/com/erp/`, Java 21 + Spring Boot + PostgreSQL.
-- Frontend: `front-end-erp/`, servido na porta 8080 e incluído no JAR pelo Maven.
-- Configuração local: `application-local.properties` (fora do Git). Alternativa: `DATABASE_URL`, `DB_USER`, `DB_PASSWORD` no ambiente; `.env` não é carregado automaticamente.
-- Schema: `src/main/resources/schema.sql`, aplicado na inicialização. Faça backup antes de atualizar uma base importante.
-- `src/com/erp/` é a implementação antiga de terminal; não é o backend web.
+## Como o projeto está organizado
+
+- **Backend web:** `src/main/java/com/erp/` — Java 21, Spring Boot e JDBC.
+- **Interface:** `front-end-erp/` — HTML, CSS e JavaScript servidos pelo Spring Boot e incluídos no JAR pelo Maven.
+- **Banco:** PostgreSQL. O Spring lê `application-local.properties` da raiz; a configuração de terminal antiga em `src/com/erp/` usa `db.properties`.
+- **Estrutura das tabelas:** `src/main/resources/schema.sql`, aplicado na inicialização. Faça backup antes de atualizar um banco com dados importantes.
+
+As configurações de banco são versionadas por decisão da equipe. Consulte [Banco de dados e credenciais](README.md#banco-de-dados-e-credenciais) antes de trocar a conexão. Inicie a aplicação na pasta que contém `pom.xml`.
 
 ## Autenticação
 
-Cadastro/login inicia o segundo fator. Após a confirmação, envie `Authorization: Bearer TOKEN` nas rotas protegidas. O servidor valida a empresa da sessão; tokens expiram ao reiniciar o processo. Algumas funções exigem plano PLUS.
+O cadastro cria a primeira sessão. Nos acessos seguintes, o login inicia um desafio de segundo fator; a sessão é criada após a confirmação. As rotas protegidas recebem `Authorization: Bearer TOKEN`.
 
-## Rotas
+O servidor associa cada operação à empresa do token. Sessões duram até 12 horas e são encerradas ao sair ou reiniciar o backend. O desafio de segundo fator expira em cinco minutos e aceita até três respostas incorretas. Categorias, faturamento analítico e IA exigem plano PLUS.
 
-| Rota | Operação | Observação |
+## Rotas da API
+
+Todas as rotas abaixo usam o prefixo `/api`. Exceto cadastro, login e segundo fator, exigem autenticação.
+
+### Acesso e cadastros
+
+| Rota | Métodos | Uso |
 | --- | --- | --- |
-| `/api/auth/cadastro` | `POST` | Cria empresa e usuário. |
-| `/api/auth/login` | `POST` | Verifica credenciais e inicia segundo fator. |
-| `/api/auth/segundo-fator` | `POST` | Conclui o desafio e inicia sessão autenticada. |
-| `/api/produtos` | `GET`, `POST` | Lista e cadastra produtos da empresa. |
-| `/api/produtos/{id}` | `GET`, `PUT`, `DELETE` | Consulta, atualiza e desativa produto. |
-| `/api/pessoas` | `GET`, `POST` | Lista e cadastra clientes e fornecedores. |
-| `/api/pessoas/{id}` | `GET`, `PUT`, `DELETE` | Consulta, altera e remove registros; a exclusão aceita `?tipo=CLIENTE` ou `?tipo=FORNECEDOR`. |
-| `/api/categorias` | `GET`, `POST` | Categorias disponíveis no plano PLUS. |
-| `/api/categorias/{id}` | `PUT`, `DELETE` | Atualiza ou remove categoria no plano PLUS. |
-| `/api/estoque` | `GET` | Situação do estoque dos produtos ativos. |
-| `/api/compras` | `GET`, `POST` | Consulta e registra compras com entrada de estoque. |
-| `/api/vendas` | `GET`, `POST` | Consulta todas as vendas do ERP e POS, com filtros opcionais `data`, `inicio` e `fim` em `AAAA-MM-DD`, e registra vendas pelo fluxo geral do ERP. |
-| `/api/vendas/{id}` | `GET` | Dados do comprovante, itens e lotes de uma venda da empresa autenticada. |
-| `/api/inventario/lotes?dias=30` | `GET` | Saldo por lote e classificação de validade; prazo de alerta de 0–365 dias. |
-| `/api/inventario/lotes/{id}/validade` | `PUT` | Regulariza lote sem data; corpo com `lote` e `validade` (`AAAA-MM-DD`). |
-| `/api/inventario/produtos/{id}/controle-validade` | `PUT` | Configura exigência de validade; corpo com `controlaValidade` booleano. |
-| `/api/alertas?pagina=0` | `GET` | Pendências do usuário e página de até 50 notificações lidas. |
-| `/api/alertas/verificar` | `POST` | Atualiza os alertas operacionais da empresa e retorna as notificações não lidas do usuário. |
-| `/api/alertas/lidos` | `POST` | Marca até 100 IDs enviados em uma lista JSON; leitura individual por usuário. |
-| `/api/pos/vendas` | `GET`, `POST` | Lista as 50 últimas vendas POS da empresa e registra uma venda concluída. |
-| `/api/pos/vendas/{id}` | `GET` | Retorna recibo e itens de uma venda POS da empresa. |
-| `/api/pos/eventos` | `GET` | Fluxo SSE autenticado e isolado por empresa; avisa sobre alterações confirmadas no estoque e catálogo. |
-| `/api/dashboard/indicadores` | `GET` | Indicadores que incluem as vendas POS. |
-| `/api/dashboard/faturamento` | `GET` | Requer PLUS; aceita `?mesReferencia=AAAA-MM`. |
-| `/api/ia/perguntar` | `POST` | Requer PLUS; consultas analíticas. |
+| `/auth/cadastro` | `POST` | Cria empresa e usuário. |
+| `/auth/login` | `POST` | Confere as credenciais e inicia o segundo fator. |
+| `/auth/segundo-fator` | `POST` | Confirma o desafio e cria a sessão. |
+| `/auth/logout` | `POST` | Encerra a sessão no servidor. |
+| `/produtos`, `/produtos/{id}` | `GET`, `POST`, `PUT`, `DELETE` | Lista, cria, consulta, atualiza ou desativa produtos. |
+| `/pessoas`, `/pessoas/{id}` | `GET`, `POST`, `PUT`, `DELETE` | Gerencia clientes e fornecedores. Consulta e exclusão podem receber `?tipo=CLIENTE` ou `?tipo=FORNECEDOR`; atualizações informam o tipo no corpo. |
+| `/categorias`, `/categorias/{id}` | `GET`, `POST`, `PUT`, `DELETE` | Gerencia categorias no plano PLUS. |
 
+### Operação, estoque e vendas
 
-## Regras de integração
+| Rota | Métodos | Uso |
+| --- | --- | --- |
+| `/compras` | `GET`, `POST` | Consulta compras e registra entradas de estoque. |
+| `/vendas` | `GET`, `POST` | Consulta vendas do ERP e POS ou registra venda pelo fluxo do ERP. A consulta aceita `data`, ou o intervalo `inicio` e `fim` (`AAAA-MM-DD`). |
+| `/vendas/{id}` | `GET` | Consulta venda, itens, lotes e comprovante. |
+| `/estoque` | `GET` | Consulta os saldos dos produtos ativos. |
+| `/inventario/lotes?dias=30` | `GET` | Consulta saldos e validade dos lotes; `dias` aceita de 0 a 365. |
+| `/inventario/lotes/{id}/validade` | `PUT` | Informa lote e validade real de um saldo sem data. |
+| `/inventario/produtos/{id}/controle-validade` | `PUT` | Ativa ou desativa o controle de validade do produto. |
+| `/inventarios-fisicos` | `GET`, `POST` | Lista contagens físicas e inicia uma sessão. |
+| `/inventarios-fisicos/{id}` | `GET` | Consulta itens, contagens e divergências. |
+| `/inventarios-fisicos/{id}/itens/{itemId}` | `PUT` | Salva uma contagem e sua observação. |
+| `/inventarios-fisicos/{id}/aprovar` | `POST` | Aplica os ajustes auditados se todos os itens foram contados e o estoque não mudou. |
 
-- Compras de perecíveis exigem lote e validade. Vendas usam FEFO e não permitem lotes bloqueados.
-- POS grava venda, itens, recebimento e estoque em uma transação. Cada pedido usa uma `chaveOperacao` UUID; repetir o mesmo pedido com a mesma chave recupera a venda sem duplicá-la.
-- Eventos SSE são enviados após a confirmação no banco, separados por empresa.
-- Pix/cartão são confirmados pelo operador externamente. Não há cobrança integrada nem emissão fiscal.
+### POS, atendimento e indicadores
 
-`mvn test` executa testes com PostgreSQL temporário separado. Detalhes de uso: [POS](POS-README.md) · [IA](IA-ASSISTENTE-README.md) · [Inventário](docs/inventario/ENTREGA.md).
+| Rota | Métodos | Uso |
+| --- | --- | --- |
+| `/pos/vendas` | `GET`, `POST` | Lista as 50 vendas POS mais recentes ou registra uma venda. |
+| `/pos/vendas/{id}` | `GET` | Consulta recibo e itens de uma venda POS. |
+| `/pos/eventos` | `GET` | Envia atualizações SSE autenticadas de estoque e catálogo após gravações. |
+| `/chamados` | `GET`, `POST` | Lista e abre chamados da empresa. |
+| `/chamados/{id}/situacao` | `PUT` | Atualiza a situação de um chamado. |
+| `/alertas?pagina=0` | `GET` | Consulta notificações do usuário autenticado. Cada página tem até 50 itens. |
+| `/alertas/verificar` | `POST` | Atualiza alertas operacionais e consulta os não lidos do usuário. |
+| `/alertas/lidos` | `POST` | Marca notificações como lidas para o usuário. |
+| `/dashboard/indicadores` | `GET` | Consulta indicadores que incluem vendas do POS. |
+| `/dashboard/faturamento?mesReferencia=AAAA-MM` | `GET` | Consulta faturamento mensal; exige PLUS. |
+| `/ia/perguntar` | `POST` | Envia pergunta ao assistente; exige PLUS e Ollama disponível. |
+
+## Regras importantes
+
+- As consultas e alterações são isoladas por empresa autenticada.
+- Compras de produtos com validade obrigatória precisam de lote e data. Vendas ERP e POS usam FEFO e bloqueiam lotes vencidos ou sem validade obrigatória.
+- O POS grava venda, pagamento informado pelo operador e baixa de estoque na mesma transação. Uma `chaveOperacao` permite verificar novamente uma venda sem duplicá-la.
+- Carrinhos guardados no POS não reservam estoque. A venda exige conexão com o servidor.
+- Pix e cartão são confirmados fora do sistema. Não há integração de cobrança nem emissão fiscal.
+- A IA só consulta os indicadores permitidos; não abre chamados, salva contagens ou aprova ajustes.
+
+## Compilar e testar
+
+```powershell
+mvn clean verify
+```
+
+Os testes usam PostgreSQL temporário e não precisam da base compartilhada. Para gerar o JAR, use `mvn clean package`. Mais detalhes de uso: [POS](POS-README.md), [IA](IA-ASSISTENTE-README.md) e [inventário físico](docs/integracao/INVENTARIO-FISICO.md).
