@@ -24,6 +24,7 @@
 <a class="" href="vendas.html">💰 Vendas</a>
 <a class="" href="estoque.html">📊 Estoque</a>
 <a class="" href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">🤖 Assistente IA</a>
+<a class="" href="atendimento.html">🎧 Atendimento</a>
 </nav>
 </aside>
 <main class="conteudo">
@@ -33,11 +34,9 @@
 <div class="painel">
 <form class="formulario" id="formProduto">
 <div class="campo"><label>Nome</label><input name="nome" placeholder="Digite o nome do produto" type="text"/></div>
-<div class="campo"><label>Código</label><input name="codigo" placeholder="Digite o código" type="text"/></div>
-<div class="campo"><label>Descrição</label><textarea name="descricao" placeholder="Digite a descrição"></textarea></div>
 <div class="linha">
-<div class="campo"><label>Preço de Compra</label><input min="0" name="precoCompra" placeholder="0,00" step="0.01" type="number"/></div>
 <div class="campo"><label>Preço de Venda</label><input min="0" name="precoVenda" placeholder="0,00" step="0.01" type="number"/></div>
+<div class="campo"><label>Preço de Compra <small>(opcional)</small></label><input min="0" name="precoCompra" placeholder="0,00" step="0.01" type="number"/></div>
 </div>
 <div class="linha">
 <div class="campo categoria-campo">
@@ -46,10 +45,23 @@
 <small class="ajuda-campo">Ex.: Celular, Computador, Periférico ou Acessório.</small>
 <div class="nova-categoria" id="novaCategoria" hidden><input id="nomeNovaCategoria" maxlength="100" placeholder="Nome da nova categoria" type="text"/><button class="acao-mini" id="salvarNovaCategoria" type="button">Salvar</button></div>
 </div>
-<div class="campo"><label>Estoque Mínimo</label><input min="0" name="estoqueMinimo" placeholder="0" step="1" type="number"/></div>
 </div>
-<div class="botoes"><a class="botao secundario" href="dashboard.html">Cancelar</a><button class="botao primario" type="button">Cadastrar</button></div>
+<details class="opcionais">
+<summary style="cursor:pointer;font-weight:600;margin-bottom:12px">Mais opções (opcional)</summary>
+<div class="campo"><label>Código <small>(gerado automaticamente se ficar em branco)</small></label><input name="codigo" placeholder="Digite o código" type="text"/></div>
+<div class="campo"><label>Descrição</label><textarea name="descricao" placeholder="Digite a descrição"></textarea></div>
+<div class="campo"><label>Estoque Mínimo</label><input min="0" name="estoqueMinimo" placeholder="0" step="1" type="number"/></div>
+</details>
+<div class="botoes"><a class="botao secundario" href="dashboard.html">Cancelar</a><button class="botao secundario" id="cadastrarOutro" type="button">Cadastrar e novo</button><button class="botao primario" type="button">Cadastrar</button></div>
 </form>
+</div>
+<div class="painel" style="margin-top:20px">
+<h2 style="font-size:16px;margin-bottom:8px">Cadastro em lote</h2>
+<p class="texto-secundario" style="margin-bottom:12px">Uma linha por produto: nome; preço de venda; preço de compra; estoque mínimo (os dois últimos são opcionais). Colar direto de uma planilha também funciona.</p>
+<div id="loteForm">
+<div class="campo"><textarea id="loteTexto" rows="8" placeholder="Mouse sem fio; 59,90; 35; 5&#10;Teclado ABNT; 120"></textarea></div>
+<div class="botoes"><span class="texto-secundario" id="loteResumo"></span><button class="botao primario" id="cadastrarLote" type="button">Cadastrar lote</button></div>
+</div>
 </div>
 </section>
 </main>

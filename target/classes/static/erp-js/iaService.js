@@ -1,4 +1,4 @@
-/** Serviço da tela de IA. */
+/** Serviço da tela de IA: mantém a chamada HTTP fora do controller visual. */
 import { apiService } from './apiService.js';
 
 export async function perguntarIA(pergunta, historico = []) {

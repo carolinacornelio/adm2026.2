@@ -24,6 +24,7 @@
 <a class="" href="vendas.html">💰 Vendas</a>
 <a class="ativo" href="estoque.html">📊 Estoque</a>
 <a class="" href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">🤖 Assistente IA</a>
+<a class="" href="atendimento.html">🎧 Atendimento</a>
 </nav>
 </aside>
 <main class="conteudo">
@@ -31,7 +32,7 @@
 <section class="pagina">
 <div class="titulo"><h1>Controle de Estoque</h1><p>Acompanhe a quantidade e os alertas dos produtos.</p></div>
 <div class="painel">
-<div class="barra-listagem"><input id="pesquisaEstoque" placeholder="🔍  Pesquisar produto..." type="search"/></div>
+<div class="barra-listagem"><input id="pesquisaEstoque" placeholder="🔍  Pesquisar produto..." type="search"/><button class="botao secundario" id="atualizarEstoque" type="button">↻ Atualizar</button><span class="texto-secundario" id="ultimaAtualizacao"></span></div>
 <table class="tabela">
 <thead><tr><th>Produto</th><th>Estoque Atual</th><th>Estoque Mínimo</th><th>Situação</th></tr></thead>
 <tbody id="listaEstoque"></tbody></table>
