@@ -5,7 +5,7 @@ const PESO_PLANO = { BASE: 1, PLUS: 2, PREMIUM: 3 };
 
 export function normalizarPlano(plano) {
     const valor = String(plano || 'BASE').trim().toUpperCase();
-    if (['INTERMEDIARIO', 'INTERMEDIÁRIO', 'EMPRESARIAL'].includes(valor)) return 'PLUS';
+    if (['PLUS', 'INTERMEDIARIO', 'INTERMEDIÁRIO', 'EMPRESARIAL'].includes(valor)) return 'PLUS';
     if (['PREMIUM', 'CORPORATIVO'].includes(valor)) return 'PREMIUM';
     return 'BASE';
 }
@@ -30,12 +30,17 @@ export function nomePlano(plano) {
 export function aplicarControlePlanos() {
     document.querySelectorAll('[data-plano-minimo]').forEach((elemento) => {
         const minimo = elemento.dataset.planoMinimo;
+        const permitido = temAcesso(minimo);
 
-        if (temAcesso(minimo)) {
+        if (elemento.classList.contains('recurso-aviso')) {
+            elemento.hidden = permitido;
+            return;
+        }
+
+        if (permitido) {
             elemento.classList.remove('recurso-bloqueado');
             elemento.removeAttribute('aria-disabled');
             if (elemento.dataset.planoOcultar === 'true') elemento.hidden = false;
-            if (elemento.classList.contains('recurso-aviso')) elemento.hidden = true;
             return;
         }
 

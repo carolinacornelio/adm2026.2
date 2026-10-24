@@ -1,68 +1,30 @@
-<<<<<<< Updated upstream
-/**
- * estoque.js
- * ---------------------------------------------------------------------------
- * Controller da tela estoque.html: lista a situação de todos os produtos
- * (estoque atual x estoque mínimo) e permite pesquisar por nome.
- *
- * Regra de atualização: a lista é recarregada ao abrir a página, ao voltar
- * para a aba, a cada INTERVALO_MS enquanto a aba estiver visível e quando o
- * usuário clica em "Atualizar". A pesquisa filtra a lista já carregada.
- * ---------------------------------------------------------------------------
- */
-=======
 import { apiService } from './apiService.js';
 import { estaAutenticado } from './authService.js';
 import { escapeHtml as e } from './uiService.js';
 import { classeStatusEstoque, classeStatusValidade, textoStatusValidade, badgeValidade } from './uiService.js';
 import { fromProdutoDTO } from './dto.js';
-import { aoMovimentar } from './estoqueSync.js';
->>>>>>> Stashed changes
 
-import { listarSituacaoEstoque } from './estoqueService.js';
-import { estaAutenticado } from './authService.js';
-import { renderizarTabela, classeStatusEstoque, escapeHtml } from './uiService.js';
-
-const INTERVALO_MS = 30000;
-
-let produtos = [];
-let carregando = false;
-
-function criarLinhaEstoque(produto) {
-    return `
-        <tr>
-            <td>${escapeHtml(produto.nome)}</td>
-            <td>${produto.quantidadeEstoque}</td>
-            <td>${produto.estoqueMinimo}</td>
-            <td><span class="status ${classeStatusEstoque(produto.situacao)}">${produto.situacao}</span></td>
-        </tr>
-    `;
+const $ = s => document.querySelector(s);
+let produtos = [], lotes = [], filtrados = [], carregando = false, repetir = false;
+let conectado = false;
+const data = value => value ? new Date(String(value).slice(0,10)+'T12:00:00').toLocaleDateString('pt-BR') : 'Não informada';
+function desenhar() {
+    const termo = $('#pesquisaEstoque').value.trim().toLowerCase();
+    produtos = produtos.map(p => ({ ...p, situacao: fromProdutoDTO(p).situacao }));
+    $('#listaEstoque').innerHTML = produtos.filter(p => p.nome.toLowerCase().includes(termo)).map(p => `<tr><td>${e(p.nome)}</td><td>${e(p.quantidadeTotal)}</td><td><span class="status ${classeStatusEstoque(p.situacao)}">${e(p.quantidadeEstoque)} · ${e(p.situacao)}</span></td><td>${e(p.estoqueMinimo)}</td><td>${badgeValidade(p)}<button class="acao-mini" data-controle="${e(p.id)}">${p.controlaValidade ? 'Obrigatória' : 'Opcional'} — alterar</button></td></tr>`).join('') || '<tr><td colspan="5" class="estado-vazio">Nenhum produto encontrado.</td></tr>';
+    const busca = $('#buscaLote').value.trim().toLowerCase();
+    const situacao = $('#situacaoLote').value, de = $('#validadeDe').value, ate = $('#validadeAte').value;
+    filtrados = lotes.filter(l => (!busca || `${l.nome} ${l.codigoProduto} ${l.lote}`.toLowerCase().includes(busca)) && (!situacao || l.situacao===situacao) && (!de || (l.validade && String(l.validade).slice(0,10)>=de)) && (!ate || (l.validade && String(l.validade).slice(0,10)<=ate)));
+    $('#listaLotes').innerHTML = filtrados.map(l => `<tr><td>${e(l.nome)}<small> (${e(l.codigoProduto)})</small></td><td>${e(l.lote)}${l.legado ? ' (legado)' : ''}</td><td>${e(data(l.validade))}</td><td>${e(l.quantidade)}</td><td><span class="status ${classeStatusValidade(l.nivelValidade)}">${e(textoStatusValidade(l.situacao,l.nivelValidade))}</span><small class="status-detalhe">${l.diasParaVencer == null ? (l.vendavel ? 'Validade não exigida' : 'Venda bloqueada') : l.diasParaVencer < 0 ? 'Venda bloqueada' : l.diasParaVencer === 0 ? 'Vence hoje' : `Vence em ${e(l.diasParaVencer)} dia(s)`}</small></td><td class="inventario-acoes">${!l.validade ? `<button class="acao-mini" data-regularizar="${e(l.id)}">Informar validade</button>` : '—'}</td></tr>`).join('') || '<tr><td colspan="6" class="estado-vazio">Nenhum lote com saldo para esses filtros.</td></tr>';
+    const qtd = s => lotes.filter(l => l.situacao===s).reduce((n,l)=>n+Number(l.quantidade),0);
+    $('#alertasInventario').textContent = `Alertas do inventário: ${qtd('Vencido')} unidades vencidas; ${qtd('A vencer')} a vencer em até ${$('#diasAlerta').value} dias; ${qtd('Validade pendente')} com validade obrigatória pendente.`;
+    $('#periodoRelatorio').textContent = `${filtrados.length} lotes com saldo · ${situacao || 'Todas as situações'} · validade: ${de ? data(de) : 'sem início'} a ${ate ? data(ate) : 'sem fim'} · atualizado em ${new Date().toLocaleString('pt-BR')}`;
 }
-
-function desenhar(tbody, termoBusca = '') {
-    const termo = termoBusca.trim().toLowerCase();
-    const filtrados = termo
-        ? produtos.filter((p) => p.nome.toLowerCase().includes(termo))
-        : produtos;
-
-    renderizarTabela(tbody, filtrados, criarLinhaEstoque, 'Nenhum produto cadastrado ainda.');
-}
-
-async function atualizar(tbody, campoPesquisa, rotulo) {
-    if (carregando) return;
-    carregando = true;
+async function carregar() {
+    if(carregando) { repetir=true; return; }
+    carregando=true;
+    $('#exportarInventario').disabled=true; $('#imprimirInventario').disabled=true;
     try {
-<<<<<<< Updated upstream
-        produtos = await listarSituacaoEstoque();
-        desenhar(tbody, campoPesquisa?.value || '');
-        if (rotulo) rotulo.textContent = `Atualizado às ${new Date().toLocaleTimeString('pt-BR')}`;
-    } catch (erro) {
-        console.error(erro);
-        if (!produtos.length) {
-            tbody.innerHTML = `<tr><td colspan="4">Não foi possível carregar o estoque.</td></tr>`;
-        } else if (rotulo) {
-            rotulo.textContent = 'Falha ao atualizar; exibindo os últimos dados carregados.';
-=======
         [produtos,lotes] = await Promise.all([apiService.get('/estoque'),apiService.get(`/inventario/lotes?dias=${encodeURIComponent($('#diasAlerta').value)}`)]);
         desenhar();
         $('#estadoInventario').textContent = conectado ? 'Atualização automática conectada' : 'Dados consultados';
@@ -73,51 +35,37 @@ async function atualizar(tbody, campoPesquisa, rotulo) {
     } finally { carregando=false; if(repetir) {repetir=false;void carregar();} }
 }
 async function acompanhar() {
-    let primeiraConexao = true;
     while(!controller.signal.aborted) {
-        // Ao reconectar, reconsulta: eventos emitidos durante a queda não são reenviados.
-        if(!primeiraConexao) void carregar();
-        primeiraConexao = false;
         try {
             await apiService.events('/pos/eventos',{signal:controller.signal,onEvent:()=>{conectado=true;void carregar();}});
         } catch(erro) {
             if(controller.signal.aborted) return;
             conectado=false; $('#estadoInventario').textContent='Reconectando atualizações automáticas...';
             if(erro.status===401) {window.location.href='login.html';return;}
->>>>>>> Stashed changes
         }
-    } finally {
-        carregando = false;
+        if(!controller.signal.aborted) await new Promise(resolve=>setTimeout(resolve,1500));
     }
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    if (!estaAutenticado()) return;
-
-    const tbody = document.getElementById('listaEstoque');
-    if (!tbody) return;
-
-    const campoPesquisa = document.getElementById('pesquisaEstoque');
-    const botaoAtualizar = document.getElementById('atualizarEstoque');
-    const rotulo = document.getElementById('ultimaAtualizacao');
-    const recarregar = () => atualizar(tbody, campoPesquisa, rotulo);
-
-    recarregar();
-
-    campoPesquisa?.addEventListener('input', () => desenhar(tbody, campoPesquisa.value));
-    botaoAtualizar?.addEventListener('click', recarregar);
-
-    // Voltar para a aba do estoque mostra o dado novo na hora (o cenário do teste de duas abas).
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') recarregar();
+const controller = new AbortController();
+function exportar() {
+    // Evita que nomes/códigos sejam interpretados como fórmulas na planilha.
+    const celula = value => '"'+String(value??'').replace(/^[=+@\-\t\r]/,"'$&").replaceAll('"','""')+'"';
+    const linhas=[['Produto','Código','Lote','Validade','Quantidade','Situação','Nível de alerta','Disponível para venda'],...filtrados.map(l=>[l.nome,l.codigoProduto,l.lote,l.validade||'',l.quantidade,l.situacao,l.nivelValidade,l.vendavel ? 'Sim' : 'Não'])];
+    const url=URL.createObjectURL(new Blob(['\ufeff'+linhas.map(l=>l.map(celula).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
+    const a=document.createElement('a');a.href=url;a.download='inventario-validade.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+document.addEventListener('DOMContentLoaded',()=>{
+    if(!estaAutenticado()) return;
+    $('#pesquisaEstoque').addEventListener('input',desenhar);
+    $('#filtrosInventario').addEventListener('submit',ev=>{ev.preventDefault();if($('#validadeDe').value && $('#validadeAte').value && $('#validadeDe').value>$('#validadeAte').value){$('#estadoInventario').textContent='Confira o intervalo de validade.';return;}void carregar();});
+    $('#limparInventario').addEventListener('click',()=>{$('#filtrosInventario').reset();void carregar();});
+    $('#listaEstoque').addEventListener('click',async ev=>{
+        const b=ev.target.closest('[data-controle]');if(!b)return;
+        const p=produtos.find(p=>String(p.id)===b.dataset.controle);
+        if(!confirm(p.controlaValidade?'Tornar a validade opcional para este produto? Lotes vencidos continuarão bloqueados.':'Exigir validade para este produto? Saldos sem data ficarão bloqueados até regularização.')) return;
+        b.disabled=true;
+        try {await apiService.put(`/inventario/produtos/${p.id}/controle-validade`,{controlaValidade:!p.controlaValidade});await carregar();}catch(erro){$('#estadoInventario').textContent=erro.message;}finally{b.disabled=false;}
     });
-<<<<<<< Updated upstream
-
-    // Atualização periódica enquanto a aba estiver visível.
-    setInterval(() => {
-        if (document.visibilityState === 'visible') recarregar();
-    }, INTERVALO_MS);
-=======
     $('#listaLotes').addEventListener('click',ev=>{
         const b=ev.target.closest('[data-regularizar]');if(!b)return;
         const lote=lotes.find(l=>String(l.id)===b.dataset.regularizar);
@@ -134,11 +82,5 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('pagehide',()=>controller.abort(),{once:true});
     window.addEventListener('pageshow',ev=>{if(ev.persisted)window.location.reload();});
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)void carregar();});
-    // Camadas extras além do stream /pos/eventos:
-    // 1) aviso direto de compras/vendas registradas em outra aba (não depende do backend);
-    aoMovimentar(() => void carregar());
-    // 2) rede de segurança: reconsulta a cada 15 s (mesmo padrão de produtos.js).
-    window.setInterval(() => { if(!document.hidden) void carregar(); }, 15000);
     void carregar();void acompanhar();
->>>>>>> Stashed changes
 });

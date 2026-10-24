@@ -25,6 +25,7 @@
 export function toUsuarioCadastroDTO(formData) {
     return {
         nome: formData.nome.trim(),
+        controlaValidade: formData.controlaValidade === 'true',
         empresa: formData.empresa.trim(),
         email: formData.email.trim().toLowerCase(),
         senha: formData.senha,
@@ -76,6 +77,7 @@ function tipoPessoaParaTexto(tipoEnum) {
 export function toPessoaDTO(formData) {
     return {
         nome: formData.nome.trim(),
+        controlaValidade: formData.controlaValidade === 'true',
         documento: formData.documento.trim(),
         telefone: formData.telefone.trim(),
         email: formData.email.trim(),
@@ -105,6 +107,7 @@ export function fromPessoaDTO(pessoa) {
 export function toProdutoDTO(formData) {
     return {
         nome: formData.nome.trim(),
+        controlaValidade: formData.controlaValidade === 'true',
         codigo: formData.codigo.trim(),
         descricao: (formData.descricao || '').trim(),
         precoCompra: Number(formData.precoCompra) || 0,
@@ -119,15 +122,22 @@ export function toProdutoDTO(formData) {
 
 /** Registro vindo do backend/localStorage -> formato usado na listagem/estoque. */
 export function fromProdutoDTO(produto) {
-    const quantidadeEstoque = produto.quantidadeEstoque ?? 0;
-    const estoqueMinimo = produto.estoqueMinimo ?? 0;
+    const quantidadeEstoque = Math.max(0, Number(produto.quantidadeEstoque) || 0);
+    const estoqueMinimo = Math.max(0, Number(produto.estoqueMinimo) || 0);
+    const limiteProximo = estoqueMinimo + Math.max(1, Math.ceil(estoqueMinimo * 0.2));
 
     let situacao = 'OK';
     if (quantidadeEstoque <= 0) situacao = 'Esgotado';
-    else if (quantidadeEstoque <= estoqueMinimo) situacao = 'Baixo';
+    else if (quantidadeEstoque < estoqueMinimo) situacao = 'Abaixo do mínimo';
+    else if (quantidadeEstoque === estoqueMinimo) situacao = 'No estoque mínimo';
+    else if (quantidadeEstoque <= limiteProximo) situacao = 'Próximo do mínimo';
+    if (['OK', 'Esgotado', 'No estoque mínimo', 'Abaixo do mínimo', 'Próximo do mínimo'].includes(produto.situacaoEstoque)) {
+        situacao = produto.situacaoEstoque;
+    }
 
     return {
         id: produto.id,
+        controlaValidade: Boolean(produto.controlaValidade),
         nome: produto.nome,
         codigo: produto.codigo,
         descricao: produto.descricao,
@@ -135,6 +145,12 @@ export function fromProdutoDTO(produto) {
         precoVenda: produto.precoVenda,
         estoqueMinimo,
         quantidadeEstoque,
+        quantidadeTotal: Number(produto.quantidadeTotal ?? quantidadeEstoque),
+        situacaoValidade: produto.situacaoValidade ?? 'Não informada',
+        nivelValidade: produto.nivelValidade ?? '',
+        unidadesVencidas: Number(produto.unidadesVencidas) || 0,
+        unidadesValidadePendente: Number(produto.unidadesValidadePendente) || 0,
+        proximaValidade: produto.proximaValidade ?? null,
         situacao,
         categoriaId: produto.categoriaId ?? null,
         categoriaNome: produto.categoriaNome ?? produto.categoria?.nome ?? '',
@@ -152,6 +168,8 @@ function toItemPedidoDTO(item) {
         produtoId: Number(item.produtoId),
         quantidade: Number(item.quantidade),
         precoUnitario: Number(item.precoUnitario),
+        lote: item.lote || '',
+        validade: item.validade || null,
     };
 }
 

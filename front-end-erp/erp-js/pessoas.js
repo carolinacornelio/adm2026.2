@@ -35,7 +35,8 @@ function validarPessoa(dados) {
 function configurarFormularioCadastro(formPessoa) {
     const botaoCadastrar = formPessoa.querySelector('button.primario');
 
-    botaoCadastrar.addEventListener('click', async () => {
+    formPessoa.addEventListener('submit', async (evento) => {
+        evento.preventDefault();
         limparMensagem(formPessoa);
         const dados = formParaObjeto(formPessoa);
 
@@ -77,15 +78,19 @@ function criarLinhaPessoa(pessoa) {
     `;
 }
 
+let versaoBusca=0;
 async function carregarListagemPessoas(tbody, termoBusca = '') {
+    const versao=++versaoBusca;
     try {
         const pessoas = (await listarPessoas()).map(fromPessoaDTO);
+        if(versao!==versaoBusca)return;
         const filtradas = termoBusca
             ? pessoas.filter((p) => p.nome.toLowerCase().includes(termoBusca.toLowerCase()))
             : pessoas;
 
         renderizarTabela(tbody, filtradas, criarLinhaPessoa, 'Nenhuma pessoa cadastrada ainda.');
     } catch (erro) {
+        if(versao!==versaoBusca)return;
         console.error(erro);
         tbody.innerHTML = `<tr><td colspan="4">Não foi possível carregar a lista de pessoas.</td></tr>`;
     }

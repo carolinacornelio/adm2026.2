@@ -5,6 +5,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Atendimento ao Cliente | ERP</title>
+<script src="./erp-js/initialUi.js"></script>
 <link href="./css/tela.css" rel="stylesheet"/>
 <link href="./css/atendimento.css" rel="stylesheet"/>
 </head>
@@ -12,24 +13,35 @@
 <div class="layout">
 <aside class="sidebar">
 <div class="logo">ERP</div>
-<nav class="menu">
-<a class="" href="dashboard.html">🏠 Dashboard</a>
-<a class="" href="pessoas-listagem.html">👥 Pessoas</a>
-<a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
-<a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
-<a class="" href="produtos-listagem.html">📦 Produtos</a>
-<a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
-<a class="sub" href="produtos-listagem.html">↳ Listagem</a>
-<a class="sub" data-plano-minimo="PLUS" data-plano-ocultar="true" href="categorias.html">↳ Categorias</a>
-<a class="" href="compras.html">🛒 Compras</a>
-<a class="" href="vendas.html">💰 Vendas</a>
-<a class="" href="estoque.html">📊 Estoque</a>
-<a class="" href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">🤖 Assistente IA</a>
-<a class="ativo" href="atendimento.html">🎧 Atendimento</a>
+<nav class="menu" aria-label="Navegação principal">
+<a href="dashboard.html">Dashboard</a>
+<a href="pos.html" data-troca-sistema="true">POS</a>
+<details class="menu-pasta" data-pasta="cadastros">
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Cadastros</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="pessoas-listagem.html">Pessoas</a>
+<a href="pessoas-cadastro.html">Cadastrar pessoa</a>
+<a href="produtos-listagem.html">Produtos</a>
+<a href="produtos-cadastro.html">Cadastrar produto</a>
+<a href="categorias.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Categorias</a>
+</div></details>
+<details class="menu-pasta" data-pasta="operacao" open>
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Operação</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="compras.html">Compras</a>
+<a href="vendas.html">Vendas</a>
+<a href="historico-vendas.html">Histórico de vendas</a>
+<a href="estoque.html">Estoque</a>
+</div></details>
+<details class="menu-pasta" data-pasta="ferramentas">
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Ferramentas</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Assistente IA</a>
+</div></details>
 </nav>
 </aside>
 <main class="conteudo">
-<header class="topo"><span class="usuario">👤 Usuário ▾</span><button class="botao secundario" data-logout="" type="button">Sair</button></header>
+<header class="topo"><span class="usuario">👤 Usuário ▾</span><a href="atendimento.html" class="atalho-atendimento" title="Central de atendimento" aria-label="Central de atendimento"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="12" width="4" height="7" rx="2"/><rect x="17" y="12" width="4" height="7" rx="2"/><path d="M19 19v1a2 2 0 0 1-2 2h-4"/></svg></a><button class="botao secundario" data-logout="" type="button">Sair</button></header>
 <section class="pagina">
 <div class="titulo"><h1>Central de Atendimento</h1><p>Abra chamados de suporte técnico e acompanhe o andamento.</p></div>
 
@@ -39,15 +51,15 @@
 <form id="formChamado" novalidate>
 <div class="campo">
 <label for="cliente">Cliente</label>
-<input id="cliente" name="cliente" type="text" placeholder="Nome do cliente" autocomplete="off" required/>
+<input maxlength="120" id="cliente" name="cliente" type="text" placeholder="Nome do cliente" autocomplete="off" required/>
 </div>
 <div class="campo">
 <label for="tituloChamado">Título</label>
-<input id="tituloChamado" name="titulo" type="text" placeholder="Ex.: Interface de Lançamento Lenta" autocomplete="off" required/>
+<input maxlength="160" id="tituloChamado" name="titulo" type="text" placeholder="Ex.: Interface de Lançamento Lenta" autocomplete="off" required/>
 </div>
 <div class="campo">
 <label for="descricao">Descrição</label>
-<textarea id="descricao" name="descricao" rows="3" placeholder="Descreva o que está acontecendo" required></textarea>
+<textarea maxlength="2000" id="descricao" name="descricao" rows="3" placeholder="Descreva o que está acontecendo" required></textarea>
 </div>
 <fieldset class="severidade">
 <legend>Severidade</legend>
@@ -78,14 +90,15 @@
 <div class="resumo-item alta"><strong id="total-alta">0</strong><span>Altos</span></div>
 <div class="resumo-item media"><strong id="total-media">0</strong><span>Médios</span></div>
 </div>
-<div class="barra-listagem"><input id="pesquisaChamado" placeholder="🔍  Pesquisar chamado..." type="search"/>
-<select id="filtroSeveridade"><option value="">Todas as severidades</option><option value="critica">Crítica</option><option value="alta">Alta</option><option value="media">Média</option></select></div>
-<table class="tabela">
-<thead><tr><th>Nº</th><th>Cliente</th><th>Título</th><th>Severidade</th><th>Situação</th><th>Aberto em</th></tr></thead>
-<tbody id="listaChamados"></tbody></table>
+<div class="barra-listagem"><input aria-label="Pesquisar chamado" id="pesquisaChamado" placeholder="🔍  Pesquisar chamado..." type="search"/>
+<select aria-label="Filtrar severidade" id="filtroSeveridade"><option value="">Todas as severidades</option><option value="critica">Crítica</option><option value="alta">Alta</option><option value="media">Média</option></select></div>
+<div class="historico-tabela-scroll"><table class="tabela">
+<thead><tr><th>Nº</th><th>Cliente</th><th>Título</th><th>Severidade</th><th>Situação</th><th>Aberto em</th><th>Ação</th></tr></thead>
+<tbody id="listaChamados"></tbody></table></div>
 </div>
 </section>
 </main>
 </div>
+<dialog class="historico-dialog" id="detalheChamado" aria-labelledby="tituloDetalheChamado"><h2 id="tituloDetalheChamado">Chamado</h2><p id="descricaoDetalheChamado" style="white-space:pre-wrap"></p><form id="formSituacaoChamado" class="formulario"><div class="campo"><label for="situacaoChamado">Situação</label><select id="situacaoChamado"><option>Aberto</option><option>Em atendimento</option><option>Resolvido</option><option>Cancelado</option></select></div><p id="erroSituacao" role="alert"></p><div class="botoes"><button class="botao secundario" id="fecharDetalhe" type="button">Fechar</button><button class="botao primario" type="submit">Salvar situação</button></div></form></dialog>
 <script type="module" src="./erp-js/app.js"></script><script type="module" src="./erp-js/atendimento.js"></script></body>
 </html>

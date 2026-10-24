@@ -4,40 +4,52 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Assistente IA | ERP</title>
-<link href="./css/tela.css" rel="stylesheet"/>
+<script src="./erp-js/initialUi.js"></script>
+<link href="./css/tela.css?v=ia-20261021-2" rel="stylesheet"/>
 </head>
 <body data-plano-minimo="PLUS">
 <div class="layout">
 <aside class="sidebar">
 <div class="logo">ERP</div>
-<nav class="menu">
-<a href="dashboard.html">🏠 Dashboard</a>
-<a href="pessoas-listagem.html">👥 Pessoas</a>
-<a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
-<a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
-<a href="produtos-listagem.html">📦 Produtos</a>
-<a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
-<a class="sub" href="produtos-listagem.html">↳ Listagem</a>
-<a class="sub" data-plano-minimo="PLUS" data-plano-ocultar="true" href="categorias.html">↳ Categorias</a>
-<a href="compras.html">🛒 Compras</a>
-<a href="vendas.html">💰 Vendas</a>
-<a href="estoque.html">📊 Estoque</a>
-<a class="ativo" href="ia.html">🤖 Assistente IA</a>
-<a class="" href="atendimento.html">🎧 Atendimento</a>
+<nav class="menu" aria-label="Navegação principal">
+<a href="dashboard.html">Dashboard</a>
+<a href="pos.html" data-troca-sistema="true">POS</a>
+<details class="menu-pasta" data-pasta="cadastros">
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Cadastros</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="pessoas-listagem.html">Pessoas</a>
+<a href="pessoas-cadastro.html">Cadastrar pessoa</a>
+<a href="produtos-listagem.html">Produtos</a>
+<a href="produtos-cadastro.html">Cadastrar produto</a>
+<a href="categorias.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Categorias</a>
+</div></details>
+<details class="menu-pasta" data-pasta="operacao">
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Operação</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="compras.html">Compras</a>
+<a href="vendas.html">Vendas</a>
+<a href="historico-vendas.html">Histórico de vendas</a>
+<a href="estoque.html">Estoque</a>
+</div></details>
+<details class="menu-pasta" data-pasta="ferramentas" open>
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Ferramentas</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="ia.html" class="ativo" aria-current="page" data-plano-minimo="PLUS" data-plano-ocultar="true">Assistente IA</a>
+</div></details>
 </nav>
 </aside>
 <main class="conteudo">
-<header class="topo"><span class="usuario">👤 Usuário ▾</span><button class="botao secundario" data-logout="" type="button">Sair</button></header>
+<header class="topo"><span class="usuario">👤 Usuário ▾</span><a href="atendimento.html" class="atalho-atendimento" title="Central de atendimento" aria-label="Central de atendimento"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="12" width="4" height="7" rx="2"/><rect x="17" y="12" width="4" height="7" rx="2"/><path d="M19 19v1a2 2 0 0 1-2 2h-4"/></svg></a><button class="botao secundario" data-logout="" type="button">Sair</button></header>
 <section class="pagina">
 <div class="titulo">
-<h1>🤖 Assistente IA</h1>
+<h1>Assistente IA</h1>
 <p>Faça perguntas sobre os dados do seu negócio e receba análises baseadas nos números registrados no ERP.</p>
 </div>
 
 <div class="painel ia-painel">
 <div class="ia-aviso">
 <strong>Como funciona</strong>
-<span>O backend consulta somente os dados da sua empresa e retorna análises sobre estoque, faturamento e saída de produtos.</span>
+<span>Consulte vendas, compras, produtos e lotes da sua empresa com respostas baseadas nos dados registrados no ERP.</span>
 </div>
 
 <form id="formIA" class="formulario">
@@ -50,15 +62,17 @@
 </div>
 </form>
 
-<div id="respostaIA" class="ia-resposta" aria-live="polite">A resposta do assistente aparecerá aqui.</div>
+<div id="respostaIA" class="ia-resposta" role="status" aria-live="polite" aria-atomic="true">A resposta da IA aparecerá aqui.</div>
 
 <div class="ia-exemplos">
 <strong>Exemplos de perguntas</strong>
 <div class="ia-exemplos-grid">
 <button type="button" class="acao-mini exemplo-ia" data-pergunta="Quais produtos estão com estoque baixo?">Estoque baixo</button>
-<button type="button" class="acao-mini exemplo-ia" data-pergunta="Quais produtos estão vendendo menos?">Produtos com baixa saída</button>
+<button type="button" class="acao-mini exemplo-ia" data-pergunta="Quais lotes estão vencidos ou a vencer nos próximos 30 dias?">Lotes e validade</button>
+<button type="button" class="acao-mini exemplo-ia" data-pergunta="Quais vendas foram registradas neste mês e em quais datas?">Vendas e datas</button>
+<button type="button" class="acao-mini exemplo-ia" data-pergunta="Quais produtos venderam menos neste mês, incluindo os que não tiveram vendas?">Produtos com baixa saída</button>
 <button type="button" class="acao-mini exemplo-ia" data-pergunta="Como está meu faturamento este mês em comparação ao mês anterior?">Comparar faturamento</button>
-<button type="button" class="acao-mini exemplo-ia" data-pergunta="Quais produtos merecem atenção com base nas vendas e no estoque?">Produtos que merecem atenção</button>
+<button type="button" class="acao-mini exemplo-ia" data-pergunta="Quais produtos merecem atenção por baixa saída neste mês, estoque baixo ou validade dos lotes?">Produtos que merecem atenção</button>
 </div>
 </div>
 </div>
@@ -66,6 +80,6 @@
 </main>
 </div>
 <script type="module" src="./erp-js/app.js"></script>
-<script type="module" src="./erp-js/ia.js"></script>
+<script type="module" src="./erp-js/ia.js?v=20261021-2"></script>
 </body>
 </html>

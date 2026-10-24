@@ -1,0 +1,11 @@
+bin/
+target/
+*.class
+*.log
+.env
+.env.*
+!.env.example
+.m2/
+# Configurações do banco compartilhadas com a equipe por decisão do projeto.
+!/application-local.properties
+!/db.properties

@@ -71,7 +71,7 @@ function configurarFormularioCadastro(formCadastro) {
         try {
             const usuarioCadastroDTO = toUsuarioCadastroDTO(dados);
             await cadastrar(usuarioCadastroDTO);
-            window.location.href = 'dashboard.html';
+            window.location.href = 'selecionar-sistema.html';
         } catch (erro) {
             mostrarErro(formCadastro, erro.message || 'Não foi possível criar sua conta.');
         } finally {
@@ -175,7 +175,7 @@ function configurarSegundoFator() {
         iniciarCarregando(botao, 'Verificando...');
         try {
             await verificarSegundoFator(dados);
-            window.location.href = 'dashboard.html';
+            window.location.href = 'selecionar-sistema.html';
         } catch (erro) {
             mostrarErro(form, erro.message || 'Não foi possível confirmar sua identidade.');
         } finally {

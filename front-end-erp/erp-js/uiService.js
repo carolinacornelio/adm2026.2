@@ -88,12 +88,31 @@ export function limparMensagem(elementoReferencia) {
 }
 
 /**
- * Traduz o campo `situacao` calculado em dto.js (OK/Baixo/Esgotado) para a
- * classe CSS de badge já pronta em tela.css (.status.normal/.baixo/.sem-estoque).
+ * Aplica as mesmas cores de estoque em cadastros e operação.
  */
 export function classeStatusEstoque(situacao) {
-    const mapa = { OK: 'normal', Baixo: 'baixo', Esgotado: 'sem-estoque' };
-    return mapa[situacao] || 'normal';
+    const mapa = { OK: 'normal', Baixo: 'estoque-minimo', 'Abaixo do mínimo': 'estoque-minimo', 'No estoque mínimo': 'estoque-minimo', 'Próximo do mínimo': 'baixo', Esgotado: 'estoque-esgotado' };
+    return mapa[situacao] || 'status-neutro';
+}
+
+export function classeStatusValidade(nivel) {
+    return { BLOQUEADO: 'validade-bloqueada', PRIORIDADE: 'validade-prioridade', IMPORTANTE: 'validade-importante', NORMAL: 'baixo', REGULAR: 'normal' }[nivel] || 'status-neutro';
+}
+
+export function textoStatusValidade(situacao, nivel) {
+    const prioridade = { PRIORIDADE: 'Prioridade', IMPORTANTE: 'Importante', NORMAL: 'Aviso' }[nivel];
+    return situacao === 'A vencer' && prioridade ? `${situacao} · ${prioridade}` : (situacao || 'Não informada');
+}
+
+export function badgeValidade(produto) {
+    const detalhes = [];
+    if (Number(produto.unidadesVencidas) > 0) detalhes.push(`${produto.unidadesVencidas} unidade(s) vencida(s)`);
+    if (Number(produto.unidadesValidadePendente) > 0) detalhes.push(`${produto.unidadesValidadePendente} unidade(s) com validade pendente`);
+    if (produto.proximaValidade) {
+        const data = String(produto.proximaValidade).slice(0,10).split('-').reverse().join('/');
+        detalhes.push(`Próxima validade: ${data}`);
+    }
+    return `<span class="status ${classeStatusValidade(produto.nivelValidade)}">${escapeHtml(textoStatusValidade(produto.situacaoValidade, produto.nivelValidade))}</span>${detalhes.length ? `<small class="status-detalhe">${escapeHtml(detalhes.join(' · '))}</small>` : ''}`;
 }
 
 /**

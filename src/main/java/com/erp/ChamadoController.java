@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 public class ChamadoController {
 
     private static final Set<String> SEVERIDADES = Set.of("critica", "alta", "media");
+    private static final Set<String> SITUACOES = Set.of("Aberto", "Em atendimento", "Resolvido", "Cancelado");
 
     // criadoEm sai como texto ISO em UTC (ex.: 2026-10-14T20:03:51Z); o navegador converte para o fuso local.
     private static final String SELECT =
@@ -54,6 +55,19 @@ public class ChamadoController {
                 Number.class, empresaId, cliente, titulo, descricao, severidade);
 
         return jdbc.queryForMap(SELECT + "WHERE id = ? AND empresa_id = ?", id.longValue(), empresaId);
+    }
+
+    @PutMapping("/{id}/situacao")
+    @Transactional
+    public Map<String, Object> atualizarSituacao(@PathVariable int id,
+            @RequestBody Map<String, Object> dados,
+            @RequestHeader("Authorization") String authorization) {
+        int empresaId = user.empresa(authorization);
+        String situacao = String.valueOf(dados.get("situacao"));
+        if (!SITUACOES.contains(situacao)) throw new IllegalArgumentException("Situação inválida.");
+        if (jdbc.update("UPDATE chamados SET situacao=? WHERE id=? AND empresa_id=?", situacao, id, empresaId) != 1)
+            throw new IllegalArgumentException("Chamado não encontrado.");
+        return jdbc.queryForMap(SELECT + "WHERE id=? AND empresa_id=?", id, empresaId);
     }
 
     private static String obrigatorio(Map<String, Object> dados, String chave, String mensagem, int max) {

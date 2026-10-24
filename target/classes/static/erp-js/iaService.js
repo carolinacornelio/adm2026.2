@@ -8,5 +8,5 @@ export async function perguntarIA(pergunta, historico = []) {
     return apiService.post('/ia/perguntar', {
         pergunta: perguntaLimpa,
         historico: Array.isArray(historico) ? historico.slice(-8) : []
-    });
+    }, { timeoutMs: 300000 });
 }

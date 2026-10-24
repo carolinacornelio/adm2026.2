@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Histórico de Vendas | ERP</title>
+<script src="./erp-js/initialUi.js"></script>
+<link href="./css/tela.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+<div class="logo">ERP</div>
+<nav class="menu" aria-label="Navegação principal">
+<a href="dashboard.html">Dashboard</a>
+<a href="pos.html" data-troca-sistema="true">POS</a>
+<details class="menu-pasta" data-pasta="cadastros">
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Cadastros</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="pessoas-listagem.html">Pessoas</a>
+<a href="pessoas-cadastro.html">Cadastrar pessoa</a>
+<a href="produtos-listagem.html">Produtos</a>
+<a href="produtos-cadastro.html">Cadastrar produto</a>
+<a href="categorias.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Categorias</a>
+</div></details>
+<details class="menu-pasta" data-pasta="operacao" open>
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Operação</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="compras.html">Compras</a>
+<a href="vendas.html">Vendas</a>
+<a href="historico-vendas.html" class="ativo" aria-current="page">Histórico de vendas</a>
+<a href="estoque.html">Estoque</a>
+</div></details>
+<details class="menu-pasta" data-pasta="ferramentas">
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Ferramentas</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Assistente IA</a>
+</div></details>
+</nav>
+</aside>
+<main class="conteudo">
+<header class="topo"><span class="usuario">👤 Usuário ▾</span><a href="atendimento.html" class="atalho-atendimento" title="Central de atendimento" aria-label="Central de atendimento"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="12" width="4" height="7" rx="2"/><rect x="17" y="12" width="4" height="7" rx="2"/><path d="M19 19v1a2 2 0 0 1-2 2h-4"/></svg></a><button class="botao secundario" data-logout="" type="button">Sair</button></header>
+<section class="pagina">
+<div class="titulo"><h1>Histórico de vendas</h1><p>Consulte todas as vendas registradas no ERP e no POS.</p></div>
+<form class="painel historico-filtros" id="filtrosHistorico">
+<div class="campo"><label for="dataHistorico">Pesquisar por dia</label><input id="dataHistorico" name="data" type="date"/></div>
+<div class="campo"><label for="inicioHistorico">De</label><input id="inicioHistorico" name="inicio" type="date"/></div>
+<div class="campo"><label for="fimHistorico">Até</label><input id="fimHistorico" name="fim" type="date"/></div>
+<button class="botao primario" id="buscarHistorico" type="submit">Pesquisar</button>
+<button class="botao secundario" id="limparHistorico" type="button">Limpar</button>
+<small>Use um dia exato ou um intervalo. Sem datas, todas as vendas aparecem.</small>
+</form>
+<div class="painel historico-painel">
+<div class="historico-topo"><h2>Vendas registradas</h2><span id="resumoHistorico" role="status">Carregando...</span></div>
+<div class="historico-tabela-scroll"><table class="tabela"><thead><tr><th>Venda</th><th>Data</th><th>Origem</th><th>Cliente</th><th>Total</th><th></th></tr></thead><tbody id="listaHistorico"><tr><td colspan="6" class="estado-vazio">Carregando vendas...</td></tr></tbody></table></div>
+</div>
+</section>
+</main>
+</div>
+<dialog class="historico-dialog" id="detalhesVenda" aria-labelledby="tituloDetalhesVenda">
+<div class="historico-topo"><h2 id="tituloDetalhesVenda">Detalhes da venda</h2><button class="botao secundario" id="fecharDetalhesVenda" type="button">Fechar</button></div>
+<div id="conteudoDetalhesVenda"></div>
+<div class="botoes comprovante-acoes"><button class="botao primario" id="imprimirComprovante" type="button" disabled>Imprimir / salvar PDF</button></div>
+</dialog>
+<script type="module" src="./erp-js/app.js"></script>
+<script type="module" src="./erp-js/historicoVendas.js"></script>
+</body>
+</html>

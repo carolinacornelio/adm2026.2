@@ -5,14 +5,23 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import java.util.Map;
 
 /** Padroniza erros para que o apiService.js mostre mensagens amigáveis. */
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler({MethodArgumentNotValidException.class, HttpMessageNotReadableException.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    Map<String, String> invalidPayload(Exception e) { return Map.of("message", "Dados inválidos. Confira produtos, quantidades, valores e a confirmação do pagamento."); }
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     Map<String, String> badRequest(IllegalArgumentException e) { return Map.of("message", e.getMessage()); }
+    @ExceptionHandler({org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
+            org.springframework.web.bind.MissingServletRequestParameterException.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    Map<String,String> invalidParameter(Exception e) { return Map.of("message","Parâmetro inválido. Confira números, identificadores e datas no formato AAAA-MM-DD."); }
     @ExceptionHandler(SecurityException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     Map<String, String> unauthorized(SecurityException e) { return Map.of("message", e.getMessage()); }

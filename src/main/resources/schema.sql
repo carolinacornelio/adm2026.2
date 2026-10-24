@@ -122,16 +122,7 @@ CREATE TABLE IF NOT EXISTS contas_receber (
     venda_id INTEGER REFERENCES vendas(id), descricao VARCHAR(255), valor NUMERIC(10,2) NOT NULL,
     vencimento DATE NOT NULL, status VARCHAR(20) DEFAULT 'pendente', data_recebimento DATE
 );
-CREATE TABLE IF NOT EXISTS chamados (
-    id          SERIAL PRIMARY KEY,
-    empresa_id  INTEGER      NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
-    cliente     VARCHAR(120) NOT NULL,
-    titulo      VARCHAR(160) NOT NULL,
-    descricao   TEXT         NOT NULL,
-    severidade  VARCHAR(10)  NOT NULL,   -- critica | alta | media
-    situacao    VARCHAR(20)  NOT NULL DEFAULT 'Aberto',
-    criado_em   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
-);
+
 -- Migração de bases criadas antes de planos, categorias e preços separados.
 ALTER TABLE empresas ADD COLUMN IF NOT EXISTS plano_assinatura VARCHAR(20) DEFAULT 'BASE';
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS pergunta_seguranca_1 VARCHAR(50);
@@ -147,10 +138,119 @@ UPDATE produtos
    SET preco_compra = COALESCE(preco_compra, preco),
        preco_venda = COALESCE(preco_venda, preco)
  WHERE preco_compra IS NULL OR preco_venda IS NULL;
- 
-CREATE INDEX IF NOT EXISTS idx_chamados_empresa ON chamados (empresa_id);
+
 CREATE INDEX IF NOT EXISTS idx_produtos_empresa_categoria ON produtos(empresa_id, categoria_id);
 CREATE INDEX IF NOT EXISTS idx_vendas_empresa_cliente ON vendas(empresa_id, cliente_id);
+CREATE INDEX IF NOT EXISTS idx_vendas_empresa_data ON vendas(empresa_id, data DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_itens_venda_venda ON itens_venda(venda_id);
 CREATE INDEX IF NOT EXISTS idx_itens_compra_compra ON itens_compra(compra_id);
 CREATE INDEX IF NOT EXISTS idx_estoque_empresa_produto ON estoque(empresa_id, produto_id);
+
+-- POS: adições compatíveis com vendas existentes; sem recriar ou remover dados.
+ALTER TABLE vendas ADD COLUMN IF NOT EXISTS origem VARCHAR(20) DEFAULT 'ERP';
+ALTER TABLE vendas ADD COLUMN IF NOT EXISTS pos_subtotal NUMERIC(10,2);
+ALTER TABLE vendas ADD COLUMN IF NOT EXISTS pos_desconto NUMERIC(10,2);
+ALTER TABLE vendas ADD COLUMN IF NOT EXISTS pos_forma_pagamento VARCHAR(20);
+ALTER TABLE vendas ADD COLUMN IF NOT EXISTS pos_valor_recebido NUMERIC(10,2);
+ALTER TABLE vendas ADD COLUMN IF NOT EXISTS pos_troco NUMERIC(10,2);
+ALTER TABLE vendas ADD COLUMN IF NOT EXISTS pos_chave_operacao UUID;
+ALTER TABLE vendas ADD COLUMN IF NOT EXISTS pos_requisicao_hash VARCHAR(64);
+ALTER TABLE itens_venda ADD COLUMN IF NOT EXISTS pos_nome_produto VARCHAR(150);
+ALTER TABLE itens_venda ADD COLUMN IF NOT EXISTS pos_codigo_produto VARCHAR(50);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_vendas_pos_operacao ON vendas(empresa_id,pos_chave_operacao) WHERE pos_chave_operacao IS NOT NULL;
+
+-- Inventário: preserva o saldo anterior como lote legado, sem inventar validade.
+ALTER TABLE produtos ADD COLUMN IF NOT EXISTS controla_validade BOOLEAN NOT NULL DEFAULT false;
+CREATE TABLE IF NOT EXISTS estoque_lotes (
+    id SERIAL PRIMARY KEY,
+    empresa_id INTEGER NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+    produto_id INTEGER NOT NULL REFERENCES produtos(id),
+    estoque_id INTEGER NOT NULL REFERENCES estoque(id) ON DELETE CASCADE,
+    compra_id INTEGER REFERENCES compras(id),
+    codigo VARCHAR(100) NOT NULL,
+    validade DATE,
+    quantidade INTEGER NOT NULL CHECK (quantidade >= 0),
+    legado BOOLEAN NOT NULL DEFAULT false,
+    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_lote_legado ON estoque_lotes(estoque_id) WHERE legado=true;
+CREATE INDEX IF NOT EXISTS idx_lotes_empresa_produto_validade ON estoque_lotes(empresa_id,produto_id,validade,id);
+CREATE TABLE IF NOT EXISTS venda_lotes (
+    id SERIAL PRIMARY KEY,
+    venda_id INTEGER NOT NULL REFERENCES vendas(id) ON DELETE CASCADE,
+    lote_id INTEGER NOT NULL REFERENCES estoque_lotes(id),
+    quantidade INTEGER NOT NULL CHECK (quantidade > 0)
+);
+INSERT INTO estoque_lotes(empresa_id,produto_id,estoque_id,codigo,quantidade,legado)
+SELECT e.empresa_id,e.produto_id,e.id,'LEGADO-'||e.id,e.quantidade,true FROM estoque e
+WHERE e.quantidade>0 AND NOT EXISTS (SELECT 1 FROM estoque_lotes l WHERE l.estoque_id=e.id);
+
+-- Histórico persistente de alertas operacionais; leitura individual por usuário.
+CREATE TABLE IF NOT EXISTS alertas_operacionais (
+ id BIGSERIAL PRIMARY KEY, empresa_id INTEGER NOT NULL REFERENCES empresas(id),
+ chave VARCHAR(180) NOT NULL, tipo VARCHAR(30) NOT NULL, nivel VARCHAR(20) NOT NULL,
+ mensagem TEXT NOT NULL, ativo BOOLEAN NOT NULL DEFAULT true,
+ criado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ atualizado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS alertas_operacionais_ativos ON alertas_operacionais(empresa_id,chave) WHERE ativo=true;
+CREATE INDEX IF NOT EXISTS alertas_operacionais_historico ON alertas_operacionais(empresa_id,id DESC);
+CREATE TABLE IF NOT EXISTS alertas_operacionais_leituras (
+ alerta_id BIGINT NOT NULL REFERENCES alertas_operacionais(id) ON DELETE CASCADE,
+ usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
+ lido_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY(alerta_id,usuario_id)
+);
+
+-- Inventário físico: sessão de contagem, fotografia do saldo e trilha de aprovação.
+CREATE TABLE IF NOT EXISTS inventarios_fisicos (
+    id SERIAL PRIMARY KEY,
+    empresa_id INTEGER NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
+    aprovado_por INTEGER REFERENCES usuarios(id),
+    status VARCHAR(20) NOT NULL DEFAULT 'EM_CONTAGEM' CHECK (status IN ('EM_CONTAGEM','CONCLUIDO')),
+    observacao VARCHAR(500) NOT NULL DEFAULT '',
+    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    concluido_em TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_inventarios_fisicos_empresa_data ON inventarios_fisicos(empresa_id, criado_em DESC);
+CREATE TABLE IF NOT EXISTS inventario_fisico_itens (
+    id SERIAL PRIMARY KEY,
+    inventario_id INTEGER NOT NULL REFERENCES inventarios_fisicos(id) ON DELETE CASCADE,
+    empresa_id INTEGER NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+    produto_id INTEGER NOT NULL REFERENCES produtos(id),
+    quantidade_sistema INTEGER NOT NULL CHECK (quantidade_sistema >= 0),
+    quantidade_contada INTEGER CHECK (quantidade_contada >= 0),
+    estoque_atualizado_em TIMESTAMP,
+    preco_unitario NUMERIC(12,2) NOT NULL DEFAULT 0,
+    observacao VARCHAR(500) NOT NULL DEFAULT '',
+    contado_em TIMESTAMP,
+    contado_por INTEGER REFERENCES usuarios(id),
+    UNIQUE(inventario_id, produto_id)
+);
+CREATE INDEX IF NOT EXISTS idx_inventario_fisico_itens_empresa ON inventario_fisico_itens(empresa_id, inventario_id);
+
+CREATE TABLE IF NOT EXISTS inventario_fisico_ajuste_lotes (
+    id SERIAL PRIMARY KEY,
+    inventario_id INTEGER NOT NULL REFERENCES inventarios_fisicos(id) ON DELETE CASCADE,
+    item_id INTEGER NOT NULL REFERENCES inventario_fisico_itens(id) ON DELETE CASCADE,
+    empresa_id INTEGER NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+    lote_id INTEGER NOT NULL REFERENCES estoque_lotes(id),
+    quantidade INTEGER NOT NULL CHECK (quantidade > 0),
+    tipo VARCHAR(10) NOT NULL CHECK (tipo IN ('SOBRA','FALTA')),
+    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_inventario_fisico_ajustes_lotes ON inventario_fisico_ajuste_lotes(empresa_id,inventario_id);
+
+-- Atendimento: complemento independente, sem substituir tabelas do ERP atual.
+CREATE TABLE IF NOT EXISTS chamados (
+    id SERIAL PRIMARY KEY,
+    empresa_id INTEGER NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+    cliente VARCHAR(120) NOT NULL,
+    titulo VARCHAR(160) NOT NULL,
+    descricao TEXT NOT NULL,
+    severidade VARCHAR(10) NOT NULL,
+    situacao VARCHAR(20) NOT NULL DEFAULT 'Aberto',
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_chamados_empresa ON chamados(empresa_id);

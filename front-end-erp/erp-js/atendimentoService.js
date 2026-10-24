@@ -17,3 +17,7 @@ export async function listarChamados() {
 export async function criarChamado(chamadoDTO) {
     return apiService.post('/chamados', chamadoDTO);
 }
+
+export async function atualizarSituacao(id, situacao) {
+    return apiService.put(`/chamados/${id}/situacao`, { situacao });
+}

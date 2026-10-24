@@ -1,14 +1,15 @@
 /** Controller da Central de Atendimento: abertura e priorização de chamados. */
-import { listarChamados, criarChamado } from './atendimentoService.js';
+import { listarChamados, criarChamado, atualizarSituacao } from './atendimentoService.js';
 import { estaAutenticado } from './authService.js';
 import { iniciarCarregando, pararCarregando, escapeHtml } from './uiService.js';
 
 const NOMES = { critica: 'Crítica', alta: 'Alta', media: 'Média' };
 const PESO = { critica: 3, alta: 2, media: 1 };
-const COLUNAS = 6;
+const COLUNAS = 7;
 
 const $ = (id) => document.getElementById(id);
 let chamados = [];
+let chamadoSelecionado = null;
 
 function lerFormulario(form) {
     const f = new FormData(form);
@@ -52,6 +53,7 @@ function criarLinha(c) {
             <td><span class="selo ${escapeHtml(c.severidade)}">${escapeHtml(NOMES[c.severidade] || c.severidade)}</span></td>
             <td><span class="selo aberto">${escapeHtml(c.situacao)}</span></td>
             <td>${data}</td>
+            <td><button class="botao secundario" type="button" data-chamado="${Number(c.id)}">Detalhes</button></td>
         </tr>`;
 }
 
@@ -119,6 +121,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     configurarFormulario($('formChamado'));
     $('pesquisaChamado').addEventListener('input', renderizarLista);
     $('filtroSeveridade').addEventListener('change', renderizarLista);
+    $('listaChamados').addEventListener('click', (evento) => {
+        const botao = evento.target.closest('[data-chamado]');
+        if (!botao) return;
+        chamadoSelecionado = chamados.find(c => c.id === Number(botao.dataset.chamado));
+        if (!chamadoSelecionado) return;
+        $('tituloDetalheChamado').textContent = `#${chamadoSelecionado.id} — ${chamadoSelecionado.titulo}`;
+        $('descricaoDetalheChamado').textContent = chamadoSelecionado.descricao;
+        $('situacaoChamado').value = chamadoSelecionado.situacao;
+        $('erroSituacao').textContent = '';
+        $('detalheChamado').showModal();
+    });
+    $('fecharDetalhe').addEventListener('click', () => $('detalheChamado').close());
+    $('formSituacaoChamado').addEventListener('submit', async evento => {
+        evento.preventDefault();
+        if (!chamadoSelecionado) return;
+        const botao = evento.target.querySelector('[type="submit"]');
+        iniciarCarregando(botao, 'Salvando...');
+        try {
+            await atualizarSituacao(chamadoSelecionado.id, $('situacaoChamado').value);
+            await recarregar();
+            $('detalheChamado').close();
+        } catch (erro) {
+            $('erroSituacao').textContent = erro.message || 'Não foi possível atualizar a situação.';
+        } finally { pararCarregando(botao); }
+    });
 
     try {
         await recarregar();

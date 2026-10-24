@@ -38,7 +38,7 @@ function popularSelectProdutos(selectElement) {
                 `<option value="${escapeHtml(p.id)}">${escapeHtml(p.nome)} (${escapeHtml(p.codigo)}) — estoque: ${p.quantidadeEstoque}</option>`
         )
         .join('');
-    selectElement.insertAdjacentHTML('beforeend', opcoes);
+    selectElement.innerHTML = `<option value="">Selecione um produto</option>${opcoes}`;
 }
 
 /** Lê o preço unitário já exibido na linha (definido pelo produto escolhido). */

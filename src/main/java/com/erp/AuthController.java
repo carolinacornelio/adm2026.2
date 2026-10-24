@@ -14,4 +14,5 @@ public class AuthController {
     @PostMapping("/login") Map<String,Object> login(@RequestBody Map<String,Object> d) { return service.login(d); }
     /** Confirma as respostas do segundo fator e somente então cria a sessão. */
     @PostMapping("/segundo-fator") Map<String,Object> segundoFator(@RequestBody Map<String,Object> d) { return service.verificarSegundoFator(d); }
+    @PostMapping("/logout") void sair(@RequestHeader("Authorization") String authorization) { service.sair(authorization); }
 }

@@ -45,12 +45,16 @@ function exibirUsuarioLogado() {
     if (usuario && elementoUsuario) {
         elementoUsuario.textContent = `👤 ${usuario.nome} ▾`;
     }
+    const atalho = document.querySelector('.topo .atalho-atendimento');
+    if (atalho && nomeDaPaginaAtual() === 'atendimento.html') {
+        atalho.setAttribute('aria-current', 'page');
+    }
 }
 
 function configurarBotaoLogout() {
     const botaoLogout = document.querySelector('[data-logout]');
     if (botaoLogout) {
-        botaoLogout.addEventListener('click', () => logout());
+        botaoLogout.addEventListener('click', () => { botaoLogout.disabled=true; void logout(); });
     }
 }
 
@@ -64,8 +68,11 @@ function configurarBotaoLogout() {
 // tempo em que uma tela protegida fica "montada" sem usuário logado.
 protegerPaginaInterna();
 
+// O nome fica disponível no sessionStorage desde o login. Atualizá-lo já no
+// início do módulo evita mostrar o rótulo provisório até DOMContentLoaded.
+exibirUsuarioLogado();
+
 document.addEventListener('DOMContentLoaded', () => {
-    exibirUsuarioLogado();
     configurarBotaoLogout();
     aplicarControlePlanos();
 });
