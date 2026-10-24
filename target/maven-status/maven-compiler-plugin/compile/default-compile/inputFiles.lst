@@ -1,3 +1,6 @@
+C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\AlertaController.java
+C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\AlertaMonitor.java
+C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\AlertaService.java
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\ApiConfig.java
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\ApiExceptionHandler.java
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\AuthController.java
@@ -7,6 +10,7 @@ C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\ChamadoControll
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\CurrentUser.java
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\DashboardController.java
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\ErpApplication.java
+C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\EstoqueStatus.java
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\IAConsulta.java
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\IAController.java
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\IAHistoricoItem.java
@@ -14,10 +18,19 @@ C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\IAPerguntaReque
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\IAPlano.java
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\IAService.java
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\IATool.java
+C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\InventarioController.java
+C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\InventarioFisicoController.java
+C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\InventarioService.java
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\MovimentoController.java
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\OllamaClient.java
+C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\OllamaRuntime.java
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\PessoaController.java
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\PlanoInsuficienteException.java
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\PlanService.java
+C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\PosController.java
+C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\PosRealtimeService.java
+C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\PosService.java
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\ProdutoController.java
 C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\ProdutoLoteController.java
+C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\ProdutoValidade.java
+C:\Users\BRAIAN\Documents\GitHub\adm2026.2\src\main\java\com\erp\ValidadeStatus.java
