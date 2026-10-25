@@ -22,6 +22,7 @@
 <a href="compras.html">🛒 Compras</a>
 <a href="vendas.html">💰 Vendas</a>
 <a href="estoque.html">📊 Estoque</a>
+<a href="compliance.html">🛡️ Compliance</a>
 <a class="ativo" href="ia.html">🤖 Assistente IA</a>
 </nav>
 </aside>
@@ -36,13 +37,13 @@
 <div class="painel ia-painel">
 <div class="ia-aviso">
 <strong>Como funciona</strong>
-<span>O assistente entende perguntas livres, identifica quais dados do ERP precisa consultar e responde usando somente os dados da sua empresa. Você também pode continuar a conversa com perguntas de acompanhamento.</span>
+<span>O backend consulta somente os dados da sua empresa e retorna análises sobre estoque, faturamento e saída de produtos.</span>
 </div>
 
 <form id="formIA" class="formulario">
 <div class="campo">
 <label for="perguntaIA">Pergunta</label>
-<textarea id="perguntaIA" name="pergunta" rows="4" placeholder="Ex.: Como estão minhas vendas este mês e quais produtos estão com estoque baixo?"></textarea>
+<textarea id="perguntaIA" name="pergunta" rows="4" placeholder="Ex.: Como está meu faturamento este mês em comparação ao mês anterior?"></textarea>
 </div>
 <div class="botoes">
 <button class="botao primario" id="btnPerguntarIA" type="submit">Perguntar à IA</button>
@@ -52,7 +53,7 @@
 <div id="respostaIA" class="ia-resposta" aria-live="polite">A resposta do assistente aparecerá aqui.</div>
 
 <div class="ia-exemplos">
-<strong>Exemplos de perguntas</strong><span class="texto-auxiliar">Você não precisa seguir um formato fixo. Escreva do seu jeito.</span>
+<strong>Exemplos de perguntas</strong>
 <div class="ia-exemplos-grid">
 <button type="button" class="acao-mini exemplo-ia" data-pergunta="Quais produtos estão com estoque baixo?">Estoque baixo</button>
 <button type="button" class="acao-mini exemplo-ia" data-pergunta="Quais produtos estão vendendo menos?">Produtos com baixa saída</button>

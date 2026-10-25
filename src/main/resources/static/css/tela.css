@@ -180,6 +180,3 @@ input:focus, select:focus, textarea:focus { border-color: var(--azul); }
 .analise-faturamento p { margin-top: 6px; color: #344054; font-size: 13px; }
 @media (max-width: 900px) { .cartoes-faturamento { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 650px) { .cartoes-faturamento { grid-template-columns: 1fr; } }
-
-/* Assistente IA: texto auxiliar sem alterar o layout existente. */
-.texto-auxiliar { display:block; margin-top:4px; opacity:.75; font-size:.9rem; }

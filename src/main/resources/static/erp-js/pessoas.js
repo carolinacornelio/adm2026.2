@@ -35,7 +35,8 @@ function validarPessoa(dados) {
 function configurarFormularioCadastro(formPessoa) {
     const botaoCadastrar = formPessoa.querySelector('button.primario');
 
-    botaoCadastrar.addEventListener('click', async () => {
+    const salvar = async (evento) => {
+        if (evento) evento.preventDefault();
         limparMensagem(formPessoa);
         const dados = formParaObjeto(formPessoa);
 
@@ -55,7 +56,10 @@ function configurarFormularioCadastro(formPessoa) {
         } finally {
             pararCarregando(botaoCadastrar);
         }
-    });
+    };
+
+    formPessoa.addEventListener('submit', salvar);
+    botaoCadastrar.addEventListener('click', salvar);
 }
 
 // ---------------------------------------------------------------------------

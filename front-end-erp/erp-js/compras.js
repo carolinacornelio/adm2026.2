@@ -1,44 +1,53 @@
 /**
  * compras.js
  * ---------------------------------------------------------------------------
- * Controller de compras.html. Permite escolher um fornecedor, adicionar
- * várias linhas de produto/quantidade, usa o preço cadastrado automaticamente
- * e calcula o total
- * e, ao finalizar, registrar a compra (o que também dá entrada no estoque —
- * ver comprasService.js).
+ * Controller de compras.html com controles de alçada e compliance.
  * ---------------------------------------------------------------------------
  */
 
 import { listarPessoas } from './pessoasService.js';
 import { listarProdutos } from './produtosService.js';
-import { criarCompra } from './comprasService.js';
+import { criarCompra, listarCompras } from './comprasService.js';
+import { complianceService } from './complianceService.js';
 import { estaAutenticado } from './authService.js';
 import { fromPessoaDTO, fromProdutoDTO, toCompraDTO } from './dto.js';
-import { iniciarCarregando, pararCarregando, mostrarErro, limparMensagem, escapeHtml } from './uiService.js';
+import { iniciarCarregando, pararCarregando, mostrarErro, limparMensagem, escapeHtml, notificarSucesso, notificarErro } from './uiService.js';
 
-let produtosDisponiveis = []; // cache em memória, carregado uma vez ao abrir a tela
+let produtosDisponiveis = [];
 
 function formatarMoeda(valor) {
     return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-/** Preenche um <select> com uma lista de pessoas (fornecedores). */
 function popularSelectFornecedores(selectElement, fornecedores) {
-    const opcoes = fornecedores
+    if (!selectElement) return;
+    const opcoes = (fornecedores || [])
         .map((f) => `<option value="${escapeHtml(f.id)}">${escapeHtml(f.nome)}</option>`)
         .join('');
-    selectElement.insertAdjacentHTML('beforeend', opcoes);
+    selectElement.innerHTML = '<option value="">Selecione um fornecedor</option>' + opcoes;
 }
 
-/** Preenche um <select name="produto"> (de uma linha da tabela) com os produtos cadastrados. */
 function popularSelectProdutos(selectElement) {
-    const opcoes = produtosDisponiveis
-        .map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.nome)} (${escapeHtml(p.codigo)})</option>`)
+    if (!selectElement) return;
+    const opcoes = (produtosDisponiveis || [])
+        .map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.nome)} (${escapeHtml(p.codigo || p.id)})</option>`)
         .join('');
-    selectElement.insertAdjacentHTML('beforeend', opcoes);
+    selectElement.innerHTML = '<option value="">Selecione um produto</option>' + opcoes;
 }
 
-/** Recalcula o subtotal de UMA linha (quantidade × preço) e devolve o valor numérico. */
+async function popularSelectContratos(selectElement) {
+    try {
+        const contratos = await complianceService.listarContratos();
+        const contratosAprovados = contratos.filter(c => c.status === 'APROVADO');
+        const opcoes = contratosAprovados
+            .map(c => `<option value="${c.id}">${escapeHtml(c.numeroContrato)} - ${escapeHtml(c.fornecedorNome)} (${formatarMoeda(c.valorTotal)})</option>`)
+            .join('');
+        selectElement.innerHTML = '<option value="">Selecione um contrato homologado</option>' + opcoes;
+    } catch (e) {
+        console.error('Erro ao listar contratos homologados:', e);
+    }
+}
+
 function recalcularSubtotalLinha(linha) {
     const quantidade = Number(linha.querySelector('[name="quantidade"]').value) || 0;
     const preco = Number(linha.querySelector('.preco-unitario').dataset.preco) || 0;
@@ -47,7 +56,6 @@ function recalcularSubtotalLinha(linha) {
     return subtotal;
 }
 
-/** Soma o subtotal de todas as linhas e atualiza o "Total" geral do formulário. */
 function recalcularTotalGeral(tbody, elementoTotal) {
     let total = 0;
     tbody.querySelectorAll('tr').forEach((linha) => {
@@ -56,7 +64,6 @@ function recalcularTotalGeral(tbody, elementoTotal) {
     elementoTotal.textContent = formatarMoeda(total);
 }
 
-/** Cria uma nova linha de item clonando a última e limpando os valores preenchidos. */
 function adicionarLinha(tbody) {
     const ultimaLinha = tbody.querySelector('tr:last-child');
     const novaLinha = ultimaLinha.cloneNode(true);
@@ -70,7 +77,6 @@ function adicionarLinha(tbody) {
     tbody.appendChild(novaLinha);
 }
 
-/** Remove uma linha; se for a única restante, apenas limpa os campos dela. */
 function removerLinha(tbody, linha, elementoTotal) {
     const linhas = tbody.querySelectorAll('tr');
     if (linhas.length === 1) {
@@ -84,7 +90,6 @@ function removerLinha(tbody, linha, elementoTotal) {
     recalcularTotalGeral(tbody, elementoTotal);
 }
 
-/** Lê todas as linhas preenchidas da tabela e monta a lista de itens para o DTO. */
 function coletarItens(tbody) {
     const itens = [];
     tbody.querySelectorAll('tr').forEach((linha) => {
@@ -105,6 +110,94 @@ function validarCompra(fornecedorId, data, itens) {
     return null;
 }
 
+async function carregarHistoricoCompras() {
+    const tbody = document.getElementById('tabelaHistoricoCompras');
+    if (!tbody) return;
+
+    try {
+        const compras = await listarCompras();
+        if (compras.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--cinza);">Nenhuma compra realizada ainda.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = compras.map(c => {
+            const dataFmt = c.data ? new Date(c.data + 'T00:00:00').toLocaleDateString('pt-BR') : '-';
+            const totalFmt = formatarMoeda(c.total);
+
+            let badgeStatus = 'badge-baixa';
+            let rotuloStatus = c.status;
+
+            if (c.status === 'PENDENTE_APROVACAO') {
+                badgeStatus = 'badge-alta';
+                rotuloStatus = 'Aguardando Aprovação';
+            } else if (c.status === 'AGUARDANDO_NIVEL_2') {
+                badgeStatus = 'badge-critica';
+                rotuloStatus = 'Aguardando Aprovação';
+            } else if (c.status === 'CONCLUIDA') {
+                badgeStatus = 'badge-conforme';
+                rotuloStatus = 'Aprovada';
+            } else if (c.status === 'PAGO') {
+                badgeStatus = 'badge-media';
+                rotuloStatus = 'Pago (Liquidado)';
+            }
+
+            const precisaAprovacao = c.status === 'PENDENTE_APROVACAO' || c.status === 'AGUARDANDO_NIVEL_2';
+            const prontoParaPagar = c.status === 'CONCLUIDA';
+
+            return `
+                <tr>
+                    <td><strong>#${c.id}</strong></td>
+                    <td>${dataFmt}</td>
+                    <td>${escapeHtml(c.fornecedorNome || 'Fornecedor #' + c.fornecedorId)}</td>
+                    <td>${escapeHtml(c.solicitanteNome || '-')}</td>
+                    <td><small>${escapeHtml(c.tipoDocumento || 'MERCADORIA')} ${c.notaFiscal ? ' | NF: ' + escapeHtml(c.notaFiscal) : ''}</small></td>
+                    <td><strong>${totalFmt}</strong></td>
+                    <td><span class="badge ${badgeStatus}">${rotuloStatus}</span></td>
+                    <td>
+                        ${precisaAprovacao ? `
+                            <button class="acao-tabela-btn acao-tabela-aprovar" data-aprovar-compra="${c.id}" type="button">Aprovar Alçada</button>
+                        ` : ''}
+                        ${prontoParaPagar ? `
+                            <button class="acao-tabela-btn" style="background: var(--azul); color: white;" data-pagar-compra="${c.id}" type="button">Pagar (SoD)</button>
+                        ` : ''}
+                        ${c.status === 'PAGO' ? '<span style="color: var(--verde); font-weight: 600;">✓ Quitado</span>' : ''}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        tbody.querySelectorAll('[data-aprovar-compra]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-aprovar-compra');
+                try {
+                    const resp = await complianceService.aprovarCompra(id);
+                    notificarSucesso(resp.mensagem || 'Aprovação registrada com sucesso.');
+                    await carregarHistoricoCompras();
+                } catch (err) {
+                    notificarErro(err.message || 'Erro ao aprovar compra.');
+                }
+            });
+        });
+
+        tbody.querySelectorAll('[data-pagar-compra]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-pagar-compra');
+                try {
+                    const resp = await complianceService.liquidarPagamento(id);
+                    notificarSucesso(resp.mensagem || 'Pagamento liquidado com sucesso.');
+                    await carregarHistoricoCompras();
+                } catch (err) {
+                    notificarErro(err.message || 'Erro ao processar pagamento.');
+                }
+            });
+        });
+    } catch (e) {
+        console.error('Erro ao listar compras:', e);
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--vermelho);">${escapeHtml(e.message || 'Erro ao carregar histórico de compras.')}</td></tr>`;
+    }
+}
+
 async function inicializarTelaCompras(form) {
     const selectFornecedor = document.getElementById('selectFornecedor');
     const inputData = document.getElementById('inputDataCompra');
@@ -112,23 +205,47 @@ async function inicializarTelaCompras(form) {
     const elementoTotal = document.getElementById('totalCompra');
     const botaoAdicionar = document.getElementById('btnAdicionarItemCompra');
     const botaoFinalizar = document.getElementById('btnFinalizarCompra');
+    const selectTipoDoc = document.getElementById('selectTipoDoc');
+    const selectContrato = document.getElementById('selectContrato');
+    const inputNotaFiscal = document.getElementById('inputNotaFiscal');
 
-    // Data de hoje já vem preenchida, por conveniência.
     inputData.value = new Date().toISOString().split('T')[0];
 
-    // Carrega fornecedores (pessoas do tipo Fornecedor) e produtos cadastrados.
-    const [pessoas, produtos] = await Promise.all([listarPessoas(), listarProdutos()]);
-    const fornecedores = pessoas.map(fromPessoaDTO).filter((p) => p.tipoTexto.includes('Fornecedor'));
-    produtosDisponiveis = produtos.map(fromProdutoDTO);
+    const [resPessoas, resProdutos] = await Promise.allSettled([listarPessoas(), listarProdutos()]);
 
-    popularSelectFornecedores(selectFornecedor, fornecedores);
-    popularSelectProdutos(tbody.querySelector('[name="produto"]'));
+    if (resPessoas.status === 'fulfilled') {
+        const fornecedores = (resPessoas.value || [])
+            .map(fromPessoaDTO)
+            .filter((p) => p && p.tipoTexto && p.tipoTexto.toLowerCase().includes('fornecedor'));
+        popularSelectFornecedores(selectFornecedor, fornecedores);
+    } else {
+        console.error('Erro ao carregar fornecedores:', resPessoas.reason);
+        mostrarErro(form, resPessoas.reason?.message || 'Não foi possível carregar a lista de fornecedores.');
+    }
 
-    // Quando o produto de uma linha muda, sugere o preço de compra cadastrado.
+    if (resProdutos.status === 'fulfilled') {
+        produtosDisponiveis = (resProdutos.value || []).map(fromProdutoDTO);
+        popularSelectProdutos(tbody.querySelector('[name="produto"]'));
+    } else {
+        console.error('Erro ao carregar produtos:', resProdutos.reason);
+        mostrarErro(form, resProdutos.reason?.message || 'Não foi possível carregar a lista de produtos.');
+    }
+
+    try {
+        await popularSelectContratos(selectContrato);
+    } catch (e) {
+        console.error('Erro ao listar contratos homologados:', e);
+    }
+
+    try {
+        await carregarHistoricoCompras();
+    } catch (e) {
+        console.error('Erro ao carregar histórico de compras:', e);
+    }
+
     tbody.addEventListener('change', (evento) => {
         if (evento.target.matches('[name="produto"]')) {
             const linha = evento.target.closest('tr');
-            // O backend envia id numérico, mas o valor do select é string.
             const produto = produtosDisponiveis.find(
                 (p) => String(p.id) === String(evento.target.value)
             );
@@ -140,14 +257,12 @@ async function inicializarTelaCompras(form) {
         }
     });
 
-    // Somente a quantidade é editável; o preço vem do produto escolhido.
     tbody.addEventListener('input', (evento) => {
         if (evento.target.matches('[name="quantidade"]')) {
             recalcularTotalGeral(tbody, elementoTotal);
         }
     });
 
-    // Remover item (delegação: funciona também nas linhas adicionadas depois).
     tbody.addEventListener('click', (evento) => {
         const botaoRemover = evento.target.closest('[data-remover-item]');
         if (!botaoRemover) return;
@@ -165,8 +280,11 @@ async function inicializarTelaCompras(form) {
         const fornecedorId = selectFornecedor.value;
         const data = inputData.value;
         const itens = coletarItens(tbody);
+        const tipoDocumento = selectTipoDoc?.value || 'MERCADORIA';
+        const contratoId = selectContrato?.value || null;
+        const notaFiscal = inputNotaFiscal?.value.trim() || '';
 
-        const erroValidacao = validarCompra(fornecedorId, data, itens);
+        const erroValidacao = validarCompra(fornecedorId, data, itens, tipoDocumento, contratoId);
         if (erroValidacao) {
             mostrarErro(form, erroValidacao);
             return;
@@ -174,9 +292,20 @@ async function inicializarTelaCompras(form) {
 
         iniciarCarregando(botaoFinalizar, 'Registrando...');
         try {
-            const compraDTO = toCompraDTO({ fornecedorId, data, itens });
-            await criarCompra(compraDTO);
-            window.location.href = 'dashboard.html';
+            const compraDTO = toCompraDTO({ fornecedorId, data, itens, tipoDocumento, notaFiscal, contratoId });
+            const resp = await criarCompra(compraDTO);
+            
+            if (resp.status === 'PENDENTE_APROVACAO') {
+                notificarSucesso('Pedido criado com sucesso! Devido ao valor (>= R$ 10.000,00), a transação exige aprovação de alçada dupla.');
+            } else {
+                notificarSucesso('Compra registrada com sucesso!');
+            }
+
+            await carregarHistoricoCompras();
+            // Limpa itens
+            tbody.innerHTML = `<tr data-item="template"><td><select name="produto"><option value="">Selecione um produto</option></select></td><td><input min="1" name="quantidade" type="number" value=""/></td><td class="preco-unitario" data-preco="0">R$ 0,00</td><td class="coluna-subtotal">R$ 0,00</td><td><button class="botao-remover-item" data-remover-item title="Remover item" type="button">❌</button></td></tr>`;
+            popularSelectProdutos(tbody.querySelector('[name="produto"]'));
+            recalcularTotalGeral(tbody, elementoTotal);
         } catch (erro) {
             mostrarErro(form, erro.message || 'Não foi possível registrar a compra.');
         } finally {
@@ -187,7 +316,6 @@ async function inicializarTelaCompras(form) {
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!estaAutenticado()) return;
-
     const form = document.getElementById('formCompra');
     if (form) inicializarTelaCompras(form);
 });

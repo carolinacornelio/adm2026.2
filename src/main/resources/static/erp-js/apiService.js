@@ -19,9 +19,10 @@
  */
 
 // Em rede local, usa automaticamente a máquina que está servindo o frontend.
-// Exemplo em ambiente local:      http://localhost:8080/api
-// Exemplo em produção (deploy):   https://SEU-DOMINIO.com/api
-const API_BASE_URL = `${window.location.protocol}//${window.location.hostname || 'localhost'}:8080/api`;
+// Suporta http, https e também abertura direta via file:
+const protocol = (window.location && window.location.protocol === 'file:') ? 'http:' : (window.location?.protocol || 'http:');
+const hostname = (window.location && window.location.hostname) ? window.location.hostname : 'localhost';
+const API_BASE_URL = `${protocol}//${hostname}:8080/api`;
 
 /**
  * Erro customizado para falhas de API.
@@ -107,9 +108,16 @@ async function request(endpoint, { method = 'GET', body, headers } = {}) {
     }
 
     if (!response.ok) {
+        if (response.status === 401 && !endpoint.startsWith('/auth/')) {
+            sessionStorage.removeItem('authToken');
+            sessionStorage.removeItem('usuario');
+            if (typeof window !== 'undefined' && !window.location.pathname.endsWith('login.html')) {
+                window.location.href = 'login.html';
+            }
+        }
         // Se o Spring devolver um corpo de erro (ex: {"message": "..."}),
         // priorizamos essa mensagem; senão usamos uma mensagem genérica.
-        const mensagem = (dados && dados.message) || mensagemParaStatus(response.status);
+        const mensagem = (dados && (dados.message || dados.mensagem)) || mensagemParaStatus(response.status);
         throw new ApiError(mensagem, response.status, dados);
     }
 
@@ -127,12 +135,18 @@ async function request(endpoint, { method = 'GET', body, headers } = {}) {
  *   const nova    = await apiService.post('/pessoas', pessoaDTO);
  * ---------------------------------------------------------------------------
  */
+export const get = (endpoint) => request(endpoint, { method: 'GET' });
+export const post = (endpoint, body) => request(endpoint, { method: 'POST', body });
+export const put = (endpoint, body) => request(endpoint, { method: 'PUT', body });
+export const patch = (endpoint, body) => request(endpoint, { method: 'PATCH', body });
+export const del = (endpoint) => request(endpoint, { method: 'DELETE' });
+
 export const apiService = {
-    get: (endpoint) => request(endpoint, { method: 'GET' }),
-    post: (endpoint, body) => request(endpoint, { method: 'POST', body }),
-    put: (endpoint, body) => request(endpoint, { method: 'PUT', body }),
-    patch: (endpoint, body) => request(endpoint, { method: 'PATCH', body }),
-    delete: (endpoint) => request(endpoint, { method: 'DELETE' }),
+    get,
+    post,
+    put,
+    patch,
+    delete: del,
 };
 
 /**

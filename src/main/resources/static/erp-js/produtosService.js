@@ -81,3 +81,13 @@ export async function ajustarEstoque(produtoId, quantidadeDelta) {
     const novaQuantidade = (produto.quantidadeEstoque || 0) + quantidadeDelta;
     return storageService.atualizar(TABELA, produtoId, { quantidadeEstoque: novaQuantidade });
 }
+
+export const produtosService = {
+    listarProdutos,
+    buscarProduto,
+    criarProduto,
+    atualizarProduto,
+    removerProduto,
+    ajustarEstoque,
+};
+

@@ -1,54 +1,155 @@
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Nova Compra | ERP</title>
-<link href="./css/tela.css" rel="stylesheet"/>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Compras & Alçadas | ERP</title>
+    <link href="./css/tela.css" rel="stylesheet"/>
+    <link href="./css/compliance.css" rel="stylesheet"/>
 </head>
 <body>
 <div class="layout">
-<aside class="sidebar">
-<div class="logo">ERP</div>
-<nav class="menu">
-<a class="" href="dashboard.html">🏠 Dashboard</a>
-<a class="" href="pessoas-listagem.html">👥 Pessoas</a>
-<a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
-<a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
-<a class="" href="produtos-listagem.html">📦 Produtos</a>
-<a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
-<a class="sub" href="produtos-listagem.html">↳ Listagem</a>
-<a class="sub" data-plano-minimo="PLUS" data-plano-ocultar="true" href="categorias.html">↳ Categorias</a>
-<a class="ativo" href="compras.html">🛒 Compras</a>
-<a class="" href="vendas.html">💰 Vendas</a>
-<a class="" href="estoque.html">📊 Estoque</a>
-<a class="" href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">🤖 Assistente IA</a>
-</nav>
-</aside>
-<main class="conteudo">
-<header class="topo"><span class="usuario">👤 Usuário ▾</span><button class="botao secundario" data-logout="" type="button">Sair</button></header>
-<section class="pagina">
-<div class="titulo"><h1>Nova Compra</h1><p>Registre uma compra e aumente o estoque automaticamente.</p></div>
-<div class="painel">
-<form class="formulario" id="formCompra">
-<div class="linha">
-<div class="campo"><label>Fornecedor</label><select id="selectFornecedor" name="fornecedorId"><option value="">Selecione um fornecedor</option></select></div>
-<div class="campo"><label>Data</label><input id="inputDataCompra" name="data" type="date"/></div>
+    <aside class="sidebar">
+        <div class="logo">ERP</div>
+        <nav class="menu">
+            <a class="" href="dashboard.html">🏠 Dashboard</a>
+            <a class="" href="pessoas-listagem.html">👥 Pessoas</a>
+            <a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
+            <a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
+            <a class="" href="produtos-listagem.html">📦 Produtos</a>
+            <a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
+            <a class="sub" href="produtos-listagem.html">↳ Listagem</a>
+            <a class="sub" data-plano-minimo="PLUS" data-plano-ocultar="true" href="categorias.html">↳ Categorias</a>
+            <a class="ativo" href="compras.html">🛒 Compras</a>
+            <a class="" href="vendas.html">💰 Vendas</a>
+            <a class="" href="estoque.html">📊 Estoque</a>
+            <a class="" href="compliance.html">🛡️ Compliance</a>
+            <a class="" href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">🤖 Assistente IA</a>
+        </nav>
+    </aside>
+
+    <main class="conteudo">
+        <header class="topo">
+            <span class="usuario">👤 Usuário ▾</span>
+            <button class="botao secundario" data-logout="" type="button">Sair</button>
+        </header>
+
+        <section class="pagina">
+            <div class="titulo">
+                <h1>Gestão de Compras e Alçadas</h1>
+                <p>Controle de aquisições com dupla alçada (>= R$ 10.000,00) e conformidade regulamentar.</p>
+            </div>
+
+            <!-- Painel de Cadastro de Compra -->
+            <div class="painel">
+                <form class="formulario" id="formCompra">
+                    <div class="linha">
+                        <div class="campo">
+                            <label>Fornecedor</label>
+                            <select id="selectFornecedor" name="fornecedorId">
+                                <option value="">Selecione um fornecedor</option>
+                            </select>
+                        </div>
+                        <div class="campo">
+                            <label>Data</label>
+                            <input id="inputDataCompra" name="data" type="date"/>
+                        </div>
+                    </div>
+
+                    <div class="linha">
+                        <div class="campo">
+                            <label>Tipo de Operação</label>
+                            <select id="selectTipoDoc" name="tipoDocumento">
+                                <option value="MERCADORIA">Mercadoria / Produtos</option>
+                                <option value="SERVICO">Prestação de Serviços (Exige Contrato)</option>
+                            </select>
+                        </div>
+                        <div class="campo" id="campoContratoContainer">
+                            <label>Contrato Vinculado</label>
+                            <select id="selectContrato" name="contratoId">
+                                <option value="">Selecione um contrato homologado</option>
+                            </select>
+                        </div>
+                        <div class="campo">
+                            <label>Nota Fiscal (NF-e / NFS-e)</label>
+                            <input id="inputNotaFiscal" name="notaFiscal" placeholder="Ex: NF-12345" type="text"/>
+                        </div>
+                    </div>
+
+                    <div class="produtos-compra">
+                        <table class="tabela">
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th>Quantidade</th>
+                                    <th>Preço Unitário</th>
+                                    <th>Total</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="corpoItensCompra">
+                                <tr data-item="template">
+                                    <td>
+                                        <select name="produto">
+                                            <option value="">Selecione um produto</option>
+                                        </select>
+                                    </td>
+                                    <td><input min="1" name="quantidade" type="number" value=""/></td>
+                                    <td class="preco-unitario" data-preco="0">R$ 0,00</td>
+                                    <td class="coluna-subtotal">R$ 0,00</td>
+                                    <td>
+                                        <button class="botao-remover-item" data-remover-item title="Remover item" type="button">❌</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <br/>
+                        <button class="botao secundario" id="btnAdicionarItemCompra" type="button">+ Adicionar produto</button>
+                    </div>
+
+                    <div class="total">Total: <span id="totalCompra">R$ 0,00</span></div>
+
+                    <div class="botoes">
+                        <a class="botao secundario" href="dashboard.html">Cancelar</a>
+                        <button class="botao primario" id="btnFinalizarCompra" type="button">Finalizar Compra</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tabela de Compras Realizadas e Alçadas de Compliance -->
+            <div class="painel" style="margin-top: 30px;">
+                <div class="barra-listagem">
+                    <div>
+                        <h3>Histórico de Pedidos de Compra & Alçadas</h3>
+                        <p class="texto-secundario">Acompanhamento do fluxo de aprovação e liquidação SoD.</p>
+                    </div>
+                </div>
+
+                <table class="tabela-compliance">
+                    <thead>
+                        <tr>
+                            <th>Nº Pedido</th>
+                            <th>Data</th>
+                            <th>Fornecedor</th>
+                            <th>Solicitante</th>
+                            <th>Tipo / NF</th>
+                            <th>Total</th>
+                            <th>Status Alçada</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaHistoricoCompras">
+                        <tr>
+                            <td colspan="8" style="text-align: center; color: var(--cinza);">Carregando pedidos de compra...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
 </div>
-<div class="produtos-compra">
-<table class="tabela">
-<thead><tr><th>Produto</th><th>Quantidade</th><th>Preço Unitário</th><th>Total</th><th></th></tr></thead>
-<tbody id="corpoItensCompra"><tr data-item="template"><td><select name="produto"><option value="">Selecione um produto</option></select></td><td><input min="1" name="quantidade" type="number" value=""/></td><td class="preco-unitario" data-preco="0">R$ 0,00</td><td class="coluna-subtotal">R$ 0,00</td><td><button class="botao-remover-item" data-remover-item type="button" title="Remover item">❌</button></td></tr></tbody>
-</table>
-<br/><button class="botao secundario" id="btnAdicionarItemCompra" type="button">+ Adicionar produto</button>
-</div>
-<div class="total">Total: <span id="totalCompra">R$ 0,00</span></div>
-<div class="botoes"><a class="botao secundario" href="dashboard.html">Cancelar</a><button class="botao primario" id="btnFinalizarCompra" type="button">Finalizar Compra</button></div>
-</form>
-</div>
-</section>
-</main>
-</div>
-<script type="module" src="./erp-js/app.js"></script><script type="module" src="./erp-js/compras.js"></script></body>
+
+<script type="module" src="./erp-js/app.js"></script>
+<script type="module" src="./erp-js/compras.js"></script>
+</body>
 </html>

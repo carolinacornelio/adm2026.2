@@ -1,50 +1,120 @@
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Cadastro de Pessoas | ERP</title>
-<link href="./css/tela.css" rel="stylesheet"/>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Cadastro de Pessoas | ERP</title>
+    <link href="./css/tela.css" rel="stylesheet"/>
 </head>
 <body>
 <div class="layout">
-<aside class="sidebar">
-<div class="logo">ERP</div>
-<nav class="menu">
-<a class="" href="dashboard.html">🏠 Dashboard</a>
-<a class="ativo" href="pessoas-listagem.html">👥 Pessoas</a>
-<a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
-<a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
-<a class="" href="produtos-listagem.html">📦 Produtos</a>
-<a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
-<a class="sub" href="produtos-listagem.html">↳ Listagem</a>
-<a class="sub" data-plano-minimo="PLUS" data-plano-ocultar="true" href="categorias.html">↳ Categorias</a>
-<a class="" href="compras.html">🛒 Compras</a>
-<a class="" href="vendas.html">💰 Vendas</a>
-<a class="" href="estoque.html">📊 Estoque</a>
-<a class="" href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">🤖 Assistente IA</a>
-</nav>
-</aside>
-<main class="conteudo">
-<header class="topo"><span class="usuario">👤 Usuário ▾</span><button class="botao secundario" data-logout="" type="button">Sair</button></header>
-<section class="pagina">
-<div class="titulo"><h1>Cadastro de Pessoa</h1><p>Cadastre clientes e fornecedores.</p></div>
-<div class="painel">
-<form class="formulario" id="formPessoa">
-<div class="campo"><label>Nome</label><input name="nome" placeholder="Digite o nome" type="text"/></div>
-<div class="campo"><label>CPF/CNPJ</label><input name="documento" placeholder="Digite o CPF ou CNPJ" type="text"/></div>
-<div class="linha">
-<div class="campo"><label>Telefone</label><input name="telefone" placeholder="Digite o telefone" type="text"/></div>
-<div class="campo"><label>E-mail</label><input name="email" placeholder="Digite o e-mail" type="email"/></div>
+    <aside class="sidebar">
+        <div class="logo">ERP</div>
+        <nav class="menu">
+            <a class="" href="dashboard.html">🏠 Dashboard</a>
+            <a class="ativo" href="pessoas-listagem.html">👥 Pessoas</a>
+            <a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
+            <a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
+            <a class="" href="produtos-listagem.html">📦 Produtos</a>
+            <a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
+            <a class="sub" href="produtos-listagem.html">↳ Listagem</a>
+            <a class="sub" data-plano-minimo="PLUS" data-plano-ocultar="true" href="categorias.html">↳ Categorias</a>
+            <a class="" href="compras.html">🛒 Compras</a>
+            <a class="" href="vendas.html">💰 Vendas</a>
+            <a class="" href="estoque.html">📊 Estoque</a>
+            <a class="" href="compliance.html">🛡️ Compliance</a>
+            <a class="" href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">🤖 Assistente IA</a>
+        </nav>
+    </aside>
+
+    <main class="conteudo">
+        <header class="topo">
+            <span class="usuario">👤 Usuário ▾</span>
+            <button class="botao secundario" data-logout="" type="button">Sair</button>
+        </header>
+
+        <section class="pagina">
+            <div class="titulo">
+                <h1>Cadastro de Pessoa</h1>
+                <p>Cadastre clientes e fornecedores com conformidade e dados bancários protegidos.</p>
+            </div>
+
+            <div class="painel">
+                <form class="formulario" id="formPessoa">
+                    <div class="campo">
+                        <label>Nome / Razão Social</label>
+                        <input name="nome" placeholder="Digite o nome completo ou razão social" required type="text"/>
+                    </div>
+                    <div class="campo">
+                        <label>CPF ou CNPJ</label>
+                        <input name="documento" placeholder="Digite o CPF ou CNPJ" type="text"/>
+                    </div>
+                    <div class="linha">
+                        <div class="campo">
+                            <label>Telefone</label>
+                            <input name="telefone" placeholder="Digite o telefone" type="text"/>
+                        </div>
+                        <div class="campo">
+                            <label>E-mail</label>
+                            <input name="email" placeholder="Digite o e-mail" type="email"/>
+                        </div>
+                    </div>
+                    <div class="campo">
+                        <label>Endereço</label>
+                        <input name="endereco" placeholder="Digite o endereço completo" type="text"/>
+                    </div>
+                    <div class="campo">
+                        <label>Tipo de Cadastro</label>
+                        <select id="selectTipoPessoa" name="tipo">
+                            <option value="Cliente">Cliente</option>
+                            <option value="Fornecedor">Fornecedor</option>
+                            <option value="Cliente e Fornecedor">Cliente e Fornecedor</option>
+                        </select>
+                    </div>
+
+                    <!-- Campos de Compliance e Dados Bancários (Para Fornecedor) -->
+                    <div id="secaoDadosFornecedor" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--borda);">
+                        <h4 style="margin-bottom: 10px; color: var(--azul-escuro);">🛡️ Dados Bancários & Compliance (Fornecedor)</h4>
+                        <div class="linha">
+                            <div class="campo">
+                                <label>Banco</label>
+                                <input name="banco" placeholder="Ex: Banco do Brasil, Itaú" type="text"/>
+                            </div>
+                            <div class="campo">
+                                <label>Agência</label>
+                                <input name="agencia" placeholder="Ex: 1234-5" type="text"/>
+                            </div>
+                            <div class="campo">
+                                <label>Conta Corrente</label>
+                                <input name="conta" placeholder="Ex: 98765-4" type="text"/>
+                            </div>
+                        </div>
+                        <div class="linha">
+                            <div class="campo">
+                                <label>Chave PIX</label>
+                                <input name="chavePix" placeholder="Chave PIX do fornecedor" type="text"/>
+                            </div>
+                            <div class="campo">
+                                <label>URL Contrato Social / Comprovante Bancário</label>
+                                <input name="contratoSocialUrl" placeholder="Link do documento assinado/comprovante" type="text"/>
+                            </div>
+                        </div>
+                        <small style="color: var(--cinza);">
+                            * Alterações posteriores de dados bancários exigirão dupla aprovação (Princípio de 4 Olhos) pela área de Compliance.
+                        </small>
+                    </div>
+
+                    <div class="botoes" style="margin-top: 20px;">
+                        <a class="botao secundario" href="dashboard.html">Cancelar</a>
+                        <button class="botao primario" type="button">Cadastrar Pessoa</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
 </div>
-<div class="campo"><label>Endereço</label><input name="endereco" placeholder="Digite o endereço" type="text"/></div>
-<div class="campo"><label>Tipo</label><select name="tipo"><option>Cliente</option><option>Fornecedor</option><option>Cliente e Fornecedor</option></select></div>
-<div class="botoes"><a class="botao secundario" href="dashboard.html">Cancelar</a><button class="botao primario" type="button">Cadastrar</button></div>
-</form>
-</div>
-</section>
-</main>
-</div>
-<script type="module" src="./erp-js/app.js"></script><script type="module" src="./erp-js/pessoas.js"></script></body>
+
+<script type="module" src="./erp-js/app.js"></script>
+<script type="module" src="./erp-js/pessoas.js"></script>
+</body>
 </html>

@@ -151,3 +151,56 @@ export function tratarErro(elementoReferencia, erro) {
     const mensagem = erro?.message || 'Ocorreu um erro inesperado. Tente novamente.';
     mostrarErro(elementoReferencia, mensagem);
 }
+
+/**
+ * Exibe uma notificação flutuante (toast) no canto superior direito da tela.
+ */
+function exibirNotificacao(mensagem, tipo = 'sucesso') {
+    if (typeof document === 'undefined') return;
+
+    let container = document.getElementById('container-notificacoes-erp');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'container-notificacoes-erp';
+        Object.assign(container.style, {
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            zIndex: '9999',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            maxWidth: '420px',
+        });
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    const ehSucesso = tipo === 'sucesso';
+    Object.assign(toast.style, {
+        padding: '12px 16px',
+        borderRadius: '8px',
+        fontSize: '13px',
+        fontWeight: '600',
+        boxShadow: '0 4px 12px rgba(16, 24, 40, 0.15)',
+        background: ehSucesso ? '#dcfae6' : '#fee4e2',
+        color: ehSucesso ? '#087443' : '#b42318',
+        border: `1px solid ${ehSucesso ? '#a6f4c5' : '#fecdca'}`,
+        transition: 'opacity 0.3s ease',
+    });
+    toast.textContent = mensagem;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 4500);
+}
+
+export function notificarSucesso(mensagem) {
+    exibirNotificacao(mensagem, 'sucesso');
+}
+
+export function notificarErro(mensagem) {
+    exibirNotificacao(mensagem, 'erro');
+}
