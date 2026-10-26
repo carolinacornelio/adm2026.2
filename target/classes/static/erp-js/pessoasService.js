@@ -8,3 +8,13 @@ export async function removerPessoa(id, tipo = 'CLIENTE') {
     await apiService.delete(`/pessoas/${encodeURIComponent(id)}?tipo=${encodeURIComponent(tipo)}`);
     return true;
 }
+
+export const pessoasService = {
+    listarPessoas,
+    listar: listarPessoas,
+    buscarPessoa,
+    criarPessoa,
+    atualizarPessoa,
+    removerPessoa,
+};
+

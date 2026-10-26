@@ -3,6 +3,7 @@ import { estaAutenticado } from './authService.js';
 import { escapeHtml as e } from './uiService.js';
 import { classeStatusEstoque, classeStatusValidade, textoStatusValidade, badgeValidade } from './uiService.js';
 import { fromProdutoDTO } from './dto.js';
+import { aoMovimentar } from './estoqueSync.js';
 
 const $ = s => document.querySelector(s);
 let produtos = [], lotes = [], filtrados = [], carregando = false, repetir = false;
@@ -35,7 +36,11 @@ async function carregar() {
     } finally { carregando=false; if(repetir) {repetir=false;void carregar();} }
 }
 async function acompanhar() {
+    let primeiraConexao = true;
     while(!controller.signal.aborted) {
+        // Ao reconectar, reconsulta: eventos emitidos durante a queda não são reenviados.
+        if(!primeiraConexao) void carregar();
+        primeiraConexao = false;
         try {
             await apiService.events('/pos/eventos',{signal:controller.signal,onEvent:()=>{conectado=true;void carregar();}});
         } catch(erro) {
@@ -82,5 +87,10 @@ document.addEventListener('DOMContentLoaded',()=>{
     window.addEventListener('pagehide',()=>controller.abort(),{once:true});
     window.addEventListener('pageshow',ev=>{if(ev.persisted)window.location.reload();});
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)void carregar();});
+    // Camadas extras além do stream /pos/eventos:
+    // 1) aviso direto de compras/vendas registradas em outra aba (não depende do backend);
+    aoMovimentar(() => void carregar());
+    // 2) rede de segurança: reconsulta a cada 15 s (mesmo padrão de produtos.js).
+    window.setInterval(() => { if(!document.hidden) void carregar(); }, 15000);
     void carregar();void acompanhar();
 });

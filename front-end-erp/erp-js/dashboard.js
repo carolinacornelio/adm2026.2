@@ -1,7 +1,7 @@
 /** Preenche os indicadores gerais e a comparação mensal de faturamento. */
 import { buscarIndicadores } from './dashboardService.js';
 import { buscarFaturamentoMensal } from './faturamentoService.js';
-import { estaAutenticado } from './authService.js';
+import { estaAutenticado, getUsuarioLogado } from './authService.js';
 import { temAcesso } from './planService.js';
 
 function formatarMoeda(valor) {
@@ -17,6 +17,40 @@ function formatarPercentual(valor) {
 function mesAtual() {
     const data = new Date();
     return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function organizarAcessoRapido() {
+    const area = document.querySelector('.acoes');
+    if (!area) return;
+    const usuario = getUsuarioLogado();
+    const chave = `erp-acesso-rapido:${usuario?.id || usuario?.email || 'usuario'}`;
+    let recentes = [];
+    try {
+        recentes = JSON.parse(localStorage.getItem(chave) || '[]');
+        if (!Array.isArray(recentes)) recentes = [];
+    } catch (_) { recentes = []; }
+
+    const cards = [...area.querySelectorAll(':scope > .acao')];
+    const nome = card => card.querySelector('strong')?.textContent.trim().toLocaleLowerCase('pt-BR') || '';
+    const ordemAlfabetica = (a, b) => nome(a).localeCompare(nome(b), 'pt-BR');
+    cards.sort((a, b) => {
+        const posA = recentes.indexOf(a.getAttribute('href'));
+        const posB = recentes.indexOf(b.getAttribute('href'));
+        if (posA !== -1 || posB !== -1) {
+            if (posA === -1) return 1;
+            if (posB === -1) return -1;
+            if (posA !== posB) return posA - posB;
+        }
+        return ordemAlfabetica(a, b);
+    }).forEach(card => area.appendChild(card));
+
+    area.addEventListener('click', event => {
+        const card = event.target.closest('.acao');
+        if (!card || card.parentElement !== area) return;
+        const href = card.getAttribute('href');
+        recentes = [href, ...recentes.filter(item => item !== href)].slice(0, cards.length);
+        localStorage.setItem(chave, JSON.stringify(recentes));
+    });
 }
 
 async function carregarIndicadores() {
@@ -74,6 +108,7 @@ async function carregarFaturamento() {
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!estaAutenticado()) return;
+    organizarAcessoRapido();
     carregarIndicadores();
 
     const referencia = document.getElementById('mesReferencia');

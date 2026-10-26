@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"/>
@@ -7,6 +6,7 @@
 <title>Nova Compra | ERP</title>
 <script src="./erp-js/initialUi.js"></script>
 <link href="./css/tela.css" rel="stylesheet"/>
+<link href="./css/compliance.css" rel="stylesheet"/>
 </head>
 <body>
 <div class="layout">
@@ -35,6 +35,8 @@
 <details class="menu-pasta" data-pasta="ferramentas">
 <summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Ferramentas</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
 <div class="menu-pasta-itens">
+<a href="compliance.html">Compliance</a>
+<a href="concorrencia.html">Concorrência</a>
 <a href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Assistente IA</a>
 </div></details>
 </nav>
@@ -42,12 +44,17 @@
 <main class="conteudo">
 <header class="topo"><span class="usuario">👤 Usuário ▾</span><a href="atendimento.html" class="atalho-atendimento" title="Central de atendimento" aria-label="Central de atendimento"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="12" width="4" height="7" rx="2"/><rect x="17" y="12" width="4" height="7" rx="2"/><path d="M19 19v1a2 2 0 0 1-2 2h-4"/></svg></a><button class="botao secundario" data-logout="" type="button">Sair</button></header>
 <section class="pagina">
-<div class="titulo"><h1>Nova Compra</h1><p>Registre uma compra e aumente o estoque automaticamente.</p></div>
+<div class="titulo"><h1>Compras e Alçadas</h1><p>Registre compras com lote e validade. Compras a partir de R$ 10.000,00 exigem aprovação de alçada antes de entrar no estoque.</p></div>
 <div class="painel">
 <form class="formulario" id="formCompra">
 <div class="linha">
 <div class="campo"><label>Fornecedor</label><select id="selectFornecedor" name="fornecedorId"><option value="">Selecione um fornecedor</option></select></div>
 <div class="campo"><label>Data</label><input id="inputDataCompra" name="data" type="date"/></div>
+</div>
+<div class="linha">
+<div class="campo"><label for="selectTipoDoc">Tipo de operação</label><select id="selectTipoDoc" name="tipoDocumento"><option value="MERCADORIA">Mercadoria / Produtos</option><option value="SERVICO">Prestação de Serviços (exige contrato)</option></select></div>
+<div class="campo" id="campoContratoContainer"><label for="selectContrato">Contrato vinculado</label><select id="selectContrato" name="contratoId"><option value="">Selecione um contrato homologado</option></select></div>
+<div class="campo"><label for="inputNotaFiscal">Nota fiscal (NF-e / NFS-e)</label><input id="inputNotaFiscal" name="notaFiscal" maxlength="100" placeholder="Ex.: NF-12345" type="text"/></div>
 </div>
 <p class="ajuda-campo">Produtos perecíveis exigem lote e validade. A validade de hoje é aceita; lotes vencidos não podem entrar.</p><div class="produtos-compra historico-tabela-scroll">
 <table class="tabela">
@@ -59,6 +66,13 @@
 <div class="total">Total: <span id="totalCompra">R$ 0,00</span></div>
 <div class="botoes"><a class="botao secundario" href="dashboard.html">Cancelar</a><button class="botao primario" id="btnFinalizarCompra" type="button">Finalizar Compra</button></div>
 </form>
+</div>
+<div class="painel" style="margin-top:24px">
+<div class="barra-listagem"><div><h3>Histórico de pedidos de compra e alçadas</h3><p class="texto-secundario">Acompanhamento do fluxo de aprovação e da liquidação com segregação de funções (SoD).</p></div></div>
+<div class="historico-tabela-scroll"><table class="tabela-compliance">
+<thead><tr><th>Nº pedido</th><th>Data</th><th>Fornecedor</th><th>Solicitante</th><th>Tipo / NF</th><th>Total</th><th>Situação da alçada</th><th>Ações</th></tr></thead>
+<tbody id="tabelaHistoricoCompras"><tr><td colspan="8" class="estado-vazio">Carregando pedidos de compra...</td></tr></tbody>
+</table></div>
 </div>
 </section>
 </main>

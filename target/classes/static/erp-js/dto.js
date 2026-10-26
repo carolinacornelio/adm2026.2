@@ -81,8 +81,13 @@ export function toPessoaDTO(formData) {
         documento: formData.documento.trim(),
         telefone: formData.telefone.trim(),
         email: formData.email.trim(),
-        endereco: formData.endereco.trim(),
+        endereco: formData.endereco ? formData.endereco.trim() : '',
         tipo: tipoPessoaParaEnum(formData.tipo),
+        banco: formData.banco ? formData.banco.trim() : '',
+        agencia: formData.agencia ? formData.agencia.trim() : '',
+        conta: formData.conta ? formData.conta.trim() : '',
+        chavePix: formData.chavePix ? formData.chavePix.trim() : '',
+        contratoSocialUrl: formData.contratoSocialUrl ? formData.contratoSocialUrl.trim() : '',
     };
 }
 
@@ -95,6 +100,7 @@ export function fromPessoaDTO(pessoa) {
         telefone: pessoa.telefone,
         email: pessoa.email,
         endereco: pessoa.endereco,
+        tipo: pessoa.tipo || 'CLIENTE',
         tipoTexto: tipoPessoaParaTexto(pessoa.tipo),
     };
 }
@@ -183,13 +189,16 @@ function calcularTotalItens(itensDTO) {
 // ---------------------------------------------------------------------------
 
 /** Dados lidos da tela de compras -> DTO enviado para POST /api/compras */
-export function toCompraDTO({ fornecedorId, data, itens }) {
+export function toCompraDTO({ fornecedorId, data, itens, tipoDocumento, notaFiscal, contratoId }) {
     const itensDTO = itens.map(toItemPedidoDTO);
     return {
         fornecedorId: Number(fornecedorId),
         data,
         itens: itensDTO,
         total: calcularTotalItens(itensDTO),
+        tipoDocumento: tipoDocumento || 'MERCADORIA',
+        notaFiscal: notaFiscal || '',
+        contratoId: contratoId ? Number(contratoId) : null,
     };
 }
 

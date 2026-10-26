@@ -134,6 +134,7 @@ ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS resposta_seguranca_hash_3 VARCHAR(
 ALTER TABLE produtos ADD COLUMN IF NOT EXISTS categoria_id INTEGER REFERENCES categorias(id) ON DELETE SET NULL;
 ALTER TABLE produtos ADD COLUMN IF NOT EXISTS preco_compra NUMERIC(10,2);
 ALTER TABLE produtos ADD COLUMN IF NOT EXISTS preco_venda NUMERIC(10,2);
+ALTER TABLE produtos ADD COLUMN IF NOT EXISTS preco_concorrente NUMERIC(10,2);
 UPDATE produtos
    SET preco_compra = COALESCE(preco_compra, preco),
        preco_venda = COALESCE(preco_venda, preco)

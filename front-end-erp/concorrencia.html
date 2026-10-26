@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Concorrência | ERP</title>
+    <script src="./erp-js/initialUi.js"></script>
+    <link href="./css/tela.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="logo">ERP</div>
+            <nav class="menu" aria-label="Navegação principal">
+                <a href="dashboard.html">Dashboard</a><a href="pos.html" data-troca-sistema="true">POS</a>
+                <details class="menu-pasta" data-pasta="cadastros">
+                    <summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Cadastros</span><span
+                            class="menu-pasta-seta" aria-hidden="true"></span></summary>
+                    <div class="menu-pasta-itens">
+                        <a href="pessoas-listagem.html">Pessoas</a><a href="pessoas-cadastro.html">Cadastrar
+                            pessoa</a><a href="produtos-listagem.html">Produtos</a><a
+                            href="produtos-cadastro.html">Cadastrar produto</a><a href="categorias.html"
+                            data-plano-minimo="PLUS" data-plano-ocultar="true">Categorias</a>
+                    </div>
+                </details>
+<details class="menu-pasta" data-pasta="operacao">
+                    <summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Operação</span><span
+                            class="menu-pasta-seta" aria-hidden="true"></span></summary>
+                    <div class="menu-pasta-itens">
+                        <a href="compras.html">Compras</a><a href="vendas.html">Vendas</a><a
+                            href="historico-vendas.html">Histórico de vendas</a><a href="estoque.html">Estoque</a>
+                    </div>
+                </details>
+                <details class="menu-pasta" data-pasta="ferramentas" open>
+                    <summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Ferramentas</span><span
+                            class="menu-pasta-seta" aria-hidden="true"></span></summary>
+                    <div class="menu-pasta-itens"><a href="compliance.html">Compliance</a><a href="concorrencia.html"
+                            class="ativo" aria-current="page">Concorrência</a><a href="ia.html" data-plano-minimo="PLUS"
+                            data-plano-ocultar="true">Assistente IA</a></div>
+                </details>
+            </nav>
+        </aside>
+        <main class="conteudo">
+            <header class="topo"><span class="usuario">👤 Usuário ▾</span><a href="atendimento.html"
+                    class="atalho-atendimento" title="Central de atendimento"
+                    aria-label="Central de atendimento">?</a><button class="botao secundario" data-logout=""
+                    type="button">Sair</button></header>
+            <section class="pagina">
+                <div class="titulo">
+                    <h1>Concorrência</h1>
+                    <p>Compare seus preços com os da concorrência e acompanhe os produtos vendidos nos últimos 30 dias.
+                    </p>
+                </div>
+                <div class="painel" id="concorrenciaPainel">
+                    <div class="barra-listagem"><input id="pesquisaConcorrencia" placeholder="Pesquisar produto..."
+                            type="search" /><span id="estadoConcorrencia" role="status">Carregando...</span></div>
+                    <div class="historico-tabela-scroll">
+                        <table class="tabela tabela-concorrencia">
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th>Nosso preço</th>
+                                    <th>Concorrente</th>
+                                    <th>Diferença</th>
+                                    <th>Vendidos em 30 dias</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listaConcorrencia">
+                                <tr>
+                                    <td colspan="5" class="estado-vazio">Carregando relatório...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="ajuda-campo">A diferença compara nosso preço com o preço do concorrente. Valores positivos
+                        indicam que nosso preço está maior.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script type="module" src="./erp-js/app.js"></script>
+    <script type="module" src="./erp-js/concorrencia.js"></script>
+</body>
+
+</html>

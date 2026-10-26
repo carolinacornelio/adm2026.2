@@ -35,6 +35,8 @@
 <details class="menu-pasta" data-pasta="ferramentas">
 <summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Ferramentas</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
 <div class="menu-pasta-itens">
+<a href="compliance.html">Compliance</a>
+<a href="concorrencia.html">Concorrência</a>
 <a href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Assistente IA</a>
 </div></details>
 </nav>
@@ -74,9 +76,17 @@
 <div class="inventario-acoes"><button class="botao primario" id="aprovarInventarioFisico" type="button" disabled>Conferir e aplicar ajustes</button><button class="botao secundario" id="imprimirInventarioFisico" type="button" disabled>Imprimir relatório</button></div>
 <p class="ajuda-campo">Por segurança, o sistema exige que todos os produtos sejam contados, inclusive os que têm quantidade zero. Se o estoque mudar durante a contagem, a aprovação será bloqueada para evitar correções incorretas. Sobras de produtos com validade obrigatória ficam bloqueadas para venda até a regularização do lote.</p>
 </section>
+<section class="painel inventario-relatorio" id="auditoriaEstoquePainel" aria-labelledby="tituloAuditoria">
+<div class="historico-topo"><div><h2 id="tituloAuditoria">Auditoria de estoque</h2><p>Compara o estoque gravado no sistema com o saldo calculado pelo histórico de transações (entradas − saídas ± ajustes). Qualquer diferença indica falha na regra de movimentação.</p></div><button class="botao secundario" id="atualizarAuditoria" type="button">Atualizar auditoria</button></div>
+<p id="resumoAuditoria" role="status"></p>
+<div class="historico-tabela-scroll"><table class="tabela"><thead><tr><th>Produto</th><th>Entradas</th><th>Saídas</th><th>Ajustes</th><th>Estoque pelo histórico</th><th>Estoque no sistema</th><th>Diferença</th><th>Situação</th></tr></thead><tbody id="listaAuditoria"></tbody></table></div>
+<div class="historico-topo"><h2>Transações de estoque do dia</h2><div class="campo"><label for="dataMovimentacoes">Data</label><input id="dataMovimentacoes" type="date"/></div></div>
+<div class="historico-tabela-scroll"><table class="tabela"><thead><tr><th>Data/Hora</th><th>Produto</th><th>Tipo</th><th>Quantidade</th><th>Motivo</th><th>Saldo conferido</th></tr></thead><tbody id="listaMovimentacoes"></tbody></table></div>
+<p class="ajuda-campo">O saldo conferido é gravado pela segunda verificação: depois de cada entrada, saída ou ajuste, o sistema relê o estoque e confirma que ele bate com o esperado.</p>
+</section>
 </section>
 </main>
 </div>
 <dialog class="historico-dialog" id="regularizarLote" aria-labelledby="tituloRegularizar"><h2 id="tituloRegularizar">Informar validade do lote</h2><form id="formRegularizar" class="formulario"><input id="loteId" type="hidden"/><div class="campo"><label for="codigoLote">Lote</label><input id="codigoLote" maxlength="100" required/></div><div class="campo"><label for="dataLote">Validade real da mercadoria</label><input id="dataLote" type="date" required/></div><p class="ajuda-campo">Confira a embalagem antes de informar a data. Uma validade já registrada não poderá ser alterada por esta tela.</p><p id="erroLote" role="alert"></p><div class="botoes"><button class="botao secundario" id="cancelarLote" type="button">Cancelar</button><button class="botao primario" type="submit">Salvar</button></div></form></dialog>
-<script type="module" src="./erp-js/app.js"></script><script type="module" src="./erp-js/estoque.js"></script><script type="module" src="./erp-js/inventarioFisico.js"></script></body>
+<script type="module" src="./erp-js/app.js"></script><script type="module" src="./erp-js/estoque.js"></script><script type="module" src="./erp-js/inventarioFisico.js"></script><script type="module" src="./erp-js/auditoriaEstoque.js"></script></body>
 </html>

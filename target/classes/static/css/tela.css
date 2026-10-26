@@ -300,6 +300,13 @@ input:focus, select:focus, textarea:focus { border-color: var(--azul); }
 .inventario-acoes button { margin-right: 8px; }
 #estoqueResumoPainel { overflow-x:auto; }
 #estoqueResumoPainel .tabela { min-width: 650px; }
+.tabela-concorrencia { min-width: 780px; }
+.tabela-concorrencia th:nth-child(2), .tabela-concorrencia th:nth-child(3),
+.tabela-concorrencia th:nth-child(4), .tabela-concorrencia th:nth-child(5),
+.tabela-concorrencia td:nth-child(2), .tabela-concorrencia td:nth-child(3),
+.tabela-concorrencia td:nth-child(4), .tabela-concorrencia td:nth-child(5) { white-space: nowrap; }
+.tabela-concorrencia .preco-concorrente { width: 150px; min-width: 125px; padding: 8px 10px; }
+.tabela-concorrencia .diferenca { font-weight: 700; }
 @media(max-width:650px) { .inventario-filtros { grid-template-columns:1fr; } }
 @media print {
   body[data-impressao="comprovante"] > .layout { display:none !important; }

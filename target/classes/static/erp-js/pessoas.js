@@ -35,8 +35,8 @@ function validarPessoa(dados) {
 function configurarFormularioCadastro(formPessoa) {
     const botaoCadastrar = formPessoa.querySelector('button.primario');
 
-    formPessoa.addEventListener('submit', async (evento) => {
-        evento.preventDefault();
+    const salvar = async (evento) => {
+        if (evento) evento.preventDefault();
         limparMensagem(formPessoa);
         const dados = formParaObjeto(formPessoa);
 
@@ -56,7 +56,10 @@ function configurarFormularioCadastro(formPessoa) {
         } finally {
             pararCarregando(botaoCadastrar);
         }
-    });
+    };
+
+    // O botão é type="submit": ligar também o "click" enviaria o cadastro duas vezes.
+    formPessoa.addEventListener('submit', salvar);
 }
 
 // ---------------------------------------------------------------------------
