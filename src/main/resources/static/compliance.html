@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Compliance e Integridade | ERP</title>
+    <link href="./css/tela.css" rel="stylesheet"/>
+    <link href="./css/compliance.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="logo">ERP</div>
+        <nav class="menu">
+            <a class="" href="dashboard.html">🏠 Dashboard</a>
+            <a class="" href="pessoas-listagem.html">👥 Pessoas</a>
+            <a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
+            <a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
+            <a class="" href="produtos-listagem.html">📦 Produtos</a>
+            <a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
+            <a class="sub" href="produtos-listagem.html">↳ Listagem</a>
+            <a class="sub" data-plano-minimo="PLUS" data-plano-ocultar="true" href="categorias.html">↳ Categorias</a>
+            <a class="" href="compras.html">🛒 Compras</a>
+            <a class="" href="vendas.html">💰 Vendas</a>
+            <a class="" href="estoque.html">📊 Estoque</a>
+            <a class="ativo" href="compliance.html">🛡️ Compliance</a>
+            <a class="" href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">🤖 Assistente IA</a>
+        </nav>
+    </aside>
+
+    <main class="conteudo">
+        <header class="topo">
+            <span class="usuario">👤 Usuário ▾</span>
+            <button class="botao secundario" data-logout="" type="button">Sair</button>
+        </header>
+
+        <section class="pagina">
+            <div class="titulo">
+                <h1>Painel de Compliance e Gestão de Riscos</h1>
+                <p>Governança Corporativa e Adequação à Lei Anticorrupção (Lei nº 12.846/2013).</p>
+            </div>
+
+            <!-- Indicadores Rápidos -->
+            <div class="cartoes">
+                <div class="cartao">
+                    <small>🚨 Transações de Risco</small>
+                    <div class="indicador" id="totalTransacoesRisco">0</div>
+                    <small>Alertas registrados</small>
+                </div>
+                <div class="cartao">
+                    <small>👥 Violações / Auditoria SoD</small>
+                    <div class="indicador" id="totalViolacoesSoD">0</div>
+                    <small>Usuários mapeados</small>
+                </div>
+                <div class="cartao">
+                    <small>👁️ Princípio de 4 Olhos</small>
+                    <div class="indicador" id="totalPendencias4Olhos">0</div>
+                    <small>Alterações bancárias pendentes</small>
+                </div>
+                <div class="cartao">
+                    <small>📄 Contratos Auditados</small>
+                    <div class="indicador" id="totalContratos">0</div>
+                    <small>Contratos homologados</small>
+                </div>
+            </div>
+
+            <!-- Abas do Módulo de Compliance -->
+            <div class="abas-compliance">
+                <button class="aba-btn ativa" data-alvo="aba-bi-risco" type="button">📊 Transações de Risco (BI)</button>
+                <button class="aba-btn" data-alvo="aba-sod" type="button">👥 Auditoria de Permissões (SoD)</button>
+                <button class="aba-btn" data-alvo="aba-4olhos" type="button">👁️ Dupla Validação Bancária (4 Olhos)</button>
+                <button class="aba-btn" data-alvo="aba-contratos" type="button">📄 Contratos de Fornecedores</button>
+            </div>
+
+            <!-- ABA 1: Relatório de Transações de Risco (BI) -->
+            <div class="aba-conteudo ativa" id="aba-bi-risco">
+                <div class="card-compliance">
+                    <h3>Relatório de Transações de Risco em Tempo Real</h3>
+                    <p style="color: var(--cinza); font-size: 13px; margin-top: 4px;">
+                        Eventos que violam limiares de segurança (ex: compras > R$ 50k, serviços sem contrato homologado ou tentativas de aprovação indevida).
+                    </p>
+
+                    <div style="overflow-x: auto;">
+                        <table class="tabela-compliance">
+                            <thead>
+                                <tr>
+                                    <th>Data / Hora</th>
+                                    <th>Usuário</th>
+                                    <th>Documento</th>
+                                    <th>Valor da Transação</th>
+                                    <th>Motivo do Alerta</th>
+                                    <th>Severidade</th>
+                                    <th>Detalhes Técnicos</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaTransacoesRisco">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; color: var(--cinza);">Carregando alertas de compliance...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 2: Auditoria de Permissões e Matriz SoD -->
+            <div class="aba-sod aba-conteudo" id="aba-sod">
+                <div class="card-compliance">
+                    <h3>Auditoria de Permissões e Matriz SoD (Segregation of Duties)</h3>
+                    <p style="color: var(--cinza); font-size: 13px; margin-top: 4px;">
+                        <strong>Regra de Ouro:</strong> Operadores com alçada para autorizar compras NÃO podem liquidar pagamentos financeiros.
+                    </p>
+
+                    <table class="tabela-compliance">
+                        <thead>
+                            <tr>
+                                <th>Usuário</th>
+                                <th>E-mail</th>
+                                <th>Perfil Atual</th>
+                                <th>Classificação de Risco</th>
+                                <th>Severidade</th>
+                                <th>Diagnóstico</th>
+                                <th>Ação Recomendada</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaAuditoriaSoD">
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: var(--cinza);">Carregando matriz SoD...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ABA 3: Princípio de 4 Olhos (Dados Bancários) -->
+            <div class="aba-4olhos aba-conteudo" id="aba-4olhos">
+                <div class="card-compliance">
+                    <h3>Dupla Validação: Alterações de Dados Bancários de Fornecedores</h3>
+                    <p style="color: var(--cinza); font-size: 13px; margin-top: 4px;">
+                        Prevenção a fraudes de desvio (*Payment Redirection*). O solicitante não pode aprovar os novos dados bancários; exige homologação de um segundo usuário.
+                    </p>
+
+                    <table class="tabela-compliance">
+                        <thead>
+                            <tr>
+                                <th>Data Solicitação</th>
+                                <th>Fornecedor</th>
+                                <th>Solicitante</th>
+                                <th>Novos Dados Bancários</th>
+                                <th>Comprovante Anexo</th>
+                                <th>Ações de Compliance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela4Olhos">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--cinza);">Nenhuma alteração bancária pendente no momento.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ABA 4: Contratos de Fornecedores -->
+            <div class="aba-contratos aba-conteudo" id="aba-contratos">
+                <div class="card-compliance">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div>
+                            <h3>Contratos de Fornecedores & Serviços</h3>
+                            <p style="color: var(--cinza); font-size: 13px;">Obrigatório para transações de serviços e contratos acima de R$ 50.000,00.</p>
+                        </div>
+                        <button class="botao primario" id="btnAbrirModalContrato" type="button">+ Novo Contrato</button>
+                    </div>
+
+                    <table class="tabela-compliance">
+                        <thead>
+                            <tr>
+                                <th>Nº Contrato</th>
+                                <th>Fornecedor</th>
+                                <th>Objeto</th>
+                                <th>Valor Total</th>
+                                <th>Status</th>
+                                <th>Documento</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaContratos">
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: var(--cinza);">Carregando contratos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Formulário Inline para Novo Contrato -->
+                <div class="card-compliance" id="formNovoContratoContainer" style="display: none;">
+                    <h4>Cadastrar Novo Contrato Formal de Fornecedor</h4>
+                    <form id="formContrato" style="margin-top: 14px;">
+                        <div class="linha">
+                            <div class="campo">
+                                <label>Fornecedor</label>
+                                <select id="selectFornecedorContrato" required></select>
+                            </div>
+                            <div class="campo">
+                                <label>Número do Contrato</label>
+                                <input id="inputNumeroContrato" placeholder="Ex: CTR-2026-001" required type="text"/>
+                            </div>
+                        </div>
+                        <div class="linha">
+                            <div class="campo">
+                                <label>Valor Total (R$)</label>
+                                <input id="inputValorContrato" min="0" placeholder="0.00" required step="0.01" type="number"/>
+                            </div>
+                            <div class="campo">
+                                <label>URL do Contrato Digitalizado (Obrigatório)</label>
+                                <input id="inputArquivoContrato" placeholder="https://storage... ou /docs/contrato.pdf" required type="text"/>
+                            </div>
+                        </div>
+                        <div class="campo">
+                            <label>Objeto / Descrição do Serviço</label>
+                            <input id="inputObjetoContrato" placeholder="Descrição do escopo contratado" required type="text"/>
+                        </div>
+                        <div class="botoes" style="margin-top: 12px;">
+                            <button class="botao secundario" id="btnCancelarContrato" type="button">Cancelar</button>
+                            <button class="botao primario" type="submit">Salvar Contrato</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script type="module" src="./erp-js/app.js"></script>
+<script type="module" src="./erp-js/compliance.js"></script>
+</body>
+</html>

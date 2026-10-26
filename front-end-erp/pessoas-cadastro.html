@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"/>
@@ -7,6 +6,7 @@
 <title>Cadastro de Pessoas | ERP</title>
 <script src="./erp-js/initialUi.js"></script>
 <link href="./css/tela.css" rel="stylesheet"/>
+<link href="./css/compliance.css" rel="stylesheet"/>
 </head>
 <body>
 <div class="layout">
@@ -35,6 +35,7 @@
 <details class="menu-pasta" data-pasta="ferramentas">
 <summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Ferramentas</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
 <div class="menu-pasta-itens">
+<a href="compliance.html">Compliance</a>
 <a href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Assistente IA</a>
 </div></details>
 </nav>
@@ -42,7 +43,7 @@
 <main class="conteudo">
 <header class="topo"><span class="usuario">👤 Usuário ▾</span><a href="atendimento.html" class="atalho-atendimento" title="Central de atendimento" aria-label="Central de atendimento"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="12" width="4" height="7" rx="2"/><rect x="17" y="12" width="4" height="7" rx="2"/><path d="M19 19v1a2 2 0 0 1-2 2h-4"/></svg></a><button class="botao secundario" data-logout="" type="button">Sair</button></header>
 <section class="pagina">
-<div class="titulo"><h1>Cadastro de Pessoa</h1><p>Cadastre clientes e fornecedores.</p></div>
+<div class="titulo"><h1>Cadastro de Pessoa</h1><p>Cadastre clientes e fornecedores com conformidade e dados bancários protegidos.</p></div>
 <div class="painel">
 <form class="formulario" id="formPessoa">
 <div class="campo"><label>Nome</label><input name="nome" placeholder="Digite o nome" type="text"/></div>
@@ -53,6 +54,19 @@
 </div>
 <div class="campo"><label>Endereço</label><input name="endereco" placeholder="Digite o endereço" type="text"/></div>
 <div class="campo"><label>Tipo</label><select name="tipo"><option>Cliente</option><option>Fornecedor</option><option>Cliente e Fornecedor</option></select></div>
+<fieldset class="secao-compliance" id="secaoDadosFornecedor">
+<legend>Dados bancários e compliance (fornecedor)</legend>
+<div class="linha">
+<div class="campo"><label for="banco">Banco</label><input id="banco" name="banco" maxlength="50" placeholder="Ex.: Banco do Brasil, Itaú" type="text"/></div>
+<div class="campo"><label for="agencia">Agência</label><input id="agencia" name="agencia" maxlength="20" placeholder="Ex.: 1234-5" type="text"/></div>
+<div class="campo"><label for="conta">Conta corrente</label><input id="conta" name="conta" maxlength="30" placeholder="Ex.: 98765-4" type="text"/></div>
+</div>
+<div class="linha">
+<div class="campo"><label for="chavePix">Chave PIX</label><input id="chavePix" name="chavePix" maxlength="100" placeholder="Chave PIX do fornecedor" type="text"/></div>
+<div class="campo"><label for="contratoSocialUrl">URL do contrato social / comprovante bancário</label><input id="contratoSocialUrl" name="contratoSocialUrl" maxlength="500" placeholder="Link do documento assinado ou comprovante" type="text"/></div>
+</div>
+<p class="ajuda-campo">Alterações posteriores de dados bancários exigem dupla aprovação (princípio dos 4 olhos) pela área de compliance.</p>
+</fieldset>
 <div class="botoes"><a class="botao secundario" href="dashboard.html">Cancelar</a><button class="botao primario" type="submit">Cadastrar</button></div>
 </form>
 </div>

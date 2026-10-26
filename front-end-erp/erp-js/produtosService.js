@@ -13,3 +13,13 @@ export async function removerProduto(id) {
     await apiService.delete(`/produtos/${encodeURIComponent(id)}`);
     return true;
 }
+
+export const produtosService = {
+    listarProdutos,
+    buscarProduto,
+    criarProduto,
+    atualizarProduto,
+    removerProduto,
+    ajustarEstoque,
+};
+

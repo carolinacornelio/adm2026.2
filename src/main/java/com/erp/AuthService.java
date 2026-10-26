@@ -58,6 +58,8 @@ public class AuthService {
                 respostaNormalizada(d, "respostaSeguranca2"),
                 respostaNormalizada(d, "respostaSeguranca3"));
         String plano = PlanService.normalizar(d.getOrDefault("plano", "BASE"));
+        String perfil = d.getOrDefault("perfil", "padrao").toString().trim();
+        if (perfil.isEmpty() || perfil.length() > 50) throw new IllegalArgumentException("Perfil inválido.");
         Number empresaId = db.queryForObject("INSERT INTO empresas (nome_fantasia, plano_assinatura) VALUES (?, ?) RETURNING id", Number.class, texto(d,"empresa"), plano);
         Number usuarioId = db.queryForObject("""
                 INSERT INTO usuarios (
@@ -67,12 +69,12 @@ public class AuthService {
                     pergunta_seguranca_3, resposta_seguranca_hash_3
                 ) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING id
                 """, Number.class,
-                empresaId, texto(d,"nome"), email, encoder.encode(senha), "padrao",
+                empresaId, texto(d,"nome"), email, encoder.encode(senha), perfil,
                 perguntas.get(0), encoder.encode(respostas.get(0)),
                 perguntas.get(1), encoder.encode(respostas.get(1)),
                 perguntas.get(2), encoder.encode(respostas.get(2)));
         return loginPorId(usuarioId.intValue(), empresaId.intValue(), texto(d,"nome"), email,
-                plano);
+                perfil, plano);
     }
     /** Busca o usuário, compara o hash BCrypt e abre uma sessão. */
     public Map<String,Object> login(Map<String,Object> d) {
@@ -80,6 +82,7 @@ public class AuthService {
         validarTamanhoBCrypt(texto(d,"senha"),"senha");
         List<Map<String,Object>> rows = db.queryForList("""
                 SELECT u.id, u.empresa_id, u.nome, u.email, u.senha_hash,
+                       COALESCE(u.perfil, 'padrao') AS perfil,
                        u.pergunta_seguranca_1, u.resposta_seguranca_hash_1,
                        u.pergunta_seguranca_2, u.resposta_seguranca_hash_2,
                        u.pergunta_seguranca_3, u.resposta_seguranca_hash_3,
@@ -127,7 +130,7 @@ public class AuthService {
         }
         segundosFatores.remove(desafio,pendente);
         return loginPorId(pendente.usuarioId(), pendente.empresaId(), pendente.nome(),
-                pendente.email(), pendente.plano());
+                pendente.email(), pendente.perfil(), pendente.plano());
         }
     }
     public Map<String,Object> usuario(String token) {
@@ -147,13 +150,34 @@ public class AuthService {
         sessoes.entrySet().removeIf(e->!agora.isBefore(e.getValue().expiraEm()));
         segundosFatores.entrySet().removeIf(e->!agora.isBefore(e.getValue().expiraEm()));
     }
+    /** Cria sessão para testes ou autenticação programática (compliance). */
+    public String registrarSessao(int id, int empresaId, String nome, String email, String perfil, String plano) {
+        String token = UUID.randomUUID().toString();
+        sessoes.put(token, new Sessao(dadosSessao(id, empresaId, nome, email, perfil, plano), Instant.now().plusSeconds(43200)));
+        return token;
+    }
     private String planoDaEmpresa(int empresaId) {
         return PlanService.normalizar(db.queryForObject(
                 "SELECT COALESCE(plano_assinatura, 'BASE') FROM empresas WHERE id=?",
                 String.class,
                 empresaId));
     }
-    private Map<String,Object> loginPorId(int id,int empresa,String nome,String email,String plano) { String token=UUID.randomUUID().toString(); Map<String,Object> u=Map.of("id",id,"empresaId",empresa,"nome",nome,"email",email,"plano",PlanService.normalizar(plano)); sessoes.put(token,new Sessao(u,Instant.now().plusSeconds(43200))); return Map.of("token",token,"usuario",u); }
+    private Map<String,Object> loginPorId(int id,int empresa,String nome,String email,String perfil,String plano) {
+        String token=UUID.randomUUID().toString();
+        Map<String,Object> u=dadosSessao(id, empresa, nome, email, perfil, plano);
+        sessoes.put(token,new Sessao(u,Instant.now().plusSeconds(43200)));
+        return Map.of("token",token,"usuario",u);
+    }
+    private static Map<String,Object> dadosSessao(int id,int empresa,String nome,String email,String perfil,String plano) {
+        return Map.of(
+            "id", id,
+            "empresaId", empresa,
+            "nome", nome,
+            "email", email,
+            "perfil", perfil != null ? perfil : "padrao",
+            "plano", PlanService.normalizar(plano)
+        );
+    }
     private Map<String,Object> iniciarSegundoFator(Map<String,Object> u) {
         List<String> perguntas = List.of(
                 valorOuVazio(u.get("pergunta_seguranca_1")),
@@ -168,7 +192,9 @@ public class AuthService {
         String desafio = UUID.randomUUID().toString();
         SegundoFatorPendente pendente = new SegundoFatorPendente(
                 ((Number)u.get("id")).intValue(), ((Number)u.get("empresa_id")).intValue(),
-                (String)u.get("nome"), (String)u.get("email"), String.valueOf(u.get("plano")),
+                (String)u.get("nome"), (String)u.get("email"),
+                String.valueOf(u.getOrDefault("perfil", "padrao")),
+                String.valueOf(u.get("plano")),
                 perguntas, hashes, configurar, Instant.now().plusSeconds(300),new java.util.concurrent.atomic.AtomicInteger());
         segundosFatores.put(desafio, pendente);
 
@@ -209,7 +235,7 @@ public class AuthService {
     }
     static String texto(Map<String,Object> d,String k) { Object v=d.get(k); if(v==null || v.toString().isBlank()) throw new IllegalArgumentException("Campo obrigatório: "+k); return v.toString().trim(); }
     private record SegundoFatorPendente(int usuarioId, int empresaId, String nome, String email,
-                                        String plano, List<String> perguntas, List<String> respostasHash,
+                                        String perfil, String plano, List<String> perguntas, List<String> respostasHash,
                                         boolean configuracaoNecessaria, Instant expiraEm,java.util.concurrent.atomic.AtomicInteger tentativas) {}
     private record Sessao(Map<String,Object> usuario,Instant expiraEm) {}
 }

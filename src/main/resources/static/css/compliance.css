@@ -1,0 +1,144 @@
+/* compliance.css - Estilos para o módulo de Compliance e Gestão de Riscos */
+
+.abas-compliance {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid var(--borda);
+  margin-bottom: 20px;
+}
+
+.aba-btn {
+  background: transparent;
+  border: none;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cinza);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s ease;
+}
+
+.aba-btn:hover {
+  color: var(--azul);
+}
+
+.aba-btn.ativa {
+  color: var(--azul);
+  border-bottom-color: var(--azul);
+  background: var(--azul-claro);
+  border-radius: 6px 6px 0 0;
+}
+
+.aba-conteudo {
+  display: none;
+}
+
+.aba-conteudo.ativa {
+  display: block;
+}
+
+/* Badges de Severidade e Status */
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-critica {
+  background: #fee4e2;
+  color: #b42318;
+  border: 1px solid #fecdca;
+}
+
+.badge-alta {
+  background: #fef0c7;
+  color: #b54708;
+  border: 1px solid #fedf89;
+}
+
+.badge-media {
+  background: #eff8ff;
+  color: #175cd3;
+  border: 1px solid #b2ddff;
+}
+
+.badge-baixa, .badge-conforme {
+  background: #ecfdf3;
+  color: #027a48;
+  border: 1px solid #a6f4c5;
+}
+
+.card-compliance {
+  background: white;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 22px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.05);
+  margin-bottom: 20px;
+}
+
+.tabela-compliance {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.tabela-compliance th, .tabela-compliance td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--borda);
+  font-size: 13px;
+}
+
+.tabela-compliance th {
+  background: #f8fafc;
+  color: var(--cinza);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.tabela-compliance tr:hover {
+  background: #f9fbfd;
+}
+
+.badge-sod {
+  background: #fef3f2;
+  color: #d92d20;
+  font-weight: bold;
+}
+
+.acao-tabela-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: .15s;
+}
+
+.acao-tabela-aprovar {
+  background: #12b76a;
+  color: white;
+}
+
+.acao-tabela-aprovar:hover {
+  background: #0e9355;
+}
+
+.acao-tabela-rejeitar {
+  background: #f04438;
+  color: white;
+}
+
+.acao-tabela-rejeitar:hover {
+  background: #d92d20;
+}

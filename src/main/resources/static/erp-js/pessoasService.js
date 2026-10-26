@@ -60,3 +60,13 @@ export async function removerPessoa(id, tipo = 'CLIENTE') {
     // ===== ETAPA 2 (localStorage) =====
     return storageService.remover(TABELA, id);
 }
+
+export const pessoasService = {
+    listarPessoas,
+    listar: listarPessoas,
+    buscarPessoa,
+    criarPessoa,
+    atualizarPessoa,
+    removerPessoa,
+};
+

@@ -4,6 +4,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.format.annotation.DateTimeFormat;
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.*;
@@ -11,17 +12,44 @@ import java.util.*;
 /**
  * Centraliza operações que alteram estoque.
  *
- * Compra soma quantidades; venda subtrai. O @Transactional garante rollback
- * se qualquer item falhar, evitando compra/venda gravada pela metade.
+ * Venda subtrai e compra soma, sempre pelo InventarioService (lotes, validade e
+ * segunda verificação do saldo). O @Transactional garante rollback se qualquer item
+ * falhar, evitando compra/venda gravada pela metade.
+ *
+ * Controles de compliance (Lei Anticorrupção):
+ * - ETAPA 1.2: rastreabilidade e bloqueio de fornecedores com dados bancários em análise.
+ * - ETAPA 2.1: alertas automáticos para valores > R$ 50.000,00 (ALT-01) e serviços sem contrato (ALT-02).
+ * - ETAPA 2.2: hierarquia de aprovação com dupla alçada para compras >= R$ 10.000,00;
+ *              o estoque dessas compras só entra depois da aprovação final.
+ * - ETAPA 1.1: Regra de Ouro SoD (quem solicita ou aprova a compra não liquida o pagamento).
  */
 @RestController
 public class MovimentoController {
- private final JdbcTemplate db;private final CurrentUser user;private final PosRealtimeService realtime;private final InventarioService inventario;public MovimentoController(JdbcTemplate db,CurrentUser user,PosRealtimeService realtime,InventarioService inventario){this.db=db;this.user=user;this.realtime=realtime;this.inventario=inventario;}
+ private static final BigDecimal LIMITE_ALCADA = new BigDecimal("10000.00");
+ private final JdbcTemplate db;private final CurrentUser user;private final PosRealtimeService realtime;private final InventarioService inventario;private final ComplianceService compliance;
+ public MovimentoController(JdbcTemplate db,CurrentUser user,PosRealtimeService realtime,InventarioService inventario,ComplianceService compliance){this.db=db;this.user=user;this.realtime=realtime;this.inventario=inventario;this.compliance=compliance;}
  /** Registra venda e dá saída no estoque. */
- @PostMapping("/api/vendas") @Transactional Map<String,Object> venda(@RequestBody Map<String,Object>d,@RequestHeader("Authorization")String a){return movimentar(d,a,true);}
- /** Registra compra e dá entrada no estoque. */
- @PostMapping("/api/compras") @Transactional Map<String,Object> compra(@RequestBody Map<String,Object>d,@RequestHeader("Authorization")String a){return movimentar(d,a,false);}
- @GetMapping("/api/compras") List<Map<String,Object>> compras(@RequestHeader("Authorization")String a){return db.queryForList("SELECT id, total, status, data FROM compras WHERE empresa_id=? ORDER BY id DESC",user.empresa(a));}
+ @PostMapping("/api/vendas") @Transactional public Map<String,Object> venda(@RequestBody Map<String,Object>d,@RequestHeader("Authorization")String a){return movimentar(d,a,true);}
+ /** Registra compra e submete ao fluxo de alçadas e compliance. */
+ @PostMapping("/api/compras") @Transactional public Map<String,Object> compra(@RequestBody Map<String,Object>d,@RequestHeader("Authorization")String a){return movimentar(d,a,false);}
+ @GetMapping("/api/compras") public List<Map<String,Object>> compras(@RequestHeader("Authorization")String a){
+  return db.queryForList("""
+   SELECT c.id, c.total, c.status, c.data,
+          c.aprovador_nivel_1 AS "aprovadorNivel1",
+          c.aprovador_nivel_2 AS "aprovadorNivel2",
+          c.data_aprovacao_n1 AS "dataAprovacaoN1",
+          c.data_aprovacao_n2 AS "dataAprovacaoN2",
+          c.nota_fiscal AS "notaFiscal",
+          c.tipo_documento AS "tipoDocumento",
+          f.nome AS "fornecedorNome",
+          u.nome AS "solicitanteNome"
+     FROM compras c
+     LEFT JOIN fornecedores f ON f.id = c.fornecedor_id AND f.empresa_id = c.empresa_id
+     LEFT JOIN usuarios u ON u.id = c.usuario_id
+    WHERE c.empresa_id = ?
+    ORDER BY c.id DESC
+   """, user.empresa(a));
+ }
  @GetMapping("/api/vendas")
  List<Map<String,Object>> vendas(@RequestHeader("Authorization") String a,
          @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate data,
@@ -84,20 +112,100 @@ public class MovimentoController {
  List<Map<String,Object>> estoque(@RequestHeader("Authorization") String a) {
   return ProdutoValidade.aplicar(db,user.empresa(a),db.queryForList("SELECT p.id,p.nome,p.codigo,p.controla_validade AS \"controlaValidade\",e.quantidade AS \"quantidadeTotal\","+InventarioService.DISPONIVEL_SQL+" AS \"quantidadeEstoque\",e.estoque_minimo AS \"estoqueMinimo\" FROM produtos p JOIN estoque e ON e.produto_id=p.id AND e.empresa_id=p.empresa_id WHERE p.empresa_id=? AND p.ativo=true ORDER BY p.nome",user.empresa(a)));
  }
+
+ /** ETAPA 2.2 & ETAPA 3.1: hierarquia de aprovação dinâmica e bloqueio de perfil operacional. */
+ @PostMapping("/api/compras/{id}/aprovar")
+ @Transactional
+ public Map<String,Object> aprovarCompra(@PathVariable int id, @RequestHeader("Authorization") String a) {
+  int e = user.empresa(a);
+  int usuarioId = user.usuario(a);
+  String perfil = user.perfil(a);
+  List<Map<String,Object>> rows = db.queryForList(
+   "SELECT id, total, status, aprovador_nivel_1, usuario_id FROM compras WHERE id = ? AND empresa_id = ? FOR UPDATE", id, e);
+  if (rows.isEmpty()) throw new IllegalArgumentException("Compra não encontrada.");
+  Map<String,Object> compra = rows.get(0);
+  double total = ((Number) compra.get("total")).doubleValue();
+  String status = String.valueOf(compra.get("status"));
+  // Só compras pendentes podem ser aprovadas: evita dar entrada no estoque duas vezes.
+  if (!status.equals("PENDENTE_APROVACAO") && !status.equals("AGUARDANDO_NIVEL_2"))
+   throw new IllegalArgumentException("Esta compra não está aguardando aprovação (situação atual: " + status + ").");
+  Integer n1 = (Integer) compra.get("aprovador_nivel_1");
+  Integer solicitanteId = (Integer) compra.get("usuario_id");
+
+  // ETAPA 3: bloqueio de usuário operacional tentando aprovar unilateralmente compras >= 10k
+  if (total >= 10000.0 && (perfil.equals("compras_operador") || perfil.equals("comprador")
+          || perfil.equals("operador") || perfil.equals("padrao") || perfil.contains("usuario_compras"))) {
+   compliance.registrarAlerta(e, usuarioId, "COMPRA_ID_" + id, total,
+           "TENTATIVA_ELEVACAO_PRIVILEGIO", "CRITICA",
+           "Usuário com perfil restrito de compras tentou aprovar unilateralmente pedido de alto valor sem alçada gerencial.");
+   throw new ComplianceException("COMPLIANCE_ALCADA_VIOLATION",
+           "Violação de Compliance: O usuário atual não possui alçada ou nível hierárquico suficiente para aprovar transações acima de R$ 10.000,00.");
+  }
+
+  if (n1 == null) {
+   // Nível 1: gerente ou administrador
+   if (!perfil.equals("gerente_compras") && !perfil.equals("admin") && !perfil.equals("gerente") && !perfil.equals("diretor"))
+    throw new ComplianceException("COMPLIANCE_ALCADA_VIOLATION", "Apenas gerentes ou administradores possuem alçada de Nível 1 para aprovação.");
+   if (total < 10000.0) {
+    db.update("UPDATE compras SET aprovador_nivel_1 = ?, data_aprovacao_n1 = NOW(), status = 'CONCLUIDA' WHERE id = ? AND empresa_id = ?", usuarioId, id, e);
+    efetivarEntradaEstoqueEContasPagar(id, e);
+    return Map.of("id", id, "status", "CONCLUIDA", "mensagem", "Compra aprovada em alçada única e estoque atualizado.");
+   }
+   db.update("UPDATE compras SET aprovador_nivel_1 = ?, data_aprovacao_n1 = NOW(), status = 'AGUARDANDO_NIVEL_2' WHERE id = ? AND empresa_id = ?", usuarioId, id, e);
+   return Map.of("id", id, "status", "AGUARDANDO_NIVEL_2", "mensagem", "Aprovação Nível 1 registrada. Aguardando aprovação de segundo nível (Diretor/Compliance).");
+  }
+  // Nível 2: usuário distinto do primeiro aprovador e do solicitante
+  if (n1 == usuarioId || (solicitanteId != null && solicitanteId == usuarioId))
+   throw new ComplianceException("COMPLIANCE_ALCADA_VIOLATION",
+           "Violação de Alçada: O segundo aprovador deve ser um usuário distinto do primeiro aprovador e do solicitante.");
+  if (!perfil.equals("diretor") && !perfil.equals("compliance") && !perfil.equals("admin"))
+   throw new ComplianceException("COMPLIANCE_ALCADA_VIOLATION", "A aprovação de Nível 2 exige alçada de Diretor, Compliance ou Administrador.");
+  db.update("UPDATE compras SET aprovador_nivel_2 = ?, data_aprovacao_n2 = NOW(), status = 'CONCLUIDA' WHERE id = ? AND empresa_id = ?", usuarioId, id, e);
+  efetivarEntradaEstoqueEContasPagar(id, e);
+  return Map.of("id", id, "status", "CONCLUIDA", "mensagem", "Aprovação de alçada dupla concluída com sucesso. Estoque atualizado.");
+ }
+
+ /** ETAPA 1.1: processamento de pagamento aplicando a Regra de Ouro SoD. */
+ @PostMapping("/api/compras/{id}/pagar")
+ @Transactional
+ public Map<String,Object> pagarCompra(@PathVariable int id, @RequestHeader("Authorization") String a) {
+  int e = user.empresa(a);
+  int usuarioId = user.usuario(a);
+  var rows = db.queryForList("SELECT status FROM compras WHERE id = ? AND empresa_id = ? FOR UPDATE", id, e);
+  if (rows.isEmpty()) throw new IllegalArgumentException("Compra não encontrada.");
+  if (!"CONCLUIDA".equals(String.valueOf(rows.get(0).get("status"))))
+   throw new IllegalArgumentException("Somente compras concluídas e ainda não pagas podem ser liquidadas.");
+  compliance.validarRegraDeOuroSoD(e, id, usuarioId);
+  db.update("UPDATE compras SET status = 'PAGO' WHERE id = ? AND empresa_id = ?", id, e);
+  db.update("UPDATE contas_pagar SET status = 'pago', data_pagamento = CURRENT_DATE, usuario_liquidacao_id = ? WHERE compra_id = ? AND empresa_id = ?",
+          usuarioId, id, e);
+  return Map.of("id", id, "status", "PAGO", "mensagem", "Pagamento liquidado com sucesso respeitando a segregação de funções.");
+ }
+
  private Map<String,Object> movimentar(Map<String,Object>d,String a,boolean venda){
-  int e=user.empresa(a);Object pessoa=d.get(venda?"clienteId":"fornecedorId");
+  int e=user.empresa(a);int usuarioId=user.usuario(a);Object pessoa=d.get(venda?"clienteId":"fornecedorId");
   if(pessoa==null)throw new IllegalArgumentException("Informe o "+(venda?"cliente":"fornecedor")+".");
   int idPessoa=inteiro(pessoa);String pessoaTabela=venda?"clientes":"fornecedores";
   if(db.queryForObject("SELECT COUNT(*) FROM "+pessoaTabela+" WHERE id=? AND empresa_id=?",Integer.class,idPessoa,e)==0)throw new IllegalArgumentException("Pessoa não encontrada para esta empresa.");
+  // ETAPA 1.3: fornecedor com dados bancários em análise fica com movimentações suspensas.
+  if(!venda && Boolean.TRUE.equals(db.queryForObject("SELECT COALESCE(dados_bancarios_bloqueados,false) FROM fornecedores WHERE id=? AND empresa_id=?",Boolean.class,idPessoa,e)))
+   throw new ComplianceException("COMPLIANCE_FORNECEDOR_BLOQUEADO","Fornecedor com dados bancários em análise preventiva. Movimentações suspensas até validação de compliance.");
   List<?> itens = itens(d.get("itens"));
   if(itens.size()>200 || itens.stream().anyMatch(item -> !(item instanceof Map<?,?>))) throw new IllegalArgumentException("Informe até 200 itens válidos.");
   var ordem=new ArrayList<>(itens);
   ordem.sort(Comparator.comparingInt(item->inteiro(((Map<?,?>)item).get("produtoId"))));
   itens=ordem;
-  String tabela=venda?"vendas":"compras",itabela=venda?"itens_venda":"itens_compra",col=venda?"cliente_id":"fornecedor_id";
   LocalDate data = data(d.get("data"));
-  Integer mov=db.queryForObject("INSERT INTO "+tabela+"(empresa_id,"+col+",usuario_id,total,data) VALUES(?,?,?,0,?) RETURNING id",Integer.class,e,idPessoa,user.usuario(a),data);
-  java.math.BigDecimal total=java.math.BigDecimal.ZERO;
+  String tipoDoc = String.valueOf(d.getOrDefault("tipoDocumento", "MERCADORIA")).trim().toUpperCase(Locale.ROOT);
+  if(!venda && !Set.of("MERCADORIA","SERVICO").contains(tipoDoc)) throw new IllegalArgumentException("Tipo de documento inválido.");
+  String notaFiscal = String.valueOf(d.getOrDefault("notaFiscal", "")).trim();
+  if(notaFiscal.length()>100) throw new IllegalArgumentException("A nota fiscal deve ter até 100 caracteres.");
+  Integer contratoId = d.get("contratoId") != null && !d.get("contratoId").toString().isBlank() ? inteiro(d.get("contratoId")) : null;
+  Integer mov = venda
+   ? db.queryForObject("INSERT INTO vendas(empresa_id,cliente_id,usuario_id,total,data) VALUES(?,?,?,0,?) RETURNING id",Integer.class,e,idPessoa,usuarioId,data)
+   : db.queryForObject("INSERT INTO compras(empresa_id,fornecedor_id,usuario_id,total,data,status,tipo_documento,nota_fiscal,contrato_id) VALUES(?,?,?,0,?,'PENDENTE_CALCULO',?,?,?) RETURNING id",
+       Integer.class,e,idPessoa,usuarioId,data,tipoDoc,notaFiscal,contratoId);
+  BigDecimal total=BigDecimal.ZERO;
   String colunaPreco = venda ? "COALESCE(p.preco_venda, p.preco)" : "COALESCE(p.preco_compra, p.preco)";
   for(Object item:itens){
    if (!(item instanceof Map<?, ?> bruto)) throw new IllegalArgumentException("Item da movimentação inválido.");
@@ -110,23 +218,55 @@ public class MovimentoController {
    int atual=((Number)produto.get(0).get("quantidade")).intValue();
    if(venda&&atual<q)throw new IllegalArgumentException("Estoque insuficiente para o produto "+p+".");
    // O preço é sempre o que está cadastrado no produto; o navegador não decide o valor da compra.
-   java.math.BigDecimal preco=(java.math.BigDecimal)produto.get(0).get("preco");
-   total=total.add(preco.multiply(java.math.BigDecimal.valueOf(q)));
-   if(preco.signum()<0 || total.compareTo(new java.math.BigDecimal("99999999.99"))>0)throw new IllegalArgumentException("O total excede o valor máximo permitido para uma movimentação.");
+   BigDecimal preco=(BigDecimal)produto.get(0).get("preco");
+   total=total.add(preco.multiply(BigDecimal.valueOf(q)));
+   if(preco.signum()<0 || total.compareTo(new BigDecimal("99999999.99"))>0)throw new IllegalArgumentException("O total excede o valor máximo permitido para uma movimentação.");
    if(venda) {
     db.update("INSERT INTO itens_venda(venda_id,produto_id,quantidade,preco_unitario,pos_nome_produto,pos_codigo_produto) VALUES(?,?,?,?,?,?)",mov,p,q,preco,produto.get(0).get("nome"),produto.get(0).get("codigo"));
     inventario.baixar(e,p,q,mov.intValue());
    } else {
-    db.update("INSERT INTO itens_compra(compra_id,produto_id,quantidade,preco_unitario) VALUES(?,?,?,?)",mov,p,q,preco);
+    String lote=Objects.toString(i.get("lote"),"").trim();
     LocalDate validade=i.get("validade")==null || i.get("validade").toString().isBlank()?null:data(i.get("validade"));
-    inventario.entrada(e,p,q,mov.intValue(),Objects.toString(i.get("lote"),""),validade);
+    // Valida já na criação, mesmo quando a entrada no estoque depender de aprovação.
+    inventario.validarEntrada(e,p,q,lote,validade);
+    db.update("INSERT INTO itens_compra(compra_id,produto_id,quantidade,preco_unitario,lote,validade) VALUES(?,?,?,?,?,?)",mov,p,q,preco,lote.isBlank()?null:lote,validade);
    }
   }
-  db.update("UPDATE "+tabela+" SET total=?,status='concluida' WHERE id=? AND empresa_id=?",total,mov,e);
+  String status;
+  if(venda) {
+   status="concluida";
+   db.update("INSERT INTO contas_receber (empresa_id, venda_id, descricao, valor, vencimento, status) VALUES (?, ?, ?, ?, ?, 'pendente')",
+           e, mov, "Venda #" + mov, total, data.plusDays(30));
+  } else {
+   // ETAPA 2.1: nota fiscal de serviço exige contrato homologado (ALT-02).
+   if("SERVICO".equals(tipoDoc)) compliance.validarNotaFiscalServico(e, usuarioId, total.doubleValue(), contratoId);
+   // ETAPA 2.1: alerta automático ALT-01 para transações > R$ 50.000,00.
+   compliance.verificarAlertaValorExcessivo(e, usuarioId, "COMPRA_ID_" + mov, total.doubleValue());
+   // ETAPA 2.2: compras >= R$ 10.000,00 entram em alçada; as demais dão entrada imediata.
+   status = total.compareTo(LIMITE_ALCADA) >= 0 ? "PENDENTE_APROVACAO" : "CONCLUIDA";
+  }
+  db.update("UPDATE "+(venda?"vendas":"compras")+" SET total=?,status=? WHERE id=? AND empresa_id=?",total,status,mov,e);
+  if(!venda && status.equals("CONCLUIDA")) efetivarEntradaEstoqueEContasPagar(mov, e);
   realtime.publicarDepoisDoCommit(e,"estoque-atualizado");
-  return Map.of("id",mov,"total",total);
+  return Map.of("id",mov,"total",total,"status",status);
  }
- private int inteiro(Object valor){try {return new java.math.BigDecimal(String.valueOf(valor)).intValueExact();} catch(RuntimeException ex) {throw new IllegalArgumentException("Informe um número inteiro válido.");}}
+
+ /** Dá entrada dos itens da compra pelos lotes (com segunda verificação) e gera a conta a pagar. */
+ private void efetivarEntradaEstoqueEContasPagar(int compraId, int empresaId) {
+  var itens = db.queryForList("SELECT produto_id, quantidade, lote, validade FROM itens_compra WHERE compra_id = ? ORDER BY produto_id, id", compraId);
+  for (Map<String,Object> item : itens) {
+   Object validade = item.get("validade");
+   LocalDate data = validade == null ? null : validade instanceof java.sql.Date sql ? sql.toLocalDate() : LocalDate.parse(validade.toString());
+   inventario.entrada(empresaId, ((Number) item.get("produto_id")).intValue(), ((Number) item.get("quantidade")).intValue(),
+           compraId, Objects.toString(item.get("lote"), ""), data);
+  }
+  BigDecimal total = db.queryForObject("SELECT total FROM compras WHERE id = ? AND empresa_id = ?", BigDecimal.class, compraId, empresaId);
+  if (db.queryForObject("SELECT COUNT(*) FROM contas_pagar WHERE compra_id = ?", Integer.class, compraId) == 0)
+   db.update("INSERT INTO contas_pagar (empresa_id, compra_id, descricao, valor, vencimento, status) VALUES (?, ?, ?, ?, CURRENT_DATE + 30, 'pendente')",
+           empresaId, compraId, "Compra #" + compraId, total);
+  realtime.publicarDepoisDoCommit(empresaId,"estoque-atualizado");
+ }
+ private int inteiro(Object valor){try {return new BigDecimal(String.valueOf(valor)).intValueExact();} catch(RuntimeException ex) {throw new IllegalArgumentException("Informe um número inteiro válido.");}}
  private List<?> itens(Object valor) {
   if (!(valor instanceof List<?> itens) || itens.isEmpty()) throw new IllegalArgumentException("Informe ao menos um item.");
   return itens;

@@ -25,6 +25,17 @@ public class ApiExceptionHandler {
     @ExceptionHandler(SecurityException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     Map<String, String> unauthorized(SecurityException e) { return Map.of("message", e.getMessage()); }
+    @ExceptionHandler(ComplianceException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    Map<String, Object> complianceError(ComplianceException e) {
+        return Map.of(
+            "status", 403,
+            "codigoErro", e.getCodigoErro(),
+            "mensagem", e.getMessage(),
+            "message", e.getMessage(),
+            "incidenteAuditado", true
+        );
+    }
     @ExceptionHandler(PlanoInsuficienteException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     Map<String, String> forbidden(PlanoInsuficienteException e) { return Map.of("message", e.getMessage()); }
@@ -36,5 +47,7 @@ public class ApiExceptionHandler {
     Map<String, String> conflict(DataIntegrityViolationException e) { return Map.of("message", "Já existe um registro com esses dados ou ele está sendo usado em outra operação."); }
     @ExceptionHandler(DataAccessException.class)
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
-    Map<String, String> databaseUnavailable(DataAccessException e) { return Map.of("message", "Não foi possível acessar o banco de dados. Verifique a configuração da conexão e se o script do banco foi aplicado."); }
+    Map<String, String> databaseUnavailable(DataAccessException e) { 
+        return Map.of("message", "Não foi possível acessar o banco de dados. Verifique a configuração da conexão e se o script do banco foi aplicado."); 
+    }
 }

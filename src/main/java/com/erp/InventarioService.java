@@ -34,6 +34,24 @@ public class InventarioService {
         return saldo;
     }
 
+    /**
+     * Valida uma entrada sem gravar nada (compras que aguardam aprovação de alçada).
+     * Aplica as mesmas regras de entrada(): produto ativo, quantidade, saldo máximo,
+     * lote/validade obrigatórios para perecíveis e mercadoria não vencida.
+     */
+    public void validarEntrada(int empresa,int produto,int quantidade,String codigo,LocalDate validade) {
+        var rows=db.queryForList("SELECT e.quantidade,p.controla_validade FROM estoque e JOIN produtos p ON p.id=e.produto_id AND p.empresa_id=e.empresa_id WHERE e.empresa_id=? AND e.produto_id=? AND p.ativo=true",empresa,produto);
+        if(rows.size()!=1) throw new IllegalArgumentException("Produto indisponível ou estoque inconsistente.");
+        if(quantidade<=0) throw new IllegalArgumentException("Quantidade inválida.");
+        if(((Number)rows.get(0).get("quantidade")).longValue()+quantidade>Integer.MAX_VALUE)
+            throw new IllegalArgumentException("A entrada excede o saldo máximo permitido para o produto.");
+        codigo=codigo==null?"":codigo.trim();
+        if(codigo.length()>100) throw new IllegalArgumentException("O lote deve ter até 100 caracteres.");
+        if(Boolean.TRUE.equals(rows.get(0).get("controla_validade")) && (codigo.isBlank() || validade==null))
+            throw new IllegalArgumentException("Informe lote e validade para o produto perecível.");
+        if(validade!=null && validade.isBefore(hoje())) throw new IllegalArgumentException("Não é permitido receber mercadoria vencida.");
+    }
+
     @Transactional
     public void entrada(int empresa,int produto,int quantidade,int compra,String codigo,LocalDate validade) {
         var saldo=bloquear(empresa,produto);
