@@ -254,3 +254,6 @@ CREATE TABLE IF NOT EXISTS chamados (
     criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_chamados_empresa ON chamados(empresa_id);
+
+-- Desafio 5: saldo conferido após cada movimentação (segunda verificação do hotfix).
+ALTER TABLE movimentacoes_estoque ADD COLUMN IF NOT EXISTS saldo_conferido INTEGER;

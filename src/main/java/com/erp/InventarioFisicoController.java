@@ -151,7 +151,7 @@ public class InventarioFisicoController {
                 if(restante>0) throw new IllegalArgumentException("Os lotes não correspondem ao saldo do produto " + produto + ". Corrija a consistência dos lotes antes de aprovar.");
             }
             db.update("UPDATE estoque SET quantidade=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND empresa_id=?",contado,estoque,empresa);
-            db.update("INSERT INTO movimentacoes_estoque(empresa_id,produto_id,tipo,quantidade,motivo) VALUES (?,?,'AJUSTE',?,?)",empresa,produto,Math.abs(delta),"Inventário físico #"+id+"; ajuste "+(delta>0?"positivo":"negativo")+"; usuário #"+usuario);
+            db.update("INSERT INTO movimentacoes_estoque(empresa_id,produto_id,tipo,quantidade,motivo,saldo_conferido) VALUES (?,?,'AJUSTE',?,?,?)",empresa,produto,Math.abs(delta),"Inventário físico #"+id+"; ajuste "+(delta>0?"positivo":"negativo")+"; usuário #"+usuario,contado);
         }
         db.update("UPDATE inventarios_fisicos SET status='CONCLUIDO',concluido_em=CURRENT_TIMESTAMP,aprovado_por=? WHERE id=? AND empresa_id=?",usuario,id,empresa);
         inventario.notificar(empresa);
