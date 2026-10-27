@@ -8,13 +8,19 @@ import {
     iniciarCarregando,
     pararCarregando,
     mostrarErro,
+    mostrarSucesso,
     limparMensagem,
     renderizarTabela,
     tratarErro,
     classeStatusEstoque,
     badgeValidade,
     escapeHtml,
+    notificarSucesso,
 } from './uiService.js';
+
+/** Chave usada para avisar a listagem de que um produto acabou de ser cadastrado. */
+const CHAVE_PRODUTO_CADASTRADO = 'produtoRecemCadastrado';
+const ATRASO_REDIRECIONAMENTO_MS = 900;
 
 let categoriasDisponiveis = [];
 let ultimaListagem = 0;
@@ -99,14 +105,27 @@ function configurarFormularioCadastro(formProduto) {
         }
 
         iniciarCarregando(botaoCadastrar, 'Cadastrando...');
+        let criado;
         try {
-            await criarProduto(toProdutoDTO(dados));
-            window.location.href = 'produtos-listagem.html';
+            criado = await criarProduto(toProdutoDTO(dados));
         } catch (erro) {
             tratarErro(formProduto, erro);
-        } finally {
             pararCarregando(botaoCadastrar);
+            return;
         }
+
+        // Confirmação visual: mensagem no formulário e, na listagem, aviso + destaque da linha.
+        const nome = dados.nome.trim();
+        try {
+            sessionStorage.setItem(CHAVE_PRODUTO_CADASTRADO, JSON.stringify({
+                id: criado?.id ?? null,
+                codigo: dados.codigo.trim(),
+                nome,
+            }));
+        } catch { /* sem sessionStorage a listagem só não mostra o aviso */ }
+        mostrarSucesso(formProduto, `Produto "${nome}" cadastrado com sucesso! Abrindo a lista de produtos...`);
+        botaoCadastrar.textContent = 'Cadastrado ✓';
+        window.setTimeout(() => { window.location.href = 'produtos-listagem.html'; }, ATRASO_REDIRECIONAMENTO_MS);
     });
 }
 
@@ -116,7 +135,7 @@ function formatarMoeda(valor) {
 
 function criarLinhaProduto(produto) {
     return `
-        <tr>
+        <tr data-produto-id="${escapeHtml(produto.id)}" data-produto-codigo="${escapeHtml(produto.codigo)}">
             <td>${escapeHtml(produto.codigo)}</td>
             <td>${escapeHtml(produto.nome)}</td>
             <td>${escapeHtml(produto.categoriaNome || 'Sem categoria')}</td>
@@ -148,12 +167,36 @@ async function carregarListagemProdutos(tbody, termoBusca = '', categoriaId = ''
     }
 }
 
+function lerProdutoRecemCadastrado() {
+    try {
+        const valor = sessionStorage.getItem(CHAVE_PRODUTO_CADASTRADO);
+        sessionStorage.removeItem(CHAVE_PRODUTO_CADASTRADO);
+        return valor ? JSON.parse(valor) : null;
+    } catch {
+        return null;
+    }
+}
+
+function destacarProduto(tbody, produto) {
+    const linha = [...tbody.querySelectorAll('tr[data-produto-id]')].find((tr) =>
+        (produto.id != null && tr.dataset.produtoId === String(produto.id))
+        || tr.dataset.produtoCodigo === String(produto.codigo));
+    if (!linha) return;
+    linha.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    linha.style.transition = 'background-color 1.5s ease';
+    linha.style.backgroundColor = '#dcfae6';
+    window.setTimeout(() => { linha.style.backgroundColor = ''; }, 4000);
+}
+
 async function configurarListagem(tbody) {
     const campoPesquisa = document.getElementById('pesquisaProdutos');
     const filtroCategoria = document.getElementById('filtroCategoria');
     await carregarCategorias(filtroCategoria, true);
     const recarregar = () => carregarListagemProdutos(tbody, campoPesquisa?.value || '', filtroCategoria?.value || '');
-    recarregar();
+    const recemCadastrado = lerProdutoRecemCadastrado();
+    if (recemCadastrado) notificarSucesso(`Produto "${recemCadastrado.nome}" cadastrado com sucesso.`);
+    await recarregar();
+    if (recemCadastrado) destacarProduto(tbody, recemCadastrado);
     campoPesquisa?.addEventListener('input', recarregar);
     filtroCategoria?.addEventListener('change', recarregar);
     // A listagem não pode manter o saldo/status da abertura após uma venda em outra tela.
