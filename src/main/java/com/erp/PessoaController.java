@@ -11,8 +11,8 @@ import java.util.*;
  */
 @RestController @RequestMapping("/api/pessoas")
 public class PessoaController {
-    private final JdbcTemplate db; private final CurrentUser user; private final PosRealtimeService realtime;
-    public PessoaController(JdbcTemplate db,CurrentUser user,PosRealtimeService realtime){this.db=db;this.user=user;this.realtime=realtime;}
+    private final JdbcTemplate db; private final CurrentUser user; private final PosRealtimeService realtime;private final ComplianceService compliance;
+    public PessoaController(JdbcTemplate db,CurrentUser user,PosRealtimeService realtime,ComplianceService compliance){this.db=db;this.user=user;this.realtime=realtime;this.compliance=compliance;}
     @GetMapping List<Map<String,Object>> listar(@RequestHeader("Authorization")String a){int e=user.empresa(a);List<Map<String,Object>> r=new ArrayList<>();r.addAll(db.queryForList("SELECT id,nome,documento,telefone,email,endereco,'CLIENTE' AS tipo FROM clientes WHERE empresa_id=? ORDER BY id",e));r.addAll(db.queryForList("SELECT id,nome,documento,telefone,email,NULL AS endereco,'FORNECEDOR' AS tipo FROM fornecedores WHERE empresa_id=? ORDER BY id",e));return r;}
     @GetMapping("/{id}") Map<String,Object> buscar(@PathVariable int id,@RequestParam(required=false) String tipo,@RequestHeader("Authorization")String a){
         int empresa=user.empresa(a);
@@ -29,6 +29,7 @@ public class PessoaController {
     /** Cria os dois registros quando a pessoa também for cliente e fornecedor. */
     @PostMapping @Transactional Map<String,Object> criar(@RequestBody Map<String,Object>d,@RequestHeader("Authorization")String a){
         int e=user.empresa(a); String tipo=tipo(d.get("tipo")); validar(d);
+        if(!tipo.equals("CLIENTE")){compliance.validarFornecedorCadastro(e,user.usuario(a),user.perfil(a));validarCamposBancarios(d);}
         Number clienteId = null, fornecedorId = null;
         if (!tipo.equals("FORNECEDOR")) clienteId = inserir("clientes", e, d);
         if (!tipo.equals("CLIENTE")) fornecedorId = inserir("fornecedores", e, d);
@@ -42,6 +43,7 @@ public class PessoaController {
     }
     @PutMapping("/{id}") @Transactional Map<String,Object> atualizar(@PathVariable int id,@RequestBody Map<String,Object>d,@RequestHeader("Authorization")String a){
         int empresa=user.empresa(a);String tipo=tipoIndividual(d.get("tipo"));validar(d);
+        if(tipo.equals("FORNECEDOR")){compliance.validarFornecedorCadastro(empresa,user.usuario(a),user.perfil(a));validarCamposBancarios(d);}
         String tabela=tipo.equals("FORNECEDOR")?"fornecedores":"clientes";
         String sql="UPDATE "+tabela+" SET nome=?,documento=?,telefone=?,email=?"+(tabela.equals("clientes")?",endereco=?":"")+" WHERE id=? AND empresa_id=?";
         List<Object> valores=new ArrayList<>();Collections.addAll(valores,AuthService.texto(d,"nome"),documento(d),opcional(d,"telefone"),opcional(d,"email"));
@@ -53,6 +55,7 @@ public class PessoaController {
     /** O tipo acompanha a exclusão para não apagar um fornecedor de mesmo id que um cliente. */
     @DeleteMapping("/{id}") @Transactional void remover(@PathVariable int id,@RequestParam(defaultValue="CLIENTE") String tipo,@RequestHeader("Authorization")String a){
         int e=user.empresa(a); String tabela = tipoIndividual(tipo).equals("FORNECEDOR") ? "fornecedores" : "clientes";
+        if(tabela.equals("fornecedores"))compliance.validarFornecedorCadastro(e,user.usuario(a),user.perfil(a));
         if(db.update("DELETE FROM "+tabela+" WHERE id=? AND empresa_id=?",id,e)==0)throw new IllegalArgumentException("Pessoa não encontrada.");
         realtime.publicarDepoisDoCommit(e,"catalogo-atualizado");
     }
@@ -65,6 +68,9 @@ public class PessoaController {
     }
     private String tipo(Object valor) { String tipo=String.valueOf(valor==null?"CLIENTE":valor).trim().toUpperCase(Locale.ROOT); if(!Set.of("CLIENTE","FORNECEDOR","CLIENTE_FORNECEDOR").contains(tipo))throw new IllegalArgumentException("Tipo de pessoa inválido."); return tipo; }
     private String tipoIndividual(Object valor) { String tipo=tipo(valor);if(tipo.equals("CLIENTE_FORNECEDOR"))throw new IllegalArgumentException("Informe CLIENTE ou FORNECEDOR para consultar, alterar ou excluir um registro.");return tipo; }
+    private void validarCamposBancarios(Map<String,Object> dados) {
+        if(java.util.stream.Stream.of("banco","agencia","conta","chavePix").anyMatch(dados::containsKey))throw new IllegalArgumentException("Solicite alterações bancárias pelo módulo Compliance para obter a validação de outra pessoa.");
+    }
     private String documento(Map<String,Object> dados) { String valor=opcional(dados,"documento");return valor.isBlank()?null:valor; }
     private String opcional(Map<String,Object> dados,String chave) { Object valor=dados.get(chave); return valor==null?"":valor.toString().trim(); }
     private void validar(Map<String,Object> dados) { if(AuthService.texto(dados,"nome").length()>150||opcional(dados,"documento").length()>20||opcional(dados,"telefone").length()>20||opcional(dados,"email").length()>150||opcional(dados,"endereco").length()>255)throw new IllegalArgumentException("Um dos campos excede o tamanho permitido."); }

@@ -12,6 +12,10 @@ import java.util.Map;
 /** Padroniza erros para que o apiService.js mostre mensagens amigáveis. */
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(ComplianceException.class)
+    org.springframework.http.ResponseEntity<Map<String,String>> compliance(ComplianceException erro) {
+        return org.springframework.http.ResponseEntity.status(erro.status()).body(Map.of("code",erro.codigo(),"message",erro.getMessage()));
+    }
     @ExceptionHandler({MethodArgumentNotValidException.class, HttpMessageNotReadableException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     Map<String, String> invalidPayload(Exception e) { return Map.of("message", "Dados inválidos. Confira produtos, quantidades, valores e a confirmação do pagamento."); }

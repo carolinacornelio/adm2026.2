@@ -42,20 +42,24 @@
 <main class="conteudo">
 <header class="topo"><span class="usuario">👤 Usuário ▾</span><a href="atendimento.html" class="atalho-atendimento" title="Central de atendimento" aria-label="Central de atendimento"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="12" width="4" height="7" rx="2"/><rect x="17" y="12" width="4" height="7" rx="2"/><path d="M19 19v1a2 2 0 0 1-2 2h-4"/></svg></a><button class="botao secundario" data-logout="" type="button">Sair</button></header>
 <section class="pagina">
-<div class="titulo"><h1>Nova Compra</h1><p>Registre uma compra e aumente o estoque automaticamente.</p></div>
+<div class="titulo"><h1>Nova Compra</h1><p>Registre mercadorias ou serviços e acompanhe as aprovações.</p></div>
 <div class="painel">
 <form class="formulario" id="formCompra">
 <div class="linha">
 <div class="campo"><label>Fornecedor</label><select id="selectFornecedor" name="fornecedorId"><option value="">Selecione um fornecedor</option></select></div>
 <div class="campo"><label>Data</label><input id="inputDataCompra" name="data" type="date"/></div>
 </div>
-<p class="ajuda-campo">Produtos perecíveis exigem lote e validade. A validade de hoje é aceita; lotes vencidos não podem entrar.</p><div class="produtos-compra historico-tabela-scroll">
+<div class="linha"><div class="campo"><label for="tipoDocumentoCompra">Tipo de compra</label><select id="tipoDocumentoCompra" name="tipoDocumento"><option value="MERCADORIA">Mercadorias</option><option value="SERVICO">Serviço com contrato</option></select></div><div class="campo"><label for="notaFiscalCompra">Nota fiscal (obrigatória para serviços)</label><input id="notaFiscalCompra" name="notaFiscal" maxlength="100"/></div><div class="campo"><label for="contratoCompra">Contrato do fornecedor</label><select id="contratoCompra" name="contratoId"><option value="">Sem contrato</option></select></div></div>
+<div id="dadosServicoCompra" hidden><div class="campo"><label for="descricaoServicoCompra">Descrição do serviço</label><input id="descricaoServicoCompra" name="descricaoServico" maxlength="255" disabled/></div><div class="campo"><label for="valorServicoCompra">Valor do serviço (R$)</label><input id="valorServicoCompra" name="valorServico" type="number" min="0.01" max="99999999.99" step="0.01" disabled/></div><p class="ajuda-campo">Serviços exigem contrato aprovado, vigente e do mesmo fornecedor. Não movimentam o estoque de produtos.</p></div>
+<div id="itensMercadoriaCompra"><p class="ajuda-campo">Produtos perecíveis exigem lote e validade. A validade de hoje é aceita; lotes vencidos não podem entrar.</p><div class="produtos-compra historico-tabela-scroll">
 <table class="tabela">
 <thead><tr><th>Produto</th><th>Lote</th><th>Validade</th><th>Quantidade</th><th>Preço Unitário</th><th>Total</th><th></th></tr></thead>
 <tbody id="corpoItensCompra"><tr data-item="template"><td><select name="produto"><option value="">Selecione um produto</option></select></td><td><input name="lote" maxlength="100" aria-label="Lote" placeholder="Código do lote"/></td><td><input name="validade" type="date" aria-label="Validade"/></td><td><input min="1" name="quantidade" type="number" value=""/></td><td class="preco-unitario" data-preco="0">R$ 0,00</td><td class="coluna-subtotal">R$ 0,00</td><td><button class="botao-remover-item" data-remover-item type="button" title="Remover item">×</button></td></tr></tbody>
 </table>
 <br/><button class="botao secundario" id="btnAdicionarItemCompra" type="button">+ Adicionar produto</button>
 </div>
+</div>
+<p class="recurso-aviso">Compras a partir de R$ 10.000,00 aguardam duas aprovações antes da entrada no estoque e da criação da conta a pagar. Acompanhe em <a href="compliance.html">Compliance → Compras e pagamentos</a>.</p>
 <div class="total">Total: <span id="totalCompra">R$ 0,00</span></div>
 <div class="botoes"><a class="botao secundario" href="dashboard.html">Cancelar</a><button class="botao primario" id="btnFinalizarCompra" type="button">Finalizar Compra</button></div>
 </form>

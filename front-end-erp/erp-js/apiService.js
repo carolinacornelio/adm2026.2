@@ -84,6 +84,7 @@ async function request(endpoint, { method = 'GET', body, headers, timeoutMs = 20
         method,
         headers: montarHeaders(headers),
     };
+    const autorizacao = config.headers.Authorization;
 
     if (body !== undefined) {
         config.body = JSON.stringify(body);
@@ -117,7 +118,8 @@ async function request(endpoint, { method = 'GET', body, headers, timeoutMs = 20
 
     // Requisições DELETE/PUT do Spring costumam devolver 204 (sem corpo).
     if (!response.ok) {
-        if (response.status === 401 && !endpoint.startsWith('/auth/')) {
+        if (response.status === 401 && !endpoint.startsWith('/auth/')
+            && autorizacao === `Bearer ${sessionStorage.getItem('authToken')}`) {
             sessionStorage.removeItem('authToken');
             sessionStorage.removeItem('usuario');
             window.location.href = 'login.html';
@@ -210,7 +212,11 @@ export const apiService = {
                     break;
                 }
             }
-        } finally { reader.releaseLock(); }
+        } finally {
+            // Encerra a conexão também quando o consumidor falha ao tratar um evento.
+            try { await reader.cancel(); } catch { /* A rede pode já ter sido encerrada. */ }
+            reader.releaseLock();
+        }
     },
 };
 

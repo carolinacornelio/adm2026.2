@@ -9,3 +9,4 @@
 .pos-produtos .pos-estoque-alerta{background:#facc15;color:#422006}
 .pos-produtos .pos-estoque-minimo{background:#dc2626;color:#fff}
 .pos-produtos .pos-estoque-zero{background:#000;color:#fff;white-space:nowrap}
+.pos-dialog-pix{text-align:center}.pos-dialog-pix h2{text-align:left}.pos-pix-qr{display:block;width:min(100%,300px);height:auto;margin:18px auto;border:1px solid var(--borda);border-radius:8px}.pos-pix-valor{font-size:18px!important}.pos-dialog-pix .botoes{justify-content:center}

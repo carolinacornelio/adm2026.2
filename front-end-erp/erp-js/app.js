@@ -72,6 +72,15 @@ protegerPaginaInterna();
 // início do módulo evita mostrar o rótulo provisório até DOMContentLoaded.
 exibirUsuarioLogado();
 
+// O mesmo acesso ao módulo aparece em todas as telas que usam a navegação compartilhada.
+const ferramentas = document.querySelector('[data-pasta="ferramentas"] .menu-pasta-itens');
+if (ferramentas && !ferramentas.querySelector('a[href="compliance.html"]')) {
+    const compliance = document.createElement('a');
+    compliance.href = 'compliance.html';
+    compliance.textContent = 'Compliance';
+    ferramentas.prepend(compliance);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     configurarBotaoLogout();
     aplicarControlePlanos();

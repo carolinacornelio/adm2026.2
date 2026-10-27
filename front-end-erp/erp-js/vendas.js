@@ -17,11 +17,14 @@ import { criarVenda } from './vendasService.js';
 import { estaAutenticado } from './authService.js';
 import { fromPessoaDTO, fromProdutoDTO, toVendaDTO } from './dto.js';
 import { iniciarCarregando, pararCarregando, mostrarErro, limparMensagem, escapeHtml } from './uiService.js';
+import { hojeNoFusoERP } from './timeUtils.js';
 
-let produtosDisponiveis = []; // cache em memória, carregado uma vez ao abrir a tela
+let produtosDisponiveis = [];
+let produtosPorId = new Map();
+const moeda = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 function formatarMoeda(valor) {
-    return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    return moeda.format(Number(valor || 0));
 }
 
 function popularSelectClientes(selectElement, clientes) {
@@ -45,7 +48,7 @@ function popularSelectProdutos(selectElement) {
 function precoUnitarioDaLinha(linha) {
     const produtoId = linha.querySelector('[name="produto"]').value;
     // O backend devolve id numérico, enquanto <select>.value sempre é texto.
-    const produto = produtosDisponiveis.find((p) => String(p.id) === String(produtoId));
+    const produto = produtosPorId.get(String(produtoId));
     return produto ? produto.precoVenda : 0;
 }
 
@@ -93,9 +96,9 @@ function coletarItens(tbody) {
     const itens = [];
     tbody.querySelectorAll('tr').forEach((linha) => {
         const produtoId = linha.querySelector('[name="produto"]').value;
-        const quantidade = Number(linha.querySelector('[name="quantidade"]').value);
-        if (produtoId && quantidade > 0) {
-            itens.push({ produtoId, quantidade, precoUnitario: precoUnitarioDaLinha(linha) });
+        const textoQuantidade = linha.querySelector('[name="quantidade"]').value;
+        if (produtoId || textoQuantidade) {
+            itens.push({ produtoId, quantidade: Number(textoQuantidade), precoUnitario: precoUnitarioDaLinha(linha) });
         }
     });
     return itens;
@@ -105,12 +108,20 @@ function validarVenda(clienteId, data, itens) {
     if (!clienteId) return 'Selecione um cliente.';
     if (!data) return 'Informe a data da venda.';
     if (itens.length === 0) return 'Adicione ao menos um produto com quantidade válida.';
+    if (itens.length > 200) return 'Informe até 200 itens por venda.';
 
     // Validação "de conveniência" no front-end: avisa antes mesmo de enviar.
     // A validação que realmente vale é feita em vendasService.js.
+    const quantidades = new Map();
     for (const item of itens) {
-        const produto = produtosDisponiveis.find((p) => String(p.id) === String(item.produtoId));
-        if (produto && item.quantidade > produto.quantidadeEstoque) {
+        const produto = produtosPorId.get(String(item.produtoId));
+        if (!produto) return 'Selecione um produto válido para cada item preenchido.';
+        if (!Number.isInteger(item.quantidade) || item.quantidade < 1 || item.quantidade > 1000000)
+            return 'Informe quantidades inteiras entre 1 e 1.000.000.';
+        const quantidade = (quantidades.get(item.produtoId) || 0) + item.quantidade;
+        quantidades.set(item.produtoId, quantidade);
+        if (quantidade > 1000000) return 'Quantidade máxima por produto excedida.';
+        if (quantidade > produto.quantidadeEstoque) {
             return `Estoque insuficiente para "${produto.nome}" (disponível: ${produto.quantidadeEstoque}).`;
         }
     }
@@ -125,11 +136,12 @@ async function inicializarTelaVendas(form) {
     const botaoAdicionar = document.getElementById('btnAdicionarItemVenda');
     const botaoFinalizar = document.getElementById('btnFinalizarVenda');
 
-    inputData.value = new Date().toISOString().split('T')[0];
+    inputData.value = hojeNoFusoERP();
 
     const [pessoas, produtos] = await Promise.all([listarPessoas(), listarProdutos()]);
     const clientes = pessoas.map(fromPessoaDTO).filter((p) => p.tipoTexto.includes('Cliente'));
     produtosDisponiveis = produtos.map(fromProdutoDTO);
+    produtosPorId = new Map(produtosDisponiveis.map(p => [String(p.id), p]));
 
     popularSelectClientes(selectCliente, clientes);
     popularSelectProdutos(tbody.querySelector('[name="produto"]'));
@@ -160,7 +172,9 @@ async function inicializarTelaVendas(form) {
         popularSelectProdutos(tbody.querySelector('tr:last-child [name="produto"]'));
     });
 
+    let registrando = false;
     botaoFinalizar.addEventListener('click', async () => {
+        if (registrando) return;
         limparMensagem(form);
 
         const clienteId = selectCliente.value;
@@ -173,6 +187,7 @@ async function inicializarTelaVendas(form) {
             return;
         }
 
+        registrando = true;
         iniciarCarregando(botaoFinalizar, 'Registrando...');
         try {
             const vendaDTO = toVendaDTO({ clienteId, data, itens });
@@ -181,14 +196,21 @@ async function inicializarTelaVendas(form) {
         } catch (erro) {
             mostrarErro(form, erro.message || 'Não foi possível registrar a venda.');
         } finally {
+            registrando = false;
             pararCarregando(botaoFinalizar);
         }
     });
+    form.addEventListener('submit', evento => { evento.preventDefault(); botaoFinalizar.click(); });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!estaAutenticado()) return;
 
     const form = document.getElementById('formVenda');
-    if (form) inicializarTelaVendas(form);
+    if (!form) return;
+    const botao = document.getElementById('btnFinalizarVenda');
+    botao.disabled = true;
+    inicializarTelaVendas(form)
+        .then(() => { botao.disabled = false; })
+        .catch(erro => mostrarErro(form, erro.message || 'Não foi possível carregar os produtos. Atualize a página.'));
 });

@@ -182,22 +182,14 @@ public class ProdutoController {
         }
     }
 
-    static double numero(Map<String, Object> dados, String chave) {
-        try {
-            double valor = Double.parseDouble(String.valueOf(dados.getOrDefault(chave, 0)).replace(',', '.'));
-            if (!Double.isFinite(valor)) throw new NumberFormatException();
-            return valor;
-        } catch (NumberFormatException erro) {
-            throw new IllegalArgumentException("Valor numérico inválido: " + chave);
-        }
-    }
-
     static int intNumero(Map<String, Object> dados, String chave) {
-        double valor = numero(dados, chave);
-        if (valor < 0 || valor != Math.rint(valor) || valor > Integer.MAX_VALUE) {
+        try {
+            int valor = new java.math.BigDecimal(String.valueOf(dados.getOrDefault(chave, 0)).replace(',', '.')).intValueExact();
+            if (valor < 0) throw new NumberFormatException();
+            return valor;
+        } catch (ArithmeticException | NumberFormatException erro) {
             throw new IllegalArgumentException("Valor inteiro não negativo inválido: " + chave);
         }
-        return (int) valor;
     }
 
     private java.math.BigDecimal precoValido(Map<String, Object> dados, String chave) {

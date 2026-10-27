@@ -3,6 +3,7 @@ import { buscarIndicadores } from './dashboardService.js';
 import { buscarFaturamentoMensal } from './faturamentoService.js';
 import { estaAutenticado } from './authService.js';
 import { temAcesso } from './planService.js';
+import { hojeNoFusoERP } from './timeUtils.js';
 
 function formatarMoeda(valor) {
     return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -15,8 +16,7 @@ function formatarPercentual(valor) {
 }
 
 function mesAtual() {
-    const data = new Date();
-    return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`;
+    return hojeNoFusoERP().slice(0, 7);
 }
 
 async function carregarIndicadores() {
@@ -51,15 +51,18 @@ function textoDaAnalise(dados) {
     return 'O faturamento do período selecionado ficou igual ao mês anterior.';
 }
 
+let ultimaConsultaFaturamento = 0;
 async function carregarFaturamento() {
     if (!temAcesso('PLUS')) return;
 
     const referencia = document.getElementById('mesReferencia');
     const analise = document.getElementById('analiseFaturamento');
     if (!referencia || !analise) return;
+    const consulta = ++ultimaConsultaFaturamento;
 
     try {
         const dados = await buscarFaturamentoMensal(referencia.value || mesAtual());
+        if (consulta !== ultimaConsultaFaturamento) return;
         document.getElementById('faturamentoAtual').textContent = formatarMoeda(dados.faturamentoAtual);
         document.getElementById('faturamentoAnterior').textContent = formatarMoeda(dados.faturamentoAnterior);
         document.getElementById('mesAtualLabel').textContent = dados.mesAtualLabel;
@@ -67,6 +70,7 @@ async function carregarFaturamento() {
         document.getElementById('variacaoFaturamento').textContent = formatarPercentual(dados.variacaoPercentual);
         analise.textContent = textoDaAnalise(dados);
     } catch (erro) {
+        if (consulta !== ultimaConsultaFaturamento) return;
         console.error('Não foi possível carregar o faturamento:', erro);
         analise.textContent = erro.message || 'Não foi possível carregar os dados de faturamento.';
     }

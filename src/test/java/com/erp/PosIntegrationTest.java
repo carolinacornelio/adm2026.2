@@ -161,6 +161,16 @@ class PosIntegrationTest {
     @Test void requiresAuthentication() {
         assertEquals(HttpStatus.UNAUTHORIZED,http.postForEntity("/api/pos/vendas",sale(1),Map.class).getStatusCode());
     }
+    @Test void saleTimestampRepresentsActualInstantAndPaymentUsesCommercialDay() {
+        var antes = java.time.Instant.now().minusSeconds(1);
+        var response = post(sale(1),token);
+        assertEquals(HttpStatus.OK,response.getStatusCode());
+        var instante = java.time.OffsetDateTime.parse((String)response.getBody().get("data")).toInstant();
+        assertFalse(instante.isBefore(antes));
+        assertFalse(instante.isAfter(java.time.Instant.now().plusSeconds(1)));
+        var dia = instante.atZone(java.time.ZoneId.of("America/Fortaleza")).toLocalDate();
+        assertEquals(dia,db.queryForObject("SELECT data_recebimento FROM contas_receber",java.time.LocalDate.class));
+    }
     @Test void erpHistoryIncludesEverySaleAndFiltersDatesWithoutExposingOtherCompanies() {
         var posVenda = post(sale(1), token).getBody();
         int posId = ((Number) posVenda.get("id")).intValue();
@@ -503,6 +513,82 @@ class PosIntegrationTest {
             assertEquals(1,db.queryForObject("SELECT COUNT(*) FROM categorias WHERE empresa_id=? AND lower(nome)='bebidas'",Integer.class,empresa));
         }
     }
+    @Test void preciseJsonNumbersCannotBypassQuantityAndPriceValidation() {
+        int fornecedor=db.queryForObject("INSERT INTO fornecedores(empresa_id,nome) VALUES (?,'Fornecedor') RETURNING id",Integer.class,empresa);
+        assertEquals(HttpStatus.BAD_REQUEST,erpPost("/api/compras",Map.of("fornecedorId",fornecedor,
+                "itens",List.of(Map.of("produtoId",produto,"quantidade",new BigDecimal("1.0000000000000001"))))).getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST,erpPost("/api/produtos",Map.of("nome","Precisão","codigo","PRECISAO",
+                "precoVenda",new BigDecimal("10.1000000000000001"))).getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST,erpPost("/api/produtos",Map.of("nome","Precisão","codigo","PRECISAO",
+                "estoqueMinimo",new BigDecimal("1.0000000000000001"))).getStatusCode());
+        var inventario=erpPost("/api/inventarios-fisicos",Map.of()).getBody();
+        int id=((Number)inventario.get("id")).intValue();
+        int item=((Number)((Map<?,?>)((List<?>)inventario.get("itens")).get(0)).get("itemId")).intValue();
+        HttpHeaders headers=new HttpHeaders();headers.setBearerAuth(token);
+        for(Object quantidade:List.of(new BigDecimal("1.0000000000000001"),new BigDecimal("-0.0000000000000001"),2147483648L,"2")) {
+            assertEquals(HttpStatus.BAD_REQUEST,http.exchange("/api/inventarios-fisicos/"+id+"/itens/"+item,HttpMethod.PUT,
+                    new HttpEntity<>(Map.of("quantidadeContada",quantidade),headers),Map.class).getStatusCode());
+        }
+        assertNull(db.queryForObject("SELECT quantidade_contada FROM inventario_fisico_itens WHERE id=?",Integer.class,item));
+        assertEquals(HttpStatus.OK,http.exchange("/api/inventarios-fisicos/"+id+"/itens/"+item,HttpMethod.PUT,
+                new HttpEntity<>(Map.of("quantidadeContada",new BigDecimal("2.0")),headers),Map.class).getStatusCode());
+        assertEquals(2,db.queryForObject("SELECT quantidade_contada FROM inventario_fisico_itens WHERE id=?",Integer.class,item));
+        assertEquals(0,count("compras"));assertEquals(10,stock());assertEquals(1,count("produtos"));
+    }
+    @Test void dashboardIndicatorsPreserveTenantAndActiveProductCounts() {
+        var outra=account("outro-dashboard");
+        int outraEmpresa=((Number)((Map<?,?>)outra.get("usuario")).get("empresaId")).intValue();
+        db.update("INSERT INTO produtos(empresa_id,nome,codigo,preco,ativo) VALUES (?,'Removido','REM',1,false),(?,'Outra empresa','OUT',1,true)",empresa,outraEmpresa);
+        db.update("INSERT INTO clientes(empresa_id,nome) VALUES (?,'Cliente'),(?,'Outro cliente')",empresa,outraEmpresa);
+        db.update("INSERT INTO fornecedores(empresa_id,nome) VALUES (?,'Fornecedor')",empresa);
+        assertEquals(HttpStatus.OK,post(sale(1),token).getStatusCode());
+        var resposta=http.exchange("/api/dashboard/indicadores",HttpMethod.GET,authorized(token),Map.class);
+        assertEquals(HttpStatus.OK,resposta.getStatusCode());
+        assertEquals(Map.of("totalPessoas",2,"totalProdutos",1,"totalCompras",0,"totalVendas",1),resposta.getBody());
+    }
+    @Test void categoriasMantemContadoresDeEstoqueEValidade() {
+        db.update("UPDATE empresas SET plano_assinatura='PLUS' WHERE id=?", empresa);
+        int categoria = db.queryForObject("INSERT INTO categorias(empresa_id,nome) VALUES (?,'Produtos') RETURNING id", Integer.class, empresa);
+        int vazia = db.queryForObject("INSERT INTO categorias(empresa_id,nome) VALUES (?,'Vazia') RETURNING id", Integer.class, empresa);
+        db.update("UPDATE produtos SET categoria_id=? WHERE id=?", categoria, produto);
+        int vencido = 0;
+        for (int saldo : List.of(0, 1, 2, 3, 4)) {
+            int id = db.queryForObject("INSERT INTO produtos(empresa_id,nome,categoria_id) VALUES (?, ?, ?) RETURNING id", Integer.class, empresa, "Saldo " + saldo, categoria);
+            int estoque = db.queryForObject("INSERT INTO estoque(empresa_id,produto_id,quantidade,estoque_minimo) VALUES (?,?,?,2) RETURNING id", Integer.class, empresa, id, saldo);
+            if (saldo == 4) {
+                vencido = id;
+                db.update("INSERT INTO estoque_lotes(empresa_id,produto_id,estoque_id,codigo,quantidade,validade) VALUES (?,?,?,'VENCIDO',1,?)", empresa, id, estoque, InventarioService.hoje().minusDays(1));
+            }
+        }
+        var resposta = http.exchange("/api/categorias", HttpMethod.GET, authorized(token), List.class);
+        assertEquals(HttpStatus.OK, resposta.getStatusCode());
+        Map<?, ?> resumo = (Map<?, ?>) resposta.getBody().stream().filter(c -> ((Number)((Map<?,?>)c).get("id")).intValue() == categoria).findFirst().orElseThrow();
+        for (var esperado : Map.of("quantidade_produtos",6, "estoqueOk",1, "esgotados",1, "abaixoMinimo",1, "noMinimo",1, "proximosMinimo",2, "estoqueEmAlerta",4, "validadeEmAlerta",1).entrySet())
+            assertEquals(esperado.getValue().intValue(), ((Number)resumo.get(esperado.getKey())).intValue(), esperado.getKey());
+        Map<?, ?> semProdutos = (Map<?, ?>) resposta.getBody().stream().filter(c -> ((Number)((Map<?,?>)c).get("id")).intValue() == vazia).findFirst().orElseThrow();
+        assertEquals(0, ((Number)semProdutos.get("estoqueEmAlerta")).intValue());
+        var detalhe = http.exchange("/api/produtos/" + vencido, HttpMethod.GET, authorized(token), Map.class).getBody();
+        assertEquals(1, ((Number)detalhe.get("unidadesVencidas")).intValue());
+        assertEquals(3, ((Number)detalhe.get("quantidadeEstoque")).intValue());
+        var regular = http.exchange("/api/produtos/" + produto, HttpMethod.GET, authorized(token), Map.class).getBody();
+        assertEquals(0, ((Number)regular.get("unidadesVencidas")).intValue());
+    }
+
+    @Test void verificacaoDeAlertasSoGravaQuandoMensagemMuda() {
+        db.update("UPDATE estoque SET quantidade=0,estoque_minimo=2 WHERE produto_id=?", produto);
+        assertEquals(HttpStatus.OK, erpPost("/api/alertas/verificar", Map.of()).getStatusCode());
+        db.update("UPDATE alertas_operacionais SET atualizado_em='2000-01-01T00:00:00Z' WHERE empresa_id=?", empresa);
+        var anterior = db.queryForMap("SELECT mensagem,atualizado_em FROM alertas_operacionais WHERE empresa_id=? AND ativo=true", empresa);
+        assertEquals(HttpStatus.OK, erpPost("/api/alertas/verificar", Map.of()).getStatusCode());
+        assertEquals(anterior, db.queryForMap("SELECT mensagem,atualizado_em FROM alertas_operacionais WHERE empresa_id=? AND ativo=true", empresa));
+        db.update("UPDATE estoque SET quantidade=1 WHERE produto_id=?", produto);
+        assertEquals(HttpStatus.OK, erpPost("/api/alertas/verificar", Map.of()).getStatusCode());
+        var atualizado = db.queryForMap("SELECT mensagem,atualizado_em FROM alertas_operacionais WHERE empresa_id=? AND ativo=true", empresa);
+        assertNotEquals(anterior.get("mensagem"), atualizado.get("mensagem"));
+        assertNotEquals(anterior.get("atualizado_em"), atualizado.get("atualizado_em"));
+        assertEquals(1, count("alertas_operacionais"));
+    }
+
     @Test void migrationPreservesLegacyStockAndCanRunAgainWithoutDuplicatingLots() {
         var script=new org.springframework.jdbc.datasource.init.ResourceDatabasePopulator(new org.springframework.core.io.ClassPathResource("schema.sql"));
         script.execute(db.getDataSource());
@@ -511,5 +597,6 @@ class PosIntegrationTest {
         assertEquals(1,count("estoque_lotes"));
         assertEquals(10,db.queryForObject("SELECT SUM(quantidade) FROM estoque_lotes",Integer.class));
         assertEquals(true,db.queryForObject("SELECT legado FROM estoque_lotes",Boolean.class));
+        assertEquals(2,db.queryForObject("SELECT COUNT(*) FROM pg_indexes WHERE schemaname=current_schema() AND indexname IN ('idx_lotes_estoque_validade','idx_venda_lotes_venda')",Integer.class));
     }
 }

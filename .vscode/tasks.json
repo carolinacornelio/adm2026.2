@@ -1,0 +1,14 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "ERP: compilar com Maven",
+            "type": "shell",
+            "command": "mvn",
+            "args": ["compile"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": ["$javac"],
+            "group": "build"
+        }
+    ]
+}

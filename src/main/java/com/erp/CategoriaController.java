@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
 
 /** CRUD de categorias, sempre isolado pela empresa do usuário autenticado. */
 @RestController
@@ -38,21 +40,38 @@ public class CategoriaController {
               GROUP BY c.id, c.nome
               ORDER BY LOWER(c.nome), c.id
                 """, empresaId);
+        if (categorias.isEmpty()) return categorias;
         var produtos = ProdutoValidade.aplicar(db, empresaId, db.queryForList(
                 "SELECT p.id,p.categoria_id,p.controla_validade AS \"controlaValidade\",COALESCE(e.quantidade,0) AS \"quantidadeTotal\","
                 + InventarioService.DISPONIVEL_SQL + " AS \"quantidadeEstoque\",COALESCE(e.estoque_minimo,0) AS \"estoqueMinimo\""
                 + " FROM produtos p LEFT JOIN estoque e ON e.produto_id=p.id AND e.empresa_id=p.empresa_id WHERE p.empresa_id=? AND p.ativo=true", empresaId));
+        Map<Object, Map<String, Object>> porCategoria = new HashMap<>();
         for (var categoria : categorias) {
-            var vinculados = produtos.stream().filter(p -> categoria.get("id").equals(p.get("categoria_id"))).toList();
-            categoria.put("estoqueOk", vinculados.stream().filter(p -> "OK".equals(p.get("situacaoEstoque"))).count());
-            categoria.put("esgotados", vinculados.stream().filter(p -> "Esgotado".equals(p.get("situacaoEstoque"))).count());
-            categoria.put("estoqueEmAlerta", vinculados.stream().filter(p -> !"OK".equals(p.get("situacaoEstoque")) && !"Esgotado".equals(p.get("situacaoEstoque"))).count());
-            categoria.put("proximosMinimo", vinculados.stream().filter(p -> "Próximo do mínimo".equals(p.get("situacaoEstoque"))).count());
-            categoria.put("noMinimo", vinculados.stream().filter(p -> "No estoque mínimo".equals(p.get("situacaoEstoque"))).count());
-            categoria.put("abaixoMinimo", vinculados.stream().filter(p -> "Abaixo do mínimo".equals(p.get("situacaoEstoque"))).count());
-            categoria.put("validadeEmAlerta", vinculados.stream().filter(p -> java.util.Set.of("BLOQUEADO","PRIORIDADE","IMPORTANTE","NORMAL").contains(p.get("nivelValidade"))).count());
+            for (String campo : List.of("estoqueOk", "esgotados", "estoqueEmAlerta", "proximosMinimo", "noMinimo", "abaixoMinimo", "validadeEmAlerta"))
+                categoria.put(campo, 0L);
+            porCategoria.put(categoria.get("id"), categoria);
+        }
+        var niveisValidade = Set.of("BLOQUEADO", "PRIORIDADE", "IMPORTANTE", "NORMAL");
+        for (var produto : produtos) {
+            var categoria = porCategoria.get(produto.get("categoria_id"));
+            if (categoria == null) continue;
+            String situacao = String.valueOf(produto.get("situacaoEstoque"));
+            String campo = switch (situacao) {
+                case "OK" -> "estoqueOk";
+                case "Esgotado" -> "esgotados";
+                case "Próximo do mínimo" -> "proximosMinimo";
+                case "No estoque mínimo" -> "noMinimo";
+                default -> "abaixoMinimo";
+            };
+            incrementar(categoria, campo);
+            if (!"OK".equals(situacao) && !"Esgotado".equals(situacao)) incrementar(categoria, "estoqueEmAlerta");
+            if (niveisValidade.contains(produto.get("nivelValidade"))) incrementar(categoria, "validadeEmAlerta");
         }
         return categorias;
+    }
+
+    private static void incrementar(Map<String, Object> categoria, String campo) {
+        categoria.put(campo, ((Number) categoria.get(campo)).longValue() + 1);
     }
 
     /** Cria uma categoria sem permitir duplicidade dentro da mesma empresa. */

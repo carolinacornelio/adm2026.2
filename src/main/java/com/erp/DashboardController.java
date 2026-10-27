@@ -3,7 +3,8 @@ package com.erp;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.Timestamp;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -13,6 +14,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/dashboard")
 public class DashboardController {
+    private static final ZoneId FUSO_ERP = ZoneId.of("America/Fortaleza");
     private static final Locale PT_BR = Locale.forLanguageTag("pt-BR");
     private static final DateTimeFormatter ROTULO_MES = DateTimeFormatter.ofPattern("MMMM 'de' uuuu", PT_BR);
 
@@ -30,12 +32,14 @@ public class DashboardController {
     @GetMapping("/indicadores")
     public Map<String, Object> indicadores(@RequestHeader("Authorization") String authorization) {
         int empresaId = user.empresa(authorization);
-        return Map.of(
-                "totalPessoas", count("SELECT COUNT(*) FROM clientes WHERE empresa_id=?", empresaId)
-                        + count("SELECT COUNT(*) FROM fornecedores WHERE empresa_id=?", empresaId),
-                "totalProdutos", count("SELECT COUNT(*) FROM produtos WHERE empresa_id=? AND ativo=true", empresaId),
-                "totalCompras", count("SELECT COUNT(*) FROM compras WHERE empresa_id=?", empresaId),
-                "totalVendas", count("SELECT COUNT(*) FROM vendas WHERE empresa_id=?", empresaId));
+        // Uma ida ao banco, com todos os totais obtidos da mesma fotografia dos dados.
+        return db.queryForMap("""
+                SELECT (SELECT COUNT(*) FROM clientes WHERE empresa_id=?)
+                     + (SELECT COUNT(*) FROM fornecedores WHERE empresa_id=?) AS "totalPessoas",
+                       (SELECT COUNT(*) FROM produtos WHERE empresa_id=? AND ativo=true) AS "totalProdutos",
+                       (SELECT COUNT(*) FROM compras WHERE empresa_id=?) AS "totalCompras",
+                       (SELECT COUNT(*) FROM vendas WHERE empresa_id=?) AS "totalVendas"
+                """, empresaId, empresaId, empresaId, empresaId, empresaId);
     }
 
     /**
@@ -67,13 +71,9 @@ public class DashboardController {
                 "variacaoPercentual", variacaoPercentual);
     }
 
-    private int count(String sql, int empresaId) {
-        return db.queryForObject(sql, Integer.class, empresaId);
-    }
-
     private double totalDoMes(int empresaId, YearMonth mes) {
-        Timestamp inicio = Timestamp.valueOf(mes.atDay(1).atStartOfDay());
-        Timestamp fim = Timestamp.valueOf(mes.plusMonths(1).atDay(1).atStartOfDay());
+        OffsetDateTime inicio = mes.atDay(1).atStartOfDay(FUSO_ERP).toOffsetDateTime();
+        OffsetDateTime fim = mes.plusMonths(1).atDay(1).atStartOfDay(FUSO_ERP).toOffsetDateTime();
         Number total = db.queryForObject("""
                 SELECT COALESCE(SUM(total), 0)
                   FROM vendas

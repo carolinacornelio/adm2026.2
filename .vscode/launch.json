@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "ERP — Spring Boot",
+            "request": "launch",
+            "preLaunchTask": "ERP: compilar com Maven",
+            "mainClass": "com.erp.ErpApplication",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

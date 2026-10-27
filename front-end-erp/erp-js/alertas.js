@@ -1,6 +1,7 @@
 import { apiService } from './apiService.js';
 import { estaAutenticado } from './authService.js';
 import { escapeHtml } from './uiService.js';
+import { formatarDataHora } from './timeUtils.js';
 const nomes = { NORMAL:'Aviso', ALERTA:'Estoque mínimo', IMPORTANTE:'Importante', PRIORIDADE:'Prioridade de validade' };
 
 function iniciar() {
@@ -14,7 +15,7 @@ function iniciar() {
     const mais = document.getElementById('maisAlertas');
     let pagina = 0, carregados = 0, ocupado = false, leituraEmAndamento = false;
     function registro(a, historico = false) {
-        const data = a.criado_em ? new Date(a.criado_em).toLocaleString('pt-BR') : '';
+        const data = a.criado_em ? formatarDataHora(a.criado_em, '') : '';
         return `<article class="alerta-registro ${!a.ativo ? 'alerta-resolvido' : ''}" data-nivel="${escapeHtml(a.nivel)}"><strong>${nomes[a.nivel] || 'Aviso'}</strong><p>${escapeHtml(a.mensagem)}</p>${!a.ativo ? '<small>Condição resolvida ou substituída.</small>' : ''}${historico ? `<small>${escapeHtml(data)} · ${a.lido ? 'Lido' : 'Não lido'}</small>` : ''}${!a.lido ? `<button type="button" class="botao secundario" data-ler-alerta="${Number(a.id)}">Marcar como lida</button>` : ''}</article>`;
     }
     async function carregar(atualizar = false, acrescentar = false, somenteCards = false) {

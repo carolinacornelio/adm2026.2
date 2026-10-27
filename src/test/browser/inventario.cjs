@@ -5,7 +5,7 @@ const path = require('path');
 const assert = require('node:assert/strict');
 const { randomUUID } = require('crypto');
 const baseURL = 'http://127.0.0.1:18765';
-const output = path.resolve('docs/inventario/evidencias');
+const output = path.resolve(process.env.ERP_BROWSER_OUTPUT || 'target/inventario-evidencias');
 const dia = offset => { const d=new Date();d.setDate(d.getDate()+offset);return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Fortaleza',year:'numeric',month:'2-digit',day:'2-digit'}).format(d); };
 (async () => {
     const api=await request.newContext({baseURL});
@@ -53,7 +53,7 @@ const dia = offset => { const d=new Date();d.setDate(d.getDate()+offset);return 
         await pos.waitForFunction(()=>document.querySelector('#sync-status').textContent.includes('Conectado'));
         const started=performance.now();
         const venda=await call('post','/api/pos/vendas',{chaveOperacao:randomUUID(),itens:[{produtoId:produto.id,quantidade:2}],desconto:0,totalEsperado:11,formaPagamento:'DINHEIRO',valorRecebido:20,pagamentoConfirmado:true});
-        await page.waitForFunction(()=>[...document.querySelectorAll('#listaEstoque tr')].some(tr=>tr.cells[0].textContent==='Leite integral 1 L' && tr.cells[2].textContent==='8'),null,{timeout:2000});
+        await page.waitForFunction(()=>[...document.querySelectorAll('#listaEstoque tr')].some(tr=>tr.cells[0].textContent==='Leite integral 1 L' && tr.cells[1].textContent==='8' && tr.cells[2].textContent.startsWith('8 · ')),null,{timeout:2000});
         const latencyMs=Math.round(performance.now()-started);
         assert.ok(latencyMs<2000,`Latência local: ${latencyMs} ms`);
         await page.screenshot({path:path.join(output,'inventario.png'),fullPage:true});

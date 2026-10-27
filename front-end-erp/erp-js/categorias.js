@@ -5,6 +5,7 @@ import { escapeHtml, iniciarCarregando, pararCarregando } from './uiService.js';
 
 let categoriaEmEdicao = null;
 let ultimaCarga = 0;
+let categoriasExibidas = [];
 
 function elementos() {
     return {
@@ -47,6 +48,7 @@ function resumoSituacao(categoria) {
 }
 
 function renderizar(categorias) {
+    categoriasExibidas = categorias;
     const { lista } = elementos();
     if (!categorias.length) {
         lista.innerHTML = '<tr><td class="estado-vazio" colspan="4">Nenhuma categoria cadastrada.</td></tr>';
@@ -117,7 +119,7 @@ function configurarAcoes() {
         const excluir = evento.target.closest('[data-excluir]');
 
         if (editar) {
-            const categoria = (await listarCategorias()).find((item) => String(item.id) === editar.dataset.editar);
+            const categoria = categoriasExibidas.find((item) => String(item.id) === editar.dataset.editar);
             if (!categoria) return;
             const { nome, salvar, cancelar } = elementos();
             categoriaEmEdicao = categoria.id;

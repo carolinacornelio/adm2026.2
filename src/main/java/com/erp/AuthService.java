@@ -67,7 +67,7 @@ public class AuthService {
                     pergunta_seguranca_3, resposta_seguranca_hash_3
                 ) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING id
                 """, Number.class,
-                empresaId, texto(d,"nome"), email, encoder.encode(senha), "padrao",
+                empresaId, texto(d,"nome"), email, encoder.encode(senha), "admin",
                 perguntas.get(0), encoder.encode(respostas.get(0)),
                 perguntas.get(1), encoder.encode(respostas.get(1)),
                 perguntas.get(2), encoder.encode(respostas.get(2)));
@@ -153,7 +153,17 @@ public class AuthService {
                 String.class,
                 empresaId));
     }
-    private Map<String,Object> loginPorId(int id,int empresa,String nome,String email,String plano) { String token=UUID.randomUUID().toString(); Map<String,Object> u=Map.of("id",id,"empresaId",empresa,"nome",nome,"email",email,"plano",PlanService.normalizar(plano)); sessoes.put(token,new Sessao(u,Instant.now().plusSeconds(43200))); return Map.of("token",token,"usuario",u); }
+    private Map<String,Object> loginPorId(int id,int empresa,String nome,String email,String plano) { String token=UUID.randomUUID().toString(); String perfil=db.queryForObject("SELECT COALESCE(perfil,'padrao') FROM usuarios WHERE id=? AND empresa_id=?",String.class,id,empresa); Map<String,Object> u=Map.of("id",id,"empresaId",empresa,"nome",nome,"email",email,"perfil",perfil,"plano",PlanService.normalizar(plano)); sessoes.put(token,new Sessao(u,Instant.now().plusSeconds(43200))); return Map.of("token",token,"usuario",u); }
+
+    /** Provisionamento interno: o colaborador define suas perguntas de segurança no primeiro login. */
+    public Map<String,Object> criarColaborador(int empresa, Map<String,Object> dados, String perfil) {
+        String nome=texto(dados,"nome"), email=texto(dados,"email").toLowerCase(Locale.ROOT), senha=texto(dados,"senha");
+        if(nome.length()>150 || email.length()>150 || !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) throw new IllegalArgumentException("Informe nome e e-mail válidos, com até 150 caracteres.");
+        if(senha.length()<6) throw new IllegalArgumentException("A senha deve ter pelo menos 6 caracteres.");
+        validarTamanhoBCrypt(senha,"senha");
+        Integer id=db.queryForObject("INSERT INTO usuarios(empresa_id,nome,email,senha_hash,perfil) VALUES (?,?,?,?,?) RETURNING id",Integer.class,empresa,nome,email,encoder.encode(senha),perfil);
+        return Map.of("id",id,"nome",nome,"email",email,"perfil",perfil);
+    }
     private Map<String,Object> iniciarSegundoFator(Map<String,Object> u) {
         List<String> perguntas = List.of(
                 valorOuVazio(u.get("pergunta_seguranca_1")),

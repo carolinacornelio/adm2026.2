@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Compliance | ERP</title>
+<script src="./erp-js/initialUi.js"></script>
+<link href="./css/tela.css" rel="stylesheet"/>
+<link href="./css/compliance.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar"><div class="logo">ERP</div><nav class="menu" aria-label="Navegação principal">
+<a href="dashboard.html">Dashboard</a><a href="pos.html" data-troca-sistema="true">POS</a>
+<details class="menu-pasta" data-pasta="cadastros"><summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Cadastros</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary><div class="menu-pasta-itens"><a href="pessoas-listagem.html">Pessoas</a><a href="pessoas-cadastro.html">Cadastrar pessoa</a><a href="produtos-listagem.html">Produtos</a><a href="produtos-cadastro.html">Cadastrar produto</a><a href="categorias.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Categorias</a></div></details>
+<details class="menu-pasta" data-pasta="operacao"><summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Operação</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary><div class="menu-pasta-itens"><a href="compras.html">Compras</a><a href="vendas.html">Vendas</a><a href="historico-vendas.html">Histórico de vendas</a><a href="estoque.html">Estoque</a></div></details>
+<details class="menu-pasta" data-pasta="ferramentas" open><summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Ferramentas</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary><div class="menu-pasta-itens"><a href="compliance.html" class="ativo" aria-current="page">Compliance</a><a href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Assistente IA</a></div></details>
+</nav></aside>
+<main class="conteudo">
+<header class="topo"><span class="usuario">👤 Usuário ▾</span><a href="atendimento.html" class="atalho-atendimento" title="Central de atendimento" aria-label="Central de atendimento"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="12" width="4" height="7" rx="2"/><rect x="17" y="12" width="4" height="7" rx="2"/><path d="M19 19v1a2 2 0 0 1-2 2h-4"/></svg></a><button class="botao secundario" data-logout type="button">Sair</button></header>
+<section class="pagina compliance-pagina">
+<div class="historico-topo"><div class="titulo"><h1>Compliance</h1><p>Contratos, aprovações de compras e revisão de dados bancários.</p><p class="ajuda-campo" id="perfilCompliance"></p></div><button class="botao secundario" id="atualizarCompliance" type="button">Atualizar painel</button></div>
+<p id="mensagemCompliance" role="status" class="recurso-aviso" hidden></p>
+<div class="compliance-resumo"><div class="painel"><strong id="totalComprasPendentes">—</strong><span>Compras em aprovação</span></div><div class="painel"><strong id="totalContratosPendentes">—</strong><span>Contratos em homologação</span></div><div class="painel"><strong id="totalPendencias4Olhos">—</strong><span>Alterações bancárias visíveis</span></div><div class="painel"><strong id="totalTransacoesRisco">—</strong><span>Alertas pendentes visíveis</span></div></div>
+<div class="compliance-abas" role="tablist" aria-label="Áreas de compliance">
+<button id="tab-compras" role="tab" aria-controls="painelCompras" aria-selected="true" data-painel="painelCompras" type="button">Compras e pagamentos</button>
+<button id="tab-contratos" role="tab" aria-controls="painelContratos" aria-selected="false" data-painel="painelContratos" type="button">Contratos</button>
+<button id="tab-banco" role="tab" aria-controls="painelBanco" aria-selected="false" data-painel="painelBanco" type="button">Dados bancários</button>
+<button id="tab-riscos" role="tab" aria-controls="painelRiscos" aria-selected="false" data-painel="painelRiscos" type="button">Riscos e auditoria</button>
+<button id="tab-equipe" role="tab" aria-controls="painelEquipe" aria-selected="false" data-painel="painelEquipe" type="button">Equipe e perfis</button>
+</div>
+<section class="painel" id="painelCompras" role="tabpanel" aria-labelledby="tab-compras">
+<div class="historico-topo"><h2>Compras e pagamentos</h2><a class="botao primario" href="compras.html">+ Nova compra</a></div>
+<p class="ajuda-campo">A partir de R$ 10.000,00, a entrada aguarda duas aprovações: Gerente de Compras/Diretor/Administrador e depois outro Diretor/Compliance/Administrador. O solicitante não aprova; quem solicita ou aprova não paga. Exibindo os últimos 500 pedidos.</p>
+<div class="historico-tabela-scroll"><table class="tabela"><thead><tr><th>Pedido</th><th>Data</th><th>Fornecedor / solicitante</th><th>Total</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="tabelaComprasCompliance"></tbody></table></div>
+</section>
+<section class="painel" id="painelContratos" role="tabpanel" aria-labelledby="tab-contratos" hidden>
+<h2>Contratos de fornecedores</h2><p class="ajuda-campo">Serviços exigem contrato aprovado, vigente e do mesmo fornecedor. Contratos acima de R$ 50.000,00 precisam de homologação por outra pessoa habilitada. Exibindo os últimos 500 contratos.</p>
+<details class="compliance-form" id="novoContrato" hidden><summary>+ Novo contrato</summary>
+<form id="formContrato" class="formulario">
+<div class="linha"><div class="campo"><label for="fornecedorContrato">Fornecedor</label><select id="fornecedorContrato" name="fornecedorId" required></select></div><div class="campo"><label for="numeroContrato">Número do contrato</label><input id="numeroContrato" name="numeroContrato" maxlength="50" required/></div><div class="campo"><label for="valorContrato">Valor total (R$)</label><input id="valorContrato" name="valorTotal" type="number" min="0.01" max="99999999.99" step="0.01" required/></div></div>
+<div class="campo"><label for="objetoContrato">Objeto do contrato</label><input id="objetoContrato" name="objeto" maxlength="255" required/></div>
+<div class="campo"><label for="arquivoContrato">Link HTTP/HTTPS do documento</label><input id="arquivoContrato" name="arquivoUrl" type="url" maxlength="500" placeholder="https://.../contrato.pdf" required/></div>
+<div class="linha"><div class="campo"><label for="inicioContrato">Início da vigência (opcional)</label><input id="inicioContrato" name="dataInicio" type="date"/></div><div class="campo"><label for="fimContrato">Fim da vigência (opcional)</label><input id="fimContrato" name="dataFim" type="date"/></div></div>
+<button class="botao primario" type="submit">Salvar contrato</button>
+</form></details>
+<div class="historico-tabela-scroll"><table class="tabela"><thead><tr><th>Contrato</th><th>Fornecedor</th><th>Objeto / vigência</th><th>Valor</th><th>Situação</th><th>Documento</th><th>Ação</th></tr></thead><tbody id="tabelaContratos"></tbody></table></div>
+</section>
+<section class="painel" id="painelBanco" role="tabpanel" aria-labelledby="tab-banco" hidden>
+<h2>Revisão de dados bancários</h2><p class="ajuda-campo">Toda alteração exige comprovante e decisão de outra pessoa com perfil Administrador, Diretor ou Compliance. Os dados anteriores permanecem em uso até a aprovação; compras e pagamentos do fornecedor ficam suspensos durante a análise.</p>
+<details class="compliance-form" id="novaAlteracaoBanco" hidden><summary>+ Solicitar alteração bancária</summary>
+<form id="formBanco" class="formulario">
+<div class="campo"><label for="fornecedorBanco">Fornecedor</label><select id="fornecedorBanco" name="fornecedorId" required></select></div><p class="ajuda-campo" id="dadosBancoAtuais"></p>
+<div class="linha"><div class="campo"><label for="bancoFornecedor">Banco</label><input id="bancoFornecedor" name="banco" maxlength="50"/></div><div class="campo"><label for="agenciaFornecedor">Agência</label><input id="agenciaFornecedor" name="agencia" maxlength="20"/></div><div class="campo"><label for="contaFornecedor">Conta</label><input id="contaFornecedor" name="conta" maxlength="30"/></div></div>
+<div class="campo"><label for="pixFornecedor">Chave Pix</label><input id="pixFornecedor" name="chavePix" maxlength="100"/></div>
+<div class="campo"><label for="comprovanteBanco">Link HTTP/HTTPS do comprovante bancário</label><input id="comprovanteBanco" name="arquivoComprobatorioUrl" type="url" maxlength="500" required/></div>
+<p class="ajuda-campo">Informe uma chave Pix ou banco, agência e conta completos. O link referencia um documento que sua equipe já disponibilizou.</p>
+<button class="botao primario" type="submit">Solicitar revisão bancária</button>
+</form></details>
+<div class="historico-tabela-scroll"><table class="tabela"><thead><tr><th>Solicitação</th><th>Fornecedor / solicitante</th><th>Dados propostos</th><th>Comprovante</th><th>Decisão</th></tr></thead><tbody id="tabela4Olhos"></tbody></table></div>
+</section>
+<section class="painel" id="painelRiscos" role="tabpanel" aria-labelledby="tab-riscos" hidden>
+<h2>Registros de risco</h2><p class="ajuda-campo">Acesso de Administrador, Diretor e Compliance. Os últimos 500 registros incluem tentativas bloqueadas, valores acima de R$ 50.000,00 e alterações de equipe. A revisão registra uma justificativa.</p>
+<div class="historico-tabela-scroll"><table class="tabela"><thead><tr><th>Data / usuário</th><th>Referência</th><th>Valor</th><th>Regra / gravidade</th><th>Detalhes</th><th>Revisão</th></tr></thead><tbody id="tabelaTransacoesRisco"></tbody></table></div>
+</section>
+<section class="painel" id="painelEquipe" role="tabpanel" aria-labelledby="tab-equipe" hidden>
+<h2>Equipe e segregação de funções</h2><p class="ajuda-campo">O administrador cadastra colaboradores nesta empresa e atribui os perfis. No primeiro login, cada colaborador define suas perguntas de segurança. A revisão de perfis identifica concentração de permissões; a autorização de cada operação é conferida pelo servidor.</p>
+<details class="compliance-form" id="novoUsuario" hidden><summary>+ Cadastrar colaborador</summary>
+<form id="formUsuario" class="formulario"><div class="linha"><div class="campo"><label for="nomeColaborador">Nome</label><input id="nomeColaborador" name="nome" maxlength="150" required/></div><div class="campo"><label for="emailColaborador">E-mail</label><input id="emailColaborador" name="email" type="email" maxlength="150" required/></div></div><div class="linha"><div class="campo"><label for="senhaColaborador">Senha inicial</label><input id="senhaColaborador" name="senha" type="password" minlength="6" maxlength="72" autocomplete="new-password" required/></div><div class="campo"><label for="perfilColaborador">Perfil</label><select id="perfilColaborador" name="perfil" required></select></div></div><button class="botao primario" type="submit">Cadastrar colaborador</button></form>
+</details>
+<div class="historico-tabela-scroll"><table class="tabela"><thead><tr><th>Usuário</th><th>Perfil</th><th>Revisão de permissões</th><th>Ação</th></tr></thead><tbody id="tabelaAuditoriaSoD"></tbody></table></div>
+</section>
+<dialog class="historico-dialog" id="detalhesCompliance" aria-labelledby="tituloDetalhesCompliance"><h2 id="tituloDetalhesCompliance">Itens da compra</h2><div id="conteudoDetalhesCompliance"></div><button class="botao secundario" type="button" data-fechar="detalhesCompliance">Fechar</button></dialog>
+<dialog class="historico-dialog" id="revisaoCompliance" aria-labelledby="tituloRevisaoCompliance"><h2 id="tituloRevisaoCompliance">Revisar registro de risco</h2><form class="formulario" id="formRevisaoAlerta"><input name="id" type="hidden"/><div class="campo"><label for="justificativaAlerta">Justificativa da revisão</label><textarea id="justificativaAlerta" name="justificativa" maxlength="500" required></textarea></div><div class="botoes"><button class="botao secundario" type="button" data-fechar="revisaoCompliance">Cancelar</button><button class="botao primario" type="submit">Registrar revisão</button></div></form></dialog>
+</section></main></div>
+<script type="module" src="./erp-js/app.js"></script><script type="module" src="./erp-js/compliance.js"></script>
+</body></html>

@@ -48,7 +48,8 @@ public class AlertaService {
     private void registrar(int empresa,String chave,String tipo,String nivel,String mensagem,Set<String> atuais) {
         atuais.add(chave);
         db.update("INSERT INTO alertas_operacionais(empresa_id,chave,tipo,nivel,mensagem) VALUES (?,?,?,?,?) "
-                +"ON CONFLICT (empresa_id,chave) WHERE ativo=true DO UPDATE SET mensagem=EXCLUDED.mensagem,atualizado_em=CURRENT_TIMESTAMP",
+                +"ON CONFLICT (empresa_id,chave) WHERE ativo=true DO UPDATE SET mensagem=EXCLUDED.mensagem,atualizado_em=CURRENT_TIMESTAMP "
+                +"WHERE alertas_operacionais.mensagem IS DISTINCT FROM EXCLUDED.mensagem",
                 empresa,chave,tipo,nivel,mensagem);
     }
 

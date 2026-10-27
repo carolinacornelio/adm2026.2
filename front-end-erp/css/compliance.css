@@ -1,0 +1,25 @@
+.compliance-pagina .compliance-resumo { display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px; }
+.compliance-resumo .painel { display:flex;flex-direction:column;gap:8px;padding:18px; }
+.compliance-resumo strong { color:var(--azul-escuro);font-size:28px; }
+.compliance-resumo span { color:var(--cinza);font-size:13px; }
+.compliance-abas { display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px; }
+.compliance-abas button { padding:11px 15px;border:1px solid var(--borda);border-radius:8px;background:white;color:var(--texto);cursor:pointer;font-weight:600; }
+.compliance-abas [aria-selected="true"] { background:var(--azul);color:white;border-color:var(--azul); }
+.compliance-abas button:focus-visible { outline:3px solid var(--azul-escuro);outline-offset:2px; }
+.compliance-pagina h2 { font-size:20px;margin-bottom:12px; }
+.compliance-pagina .ajuda-campo { margin:10px 0 16px;line-height:1.5; }
+.compliance-form { border:1px solid var(--borda);border-radius:8px;padding:14px;margin:16px 0; }
+.compliance-form summary { cursor:pointer;color:var(--azul);font-weight:600; }
+.compliance-form form { padding-top:18px; }
+.compliance-pagina .tabela td { vertical-align:top; }
+.compliance-pagina .tabela small { display:block;margin-top:6px;line-height:1.4;color:var(--cinza); }
+.compliance-pagina .acoes-tabela { flex-wrap:wrap;min-width:130px; }
+.compliance-pagina .tabela select { max-width:200px;padding:8px;border:1px solid var(--borda);border-radius:6px;background:white; }
+.compliance-pagina .compliance-link { color:var(--azul);text-decoration:underline; }
+.compliance-pagina textarea { min-height:100px;padding:12px;border:1px solid var(--borda);border-radius:8px;font:inherit;resize:vertical; }
+.compliance-pagina #mensagemCompliance[data-erro="true"] { border-color:var(--vermelho);color:#a12622; }
+.compliance-status { display:inline-block;padding:5px 8px;border-radius:7px;font-size:12px; }
+.compliance-status.ok { color:#027a48;background:#ecfdf3; }
+.compliance-status.pendente { color:#854700;background:#fff4d6; }
+.compliance-status.neutro { color:var(--cinza);background:#f2f4f7; }
+@media(max-width:640px) { .compliance-pagina>.historico-topo { align-items:stretch;flex-direction:column;gap:12px; }.compliance-abas button { flex:1 1 140px; }.compliance-pagina .painel { padding:14px; } }

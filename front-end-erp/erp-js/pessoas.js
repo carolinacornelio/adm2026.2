@@ -101,9 +101,13 @@ function configurarListagem(tbody) {
 
     const campoPesquisa = document.getElementById('pesquisaPessoas');
     if (campoPesquisa) {
-        campoPesquisa.addEventListener('input', (evento) => {
-            carregarListagemPessoas(tbody, evento.target.value);
+        let buscaPendente;
+        campoPesquisa.addEventListener('input', () => {
+            ++versaoBusca;
+            clearTimeout(buscaPendente);
+            buscaPendente = setTimeout(() => carregarListagemPessoas(tbody, campoPesquisa.value), 200);
         });
+        window.addEventListener('pagehide', () => clearTimeout(buscaPendente), { once: true });
     }
 
     // Delegação de evento: um único listener cuida de todos os botões

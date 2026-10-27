@@ -577,7 +577,7 @@ public class IAService {
         String filtro=filtroNovosModulos("c",consulta,params,true);
         // Não selecionar cliente, título ou descrição: são campos livres que podem conter dados pessoais e instruções.
         return bancoLeitura().queryForList("SELECT c.id AS numero_chamado,c.severidade,c.situacao,"
-                +"c.criado_em AT TIME ZONE 'America/Fortaleza' AS aberto_em,COUNT(*) OVER() AS total_registros "
+                +"TO_CHAR(c.criado_em AT TIME ZONE 'America/Fortaleza','YYYY-MM-DD HH24:MI:SS') AS aberto_em,COUNT(*) OVER() AS total_registros "
                 +"FROM chamados c WHERE "+filtro
                 +" ORDER BY CASE c.severidade WHEN 'critica' THEN 0 WHEN 'alta' THEN 1 ELSE 2 END,c.id DESC LIMIT "+MAX_LISTA,params.toArray());
     }
@@ -607,7 +607,9 @@ public class IAService {
         var params=parametrosNovosModulos(empresaId,consulta);
         String filtro=filtroNovosModulos("i",consulta,params,false);
         StringBuilder sql=new StringBuilder("""
-                SELECT i.id AS numero_inventario,i.status,i.criado_em AS aberto_em,i.concluido_em,
+                SELECT i.id AS numero_inventario,i.status,
+                       TO_CHAR(i.criado_em AT TIME ZONE 'America/Fortaleza','YYYY-MM-DD HH24:MI:SS') AS aberto_em,
+                       TO_CHAR(i.concluido_em AT TIME ZONE 'America/Fortaleza','YYYY-MM-DD HH24:MI:SS') AS concluido_em,
                        p.nome AS produto,x.quantidade_sistema,x.quantidade_contada,
                        x.quantidade_contada-x.quantidade_sistema AS diferenca,
                        (x.quantidade_contada-x.quantidade_sistema)*x.preco_unitario AS valor_estimado_diferenca,

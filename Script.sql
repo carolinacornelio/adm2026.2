@@ -6,7 +6,7 @@ CREATE TABLE empresas (
     nome_fantasia VARCHAR(150) NOT NULL,
     documento VARCHAR(20) UNIQUE, -- CNPJ da empresa que assina o ERP
     plano_assinatura VARCHAR(20) DEFAULT 'BASE', -- 'BASE', 'PLUS', 'PREMIUM'
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE usuarios (
@@ -16,7 +16,7 @@ CREATE TABLE usuarios (
     email VARCHAR(150) UNIQUE NOT NULL,
     senha_hash VARCHAR(255) NOT NULL, 
     perfil VARCHAR(50) DEFAULT 'padrao', 
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- CADASTROS (Agora todos vinculados à empresa_id)
@@ -25,7 +25,7 @@ CREATE TABLE categorias (
     id SERIAL PRIMARY KEY,
     empresa_id INTEGER REFERENCES empresas(id) ON DELETE CASCADE,
     nome VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE produtos (
@@ -37,7 +37,7 @@ CREATE TABLE produtos (
     categoria_id INTEGER REFERENCES categorias(id) ON DELETE SET NULL,
     descricao TEXT,
     ativo BOOLEAN DEFAULT TRUE, -- Substitui o DELETE. Marca como FALSE para ocultar, mantendo o histórico de vendas.
-    created_at TIMESTAMP DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE (empresa_id, codigo) -- O código do produto só precisa ser único dentro daquela empresa
 );
 
@@ -49,7 +49,7 @@ CREATE TABLE clientes (
     telefone VARCHAR(20),
     email VARCHAR(150),
     endereco VARCHAR(255),
-    created_at TIMESTAMP DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE (empresa_id, documento)
 );
 
@@ -60,7 +60,7 @@ CREATE TABLE fornecedores (
     documento VARCHAR(20),
     telefone VARCHAR(20),
     email VARCHAR(150),
-    created_at TIMESTAMP DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE (empresa_id, documento)
 );
 
@@ -73,7 +73,7 @@ CREATE TABLE estoque (
     quantidade INTEGER NOT NULL DEFAULT 0,
     estoque_minimo INTEGER DEFAULT 0, 
     local VARCHAR(100) DEFAULT 'padrao',
-    updated_at TIMESTAMP DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE movimentacoes_estoque (
@@ -83,7 +83,7 @@ CREATE TABLE movimentacoes_estoque (
     tipo VARCHAR(10) NOT NULL, 
     quantidade INTEGER NOT NULL,
     motivo VARCHAR(255),
-    data TIMESTAMP DEFAULT NOW()
+    data TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- VENDAS E COMPRAS
@@ -95,7 +95,7 @@ CREATE TABLE vendas (
     usuario_id INTEGER REFERENCES usuarios(id),
     status VARCHAR(20) DEFAULT 'aberta', 
     total NUMERIC(10,2) DEFAULT 0,
-    data TIMESTAMP DEFAULT NOW()
+    data TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE itens_venda (
@@ -113,7 +113,7 @@ CREATE TABLE compras (
     usuario_id INTEGER REFERENCES usuarios(id),
     status VARCHAR(20) DEFAULT 'aberta',
     total NUMERIC(10,2) DEFAULT 0,
-    data TIMESTAMP DEFAULT NOW()
+    data TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE itens_compra (

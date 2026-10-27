@@ -3,6 +3,8 @@ import { listarProdutos, criarProduto, removerProduto } from './produtosService.
 import { listarCategorias, criarCategoria } from './categoriasService.js';
 import { estaAutenticado } from './authService.js';
 import { toProdutoDTO, fromProdutoDTO } from './dto.js';
+import { iniciarSincronizacao } from './estoqueSync.js';
+import { formatarHora } from './timeUtils.js';
 import {
     formParaObjeto,
     iniciarCarregando,
@@ -141,10 +143,14 @@ async function carregarListagemProdutos(tbody, termoBusca = '', categoriaId = ''
                 || String(produto.categoriaNome || '').toLowerCase().includes(termo);
         });
         renderizarTabela(tbody, filtrados, criarLinhaProduto, 'Nenhum produto encontrado com esses filtros.');
+        const estado = document.getElementById('estadoAtualizacaoProdutos');
+        if (estado) estado.textContent = `Atualização automática ativa · última consulta às ${formatarHora()}`;
     } catch (erro) {
         if (consulta !== ultimaListagem) return;
         console.error(erro);
         tbody.innerHTML = `<tr><td colspan="8">${escapeHtml(erro.message || 'Não foi possível carregar a lista de produtos.')}</td></tr>`;
+        const estado = document.getElementById('estadoAtualizacaoProdutos');
+        if (estado) estado.textContent = 'Não foi possível atualizar os produtos. O sistema tentará novamente automaticamente.';
     }
 }
 
@@ -152,20 +158,20 @@ async function configurarListagem(tbody) {
     const campoPesquisa = document.getElementById('pesquisaProdutos');
     const filtroCategoria = document.getElementById('filtroCategoria');
     await carregarCategorias(filtroCategoria, true);
-    const recarregar = () => carregarListagemProdutos(tbody, campoPesquisa?.value || '', filtroCategoria?.value || '');
-    recarregar();
-    campoPesquisa?.addEventListener('input', recarregar);
-    filtroCategoria?.addEventListener('change', recarregar);
-    // A listagem não pode manter o saldo/status da abertura após uma venda em outra tela.
-    let atualizando = false;
-    const atualizarSaldos = async () => {
-        if (atualizando || document.hidden) return;
-        atualizando = true;
-        try { await recarregar(); } finally { atualizando = false; }
+    let buscaPendente;
+    const recarregar = () => {
+        clearTimeout(buscaPendente);
+        return carregarListagemProdutos(tbody, campoPesquisa?.value || '', filtroCategoria?.value || '');
     };
-    window.setInterval(atualizarSaldos, 15000);
-    window.addEventListener('focus', atualizarSaldos);
-    document.addEventListener('visibilitychange', atualizarSaldos);
+    recarregar();
+    campoPesquisa?.addEventListener('input', () => {
+        ++ultimaListagem; // Uma resposta anterior não deve substituir o filtro que está sendo digitado.
+        clearTimeout(buscaPendente);
+        buscaPendente = setTimeout(recarregar, 200);
+    });
+    window.addEventListener('pagehide', () => clearTimeout(buscaPendente), { once: true });
+    filtroCategoria?.addEventListener('change', recarregar);
+    iniciarSincronizacao(recarregar);
 
     tbody.addEventListener('click', async (evento) => {
         const botao = evento.target.closest('[data-excluir]');

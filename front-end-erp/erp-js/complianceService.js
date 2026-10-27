@@ -1,0 +1,21 @@
+import { apiService } from './apiService.js';
+export const complianceService = {
+    contexto: () => apiService.get('/compliance/contexto'),
+    fornecedores: () => apiService.get('/compliance/fornecedores'),
+    contratos: () => apiService.get('/compliance/contratos'),
+    criarContrato: dados => apiService.post('/compliance/contratos', dados),
+    homologar: id => apiService.put(`/compliance/contratos/${id}/homologar`, {}),
+    alteracoes: () => apiService.get('/compliance/alteracoes-pendentes'),
+    solicitarBanco: (id, dados) => apiService.post(`/compliance/fornecedores/${id}/dados-bancarios`, dados),
+    decidirBanco: (id, aprovar) => apiService.post(`/compliance/alteracoes-pendentes/${id}/${aprovar ? 'aprovar' : 'rejeitar'}`, {}),
+    alertas: () => apiService.get('/compliance/alertas'),
+    revisar: (id, justificativa) => apiService.post(`/compliance/alertas/${id}/revisar`, { justificativa }),
+    auditar: () => apiService.get('/compliance/sod-auditoria'),
+    criarUsuario: dados => apiService.post('/compliance/usuarios', dados),
+    perfil: (id, perfil) => apiService.put(`/compliance/usuarios/${id}/perfil`, { perfil }),
+    compras: () => apiService.get('/compras'),
+    detalhe: id => apiService.get(`/compliance/compras/${id}`),
+    aprovarCompra: id => apiService.post(`/compras/${id}/aprovar`, {}),
+    pagar: id => apiService.post(`/compras/${id}/pagar`, {}),
+    cancelar: id => apiService.post(`/compras/${id}/cancelar`, {}),
+};

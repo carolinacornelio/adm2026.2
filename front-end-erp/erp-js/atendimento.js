@@ -2,6 +2,7 @@
 import { listarChamados, criarChamado, atualizarSituacao } from './atendimentoService.js';
 import { estaAutenticado } from './authService.js';
 import { iniciarCarregando, pararCarregando, escapeHtml } from './uiService.js';
+import { formatarData } from './timeUtils.js';
 
 const NOMES = { critica: 'Crítica', alta: 'Alta', media: 'Média' };
 const PESO = { critica: 3, alta: 2, media: 1 };
@@ -44,7 +45,7 @@ function renderizarResumo() {
 }
 
 function criarLinha(c) {
-    const data = c.criadoEm ? new Date(c.criadoEm).toLocaleDateString('pt-BR') : '—';
+    const data = c.criadoEm ? formatarData(c.criadoEm) : '—';
     return `
         <tr>
             <td>#${String(c.id).padStart(4, '0')}</td>

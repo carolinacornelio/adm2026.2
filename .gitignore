@@ -6,6 +6,9 @@ target/
 .env.*
 !.env.example
 .m2/
+.codex-remote-attachments/
+.github/modernize/
+output/
 # Configurações do banco compartilhadas com a equipe por decisão do projeto.
 !/application-local.properties
 !/db.properties

@@ -5,6 +5,7 @@ import { listarPessoas } from './pessoasService.js';
 import { posService } from './posService.js';
 import { escapeHtml } from './uiService.js';
 import { fromProdutoDTO } from './dto.js';
+import { formatarDataHora, formatarHora } from './timeUtils.js';
 
 const $ = (selector) => document.querySelector(selector);
 const cents = (value) => Math.round(Number(value || 0) * 100);
@@ -102,10 +103,11 @@ function renderTotals() {
     $('#total').textContent = money(total());
     $('#discount').max = (subtotal() / 100).toFixed(2);
     $('#cash-fields').hidden = state.method !== 'DINHEIRO';
+    $('#paid-confirmation').hidden = state.method === 'PIX';
     $('#change').textContent = money(Math.max(0, cents(state.received) - total()));
     $('#payment-help').textContent = state.method === 'DINHEIRO'
         ? 'Confirme o recebimento do dinheiro antes de finalizar.'
-        : state.method === 'PIX' ? 'Confira o recebimento no banco antes de confirmar. Este POS não gera cobranças Pix.'
+        : state.method === 'PIX' ? 'Ao confirmar a venda, o QR Code Pix será exibido antes do registro.'
         : 'Realize a cobrança na maquininha e confirme a aprovação antes de finalizar.';
 }
 function renderCart() {
@@ -161,7 +163,7 @@ async function refresh() {
         }
         synchronizeCart();
         renderCart();
-        $('#sync-status').textContent = `Conectado · catálogo atualizado às ${new Date().toLocaleTimeString('pt-BR')}.`;
+        $('#sync-status').textContent = `Conectado · catálogo atualizado às ${formatarHora()}.`;
     } catch (error) {
         ready = false;
         $('#sync-status').textContent = 'Sem conexão com o ERP. Atualize o catálogo antes de iniciar outra venda.';
@@ -226,7 +228,7 @@ function validateSale() {
     if (state.cart.some((line) => !product(line.id) || line.qty > product(line.id).quantidadeEstoque)) throw new Error('Há produtos indisponíveis ou sem estoque suficiente. Revise os itens.');
     if (!Number.isSafeInteger(state.discount) || state.discount < 0 || state.discount > subtotal() || subtotal() > 9999999999) throw new Error('Informe um desconto e um total válidos.');
     if (!$('#discount').checkValidity()) throw new Error('Informe um desconto válido, com até duas casas decimais.');
-    if (!$('#paid').checked) throw new Error('Confirme que recebeu o pagamento antes de finalizar.');
+    if (state.method !== 'PIX' && !$('#paid').checked) throw new Error('Confirme que recebeu o pagamento antes de finalizar.');
     if (state.method === 'DINHEIRO' && (!$('#received').checkValidity() || !state.received || cents(state.received) < total() || cents(state.received) > 9999999999)) throw new Error('O valor recebido precisa cobrir a venda e ter até duas casas decimais.');
     return {
         chaveOperacao:operationId(), clienteId:state.customer ? Number(state.customer) : null,
@@ -241,6 +243,7 @@ function requestCheckout() {
     try {
         staged = validateSale();
         $('#confirm-summary').textContent = `${money(total())} · ${methods[state.method]} · ${$('#customer').selectedOptions[0]?.textContent || 'Consumidor final'}`;
+        $('#confirm-sale').textContent = state.method === 'PIX' ? 'Exibir QR Code Pix' : 'Confirmar e registrar';
         $('#confirm-dialog').showModal();
     } catch (error) { handleError(error); }
 }
@@ -251,6 +254,7 @@ async function submitSale() {
         if (!persist(true)) { state.pending = null; return; }
     }
     $('#confirm-dialog').close();
+    $('#pix-dialog').close();
     sending = true;
     renderCart();
     try {
@@ -272,7 +276,7 @@ async function submitSale() {
 }
 function showReceipt(receipt) {
     const e = escapeHtml;
-    $('#receipt').innerHTML = `<div class="pos-recibo"><h3>${e(receipt.empresa)}</h3><p>Venda #${receipt.id} · ${e(new Date(receipt.data).toLocaleString('pt-BR'))}</p><p>Cliente: ${e(receipt.cliente)}<br>Operador: ${e(receipt.operador)}</p><div class="pos-recibo-itens">${receipt.itens.map((line) => `<div class="pos-recibo-linha"><span>${line.quantidade} × ${e(line.nome)}<small>${money(cents(line.precoUnitario))} por unidade</small></span><strong>${money(cents(line.subtotal))}</strong></div>`).join('')}</div><div class="pos-recibo-linha"><span>Subtotal</span><span>${money(cents(receipt.subtotal))}</span></div><div class="pos-recibo-linha"><span>Desconto</span><span>${money(cents(receipt.desconto))}</span></div><div class="pos-recibo-linha"><strong>Total</strong><strong>${money(cents(receipt.total))}</strong></div><p>Pagamento: ${e(methods[receipt.formaPagamento] || receipt.formaPagamento)}<br>Valor informado: ${money(cents(receipt.valorRecebido))}<br>Troco: ${money(cents(receipt.troco))}</p><p>Recebimento confirmado pelo operador.<br>Comprovante não fiscal. Não substitui documento fiscal.</p></div>`;
+    $('#receipt').innerHTML = `<div class="pos-recibo"><h3>${e(receipt.empresa)}</h3><p>Venda #${receipt.id} · ${e(formatarDataHora(receipt.data, 'Data indisponível'))}</p><p>Cliente: ${e(receipt.cliente)}<br>Operador: ${e(receipt.operador)}</p><div class="pos-recibo-itens">${receipt.itens.map((line) => `<div class="pos-recibo-linha"><span>${line.quantidade} × ${e(line.nome)}<small>${money(cents(line.precoUnitario))} por unidade</small></span><strong>${money(cents(line.subtotal))}</strong></div>`).join('')}</div><div class="pos-recibo-linha"><span>Subtotal</span><span>${money(cents(receipt.subtotal))}</span></div><div class="pos-recibo-linha"><span>Desconto</span><span>${money(cents(receipt.desconto))}</span></div><div class="pos-recibo-linha"><strong>Total</strong><strong>${money(cents(receipt.total))}</strong></div><p>Pagamento: ${e(methods[receipt.formaPagamento] || receipt.formaPagamento)}<br>Valor informado: ${money(cents(receipt.valorRecebido))}<br>Troco: ${money(cents(receipt.troco))}</p><p>Recebimento confirmado pelo operador.<br>Comprovante não fiscal. Não substitui documento fiscal.</p></div>`;
     $('#receipt-dialog').showModal();
 }
 function snapshot() { return { cart:state.cart.map((line) => ({ ...line })), discount:state.discount, customer:state.customer }; }
@@ -290,7 +294,7 @@ async function history() {
     $('#history-dialog').showModal();
     try {
         const sales = await posService.listar();
-        $('#history').innerHTML = sales.length ? sales.map((sale) => `<tr><td>#${sale.id}</td><td>${escapeHtml(new Date(sale.data).toLocaleString('pt-BR'))}</td><td>${escapeHtml(sale.cliente)}</td><td>${money(cents(sale.total))}</td><td><button class="botao secundario" data-receipt="${sale.id}">Comprovante</button></td></tr>`).join('') : '<tr><td colspan="5" class="estado-vazio">Nenhuma venda POS registrada.</td></tr>';
+        $('#history').innerHTML = sales.length ? sales.map((sale) => `<tr><td>#${sale.id}</td><td>${escapeHtml(formatarDataHora(sale.data, 'Data indisponível'))}</td><td>${escapeHtml(sale.cliente)}</td><td>${money(cents(sale.total))}</td><td><button class="botao secundario" data-receipt="${sale.id}">Comprovante</button></td></tr>`).join('') : '<tr><td colspan="5" class="estado-vazio">Nenhuma venda POS registrada.</td></tr>';
     } catch (error) { $('#history-dialog').close(); handleError(error); }
 }
 function configure() {
@@ -325,8 +329,22 @@ function configure() {
     $('#clear').addEventListener('click', () => { if (!locked() && state.cart.length) $('#clear-dialog').showModal(); });
     $('#confirm-clear').addEventListener('click', () => { if (!locked()) resetCurrent(); $('#clear-dialog').close(); });
     $('#checkout').addEventListener('click', requestCheckout);
-    $('#confirm-sale').addEventListener('click', submitSale);
+    $('#confirm-sale').addEventListener('click', () => {
+        if (staged?.formaPagamento === 'PIX') {
+            $('#pix-total').textContent = money(cents(staged.totalEsperado));
+            $('#confirm-dialog').close();
+            $('#pix-dialog').showModal();
+            return;
+        }
+        void submitSale();
+    });
+    $('#confirm-pix').addEventListener('click', () => {
+        if (staged?.formaPagamento !== 'PIX') return;
+        $('#paid').checked = true;
+        void submitSale();
+    });
     $('#confirm-dialog').addEventListener('cancel', () => { staged = null; });
+    $('#pix-dialog').addEventListener('cancel', () => { staged = null; });
     $('#hold').addEventListener('click', hold);
     $('#held-button').addEventListener('click', () => { if (locked()) return; renderHeld(); $('#held-dialog').showModal(); });
     $('#held-list').addEventListener('click', (event) => {

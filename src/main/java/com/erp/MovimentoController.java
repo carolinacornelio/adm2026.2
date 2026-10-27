@@ -4,8 +4,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.format.annotation.DateTimeFormat;
-import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 /**
@@ -16,12 +17,13 @@ import java.util.*;
  */
 @RestController
 public class MovimentoController {
- private final JdbcTemplate db;private final CurrentUser user;private final PosRealtimeService realtime;private final InventarioService inventario;public MovimentoController(JdbcTemplate db,CurrentUser user,PosRealtimeService realtime,InventarioService inventario){this.db=db;this.user=user;this.realtime=realtime;this.inventario=inventario;}
+ private static final ZoneId FUSO_ERP=ZoneId.of("America/Fortaleza");
+ private final JdbcTemplate db;private final CurrentUser user;private final PosRealtimeService realtime;private final InventarioService inventario;private final CompliancePurchaseService comprasService;public MovimentoController(JdbcTemplate db,CurrentUser user,PosRealtimeService realtime,InventarioService inventario,CompliancePurchaseService comprasService){this.db=db;this.user=user;this.realtime=realtime;this.inventario=inventario;this.comprasService=comprasService;}
  /** Registra venda e dá saída no estoque. */
- @PostMapping("/api/vendas") @Transactional Map<String,Object> venda(@RequestBody Map<String,Object>d,@RequestHeader("Authorization")String a){return movimentar(d,a,true);}
+ @PostMapping("/api/vendas") @Transactional Map<String,Object> venda(@RequestBody Map<String,Object>d,@RequestHeader("Authorization")String a){return movimentar(d,a);}
  /** Registra compra e dá entrada no estoque. */
- @PostMapping("/api/compras") @Transactional Map<String,Object> compra(@RequestBody Map<String,Object>d,@RequestHeader("Authorization")String a){return movimentar(d,a,false);}
- @GetMapping("/api/compras") List<Map<String,Object>> compras(@RequestHeader("Authorization")String a){return db.queryForList("SELECT id, total, status, data FROM compras WHERE empresa_id=? ORDER BY id DESC",user.empresa(a));}
+ @PostMapping("/api/compras") Map<String,Object> compra(@RequestBody Map<String,Object>d,@RequestHeader("Authorization")String a){return comprasService.registrar(user.empresa(a),user.usuario(a),d);}
+ @GetMapping("/api/compras") List<Map<String,Object>> compras(@RequestHeader("Authorization")String a){return comprasService.listar(user.empresa(a));}
  @GetMapping("/api/vendas")
  List<Map<String,Object>> vendas(@RequestHeader("Authorization") String a,
          @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate data,
@@ -42,11 +44,11 @@ public class MovimentoController {
   parametros.add(user.empresa(a));
   if (inicio != null) {
    sql.append(" AND v.data >= ?");
-   parametros.add(Timestamp.valueOf(inicio.atStartOfDay()));
+   parametros.add(inicio.atStartOfDay(FUSO_ERP).toOffsetDateTime());
   }
   if (fim != null) {
    sql.append(" AND v.data < ?");
-   parametros.add(Timestamp.valueOf(fim.plusDays(1).atStartOfDay()));
+   parametros.add(fim.plusDays(1).atStartOfDay(FUSO_ERP).toOffsetDateTime());
   }
   sql.append(" ORDER BY v.data DESC, v.id DESC");
   return db.queryForList(sql.toString(), parametros.toArray());
@@ -84,21 +86,22 @@ public class MovimentoController {
  List<Map<String,Object>> estoque(@RequestHeader("Authorization") String a) {
   return ProdutoValidade.aplicar(db,user.empresa(a),db.queryForList("SELECT p.id,p.nome,p.codigo,p.controla_validade AS \"controlaValidade\",e.quantidade AS \"quantidadeTotal\","+InventarioService.DISPONIVEL_SQL+" AS \"quantidadeEstoque\",e.estoque_minimo AS \"estoqueMinimo\" FROM produtos p JOIN estoque e ON e.produto_id=p.id AND e.empresa_id=p.empresa_id WHERE p.empresa_id=? AND p.ativo=true ORDER BY p.nome",user.empresa(a)));
  }
- private Map<String,Object> movimentar(Map<String,Object>d,String a,boolean venda){
-  int e=user.empresa(a);Object pessoa=d.get(venda?"clienteId":"fornecedorId");
-  if(pessoa==null)throw new IllegalArgumentException("Informe o "+(venda?"cliente":"fornecedor")+".");
-  int idPessoa=inteiro(pessoa);String pessoaTabela=venda?"clientes":"fornecedores";
+ private Map<String,Object> movimentar(Map<String,Object>d,String a){
+  int e=user.empresa(a);Object pessoa=d.get("clienteId");
+  if(pessoa==null)throw new IllegalArgumentException("Informe o cliente.");
+  int idPessoa=inteiro(pessoa);String pessoaTabela="clientes";
   if(db.queryForObject("SELECT COUNT(*) FROM "+pessoaTabela+" WHERE id=? AND empresa_id=?",Integer.class,idPessoa,e)==0)throw new IllegalArgumentException("Pessoa não encontrada para esta empresa.");
   List<?> itens = itens(d.get("itens"));
   if(itens.size()>200 || itens.stream().anyMatch(item -> !(item instanceof Map<?,?>))) throw new IllegalArgumentException("Informe até 200 itens válidos.");
   var ordem=new ArrayList<>(itens);
   ordem.sort(Comparator.comparingInt(item->inteiro(((Map<?,?>)item).get("produtoId"))));
   itens=ordem;
-  String tabela=venda?"vendas":"compras",itabela=venda?"itens_venda":"itens_compra",col=venda?"cliente_id":"fornecedor_id";
+  String tabela="vendas",col="cliente_id";
   LocalDate data = data(d.get("data"));
-  Integer mov=db.queryForObject("INSERT INTO "+tabela+"(empresa_id,"+col+",usuario_id,total,data) VALUES(?,?,?,0,?) RETURNING id",Integer.class,e,idPessoa,user.usuario(a),data);
+  OffsetDateTime dataComercial=data.atStartOfDay(FUSO_ERP).toOffsetDateTime();
+  Integer mov=db.queryForObject("INSERT INTO "+tabela+"(empresa_id,"+col+",usuario_id,total,data) VALUES(?,?,?,0,?) RETURNING id",Integer.class,e,idPessoa,user.usuario(a),dataComercial);
   java.math.BigDecimal total=java.math.BigDecimal.ZERO;
-  String colunaPreco = venda ? "COALESCE(p.preco_venda, p.preco)" : "COALESCE(p.preco_compra, p.preco)";
+  String colunaPreco = "COALESCE(p.preco_venda, p.preco)";
   for(Object item:itens){
    if (!(item instanceof Map<?, ?> bruto)) throw new IllegalArgumentException("Item da movimentação inválido.");
    Map<String,Object> i = new HashMap<>();
@@ -108,19 +111,13 @@ public class MovimentoController {
    List<Map<String,Object>> produto=db.queryForList("SELECT e.quantidade,p.nome,p.codigo,"+colunaPreco+" AS preco FROM estoque e JOIN produtos p ON p.id=e.produto_id AND p.empresa_id=e.empresa_id WHERE e.produto_id=? AND e.empresa_id=? AND p.ativo=true ORDER BY e.id FOR UPDATE OF e,p",p,e);
    if(produto.size()!=1)throw new IllegalArgumentException("Produto não encontrado ou estoque inconsistente para esta empresa.");
    int atual=((Number)produto.get(0).get("quantidade")).intValue();
-   if(venda&&atual<q)throw new IllegalArgumentException("Estoque insuficiente para o produto "+p+".");
+   if(atual<q)throw new IllegalArgumentException("Estoque insuficiente para o produto "+p+".");
    // O preço é sempre o que está cadastrado no produto; o navegador não decide o valor da compra.
    java.math.BigDecimal preco=(java.math.BigDecimal)produto.get(0).get("preco");
    total=total.add(preco.multiply(java.math.BigDecimal.valueOf(q)));
    if(preco.signum()<0 || total.compareTo(new java.math.BigDecimal("99999999.99"))>0)throw new IllegalArgumentException("O total excede o valor máximo permitido para uma movimentação.");
-   if(venda) {
-    db.update("INSERT INTO itens_venda(venda_id,produto_id,quantidade,preco_unitario,pos_nome_produto,pos_codigo_produto) VALUES(?,?,?,?,?,?)",mov,p,q,preco,produto.get(0).get("nome"),produto.get(0).get("codigo"));
-    inventario.baixar(e,p,q,mov.intValue());
-   } else {
-    db.update("INSERT INTO itens_compra(compra_id,produto_id,quantidade,preco_unitario) VALUES(?,?,?,?)",mov,p,q,preco);
-    LocalDate validade=i.get("validade")==null || i.get("validade").toString().isBlank()?null:data(i.get("validade"));
-    inventario.entrada(e,p,q,mov.intValue(),Objects.toString(i.get("lote"),""),validade);
-   }
+   db.update("INSERT INTO itens_venda(venda_id,produto_id,quantidade,preco_unitario,pos_nome_produto,pos_codigo_produto) VALUES(?,?,?,?,?,?)",mov,p,q,preco,produto.get(0).get("nome"),produto.get(0).get("codigo"));
+   inventario.baixar(e,p,q,mov.intValue());
   }
   db.update("UPDATE "+tabela+" SET total=?,status='concluida' WHERE id=? AND empresa_id=?",total,mov,e);
   realtime.publicarDepoisDoCommit(e,"estoque-atualizado");

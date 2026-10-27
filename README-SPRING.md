@@ -37,7 +37,7 @@ Todas as rotas abaixo usam o prefixo `/api`. Exceto cadastro, login e segundo fa
 
 | Rota | Métodos | Uso |
 | --- | --- | --- |
-| `/compras` | `GET`, `POST` | Consulta compras e registra entradas de estoque. |
+| `/compras` | `GET`, `POST` | Consulta pedidos e registra mercadorias ou serviços; a partir de R$ 10 mil, a efetivação aguarda duas aprovações. |
 | `/vendas` | `GET`, `POST` | Consulta vendas do ERP e POS ou registra venda pelo fluxo do ERP. A consulta aceita `data`, ou o intervalo `inicio` e `fim` (`AAAA-MM-DD`). |
 | `/vendas/{id}` | `GET` | Consulta venda, itens, lotes e comprovante. |
 | `/estoque` | `GET` | Consulta os saldos dos produtos ativos. |
@@ -65,10 +65,31 @@ Todas as rotas abaixo usam o prefixo `/api`. Exceto cadastro, login e segundo fa
 | `/dashboard/faturamento?mesReferencia=AAAA-MM` | `GET` | Consulta faturamento mensal; exige PLUS. |
 | `/ia/perguntar` | `POST` | Envia pergunta ao assistente; exige PLUS e Ollama disponível. |
 
+### Compliance
+
+| Rota | Métodos | Uso |
+| --- | --- | --- |
+| `/compliance/contexto` | `GET` | Informa perfil e capacidades atuais, conferidos no banco por usuário e empresa. |
+| `/compliance/contratos` | `GET`, `POST` | Consulta e cadastra contratos com documento, fornecedor, vigência e valor. |
+| `/compliance/contratos/{id}/homologar` | `PUT` | Homologa contrato de alto valor com outro revisor. |
+| `/compliance/fornecedores` | `GET` | Consulta fornecedores; dados bancários são restritos aos perfis habilitados. |
+| `/compliance/fornecedores/{id}/dados-bancarios` | `POST` | Solicita alteração bancária com comprovante. |
+| `/compliance/alteracoes-pendentes` | `GET` | Lista solicitações que o perfil pode consultar. |
+| `/compliance/alteracoes-pendentes/{id}/aprovar`, `/rejeitar` | `POST` | Decide uma solicitação pendente, exigindo pessoa diferente do solicitante. |
+| `/compliance/compras/{id}` | `GET` | Consulta itens, lotes e valores registrados no pedido. |
+| `/compras/{id}/aprovar`, `/pagar`, `/cancelar` | `POST` | Aprova por nível, registra pagamento segregado ou cancela pedido ainda pendente. |
+| `/compliance/alertas`, `/compliance/sod-auditoria` | `GET` | Consulta riscos e a revisão dos perfis da empresa. |
+| `/compliance/alertas/{id}/revisar` | `POST` | Registra justificativa e responsável pela revisão. |
+| `/compliance/usuarios` | `GET`, `POST` | Consulta equipe e permite ao administrador cadastrar colaboradores da mesma empresa. |
+| `/compliance/usuarios/{id}/perfil` | `PUT` | Altera o perfil, preservando ao menos um administrador. |
+
 ## Regras importantes
 
 - As consultas e alterações são isoladas por empresa autenticada.
 - Compras de produtos com validade obrigatória precisam de lote e data. Vendas ERP e POS usam FEFO e bloqueiam lotes vencidos ou sem validade obrigatória.
+- Pedidos pendentes não aumentam o estoque. A aprovação final usa os lotes e preços gravados, confere novamente a validade e cria uma única conta a pagar. Serviços não movimentam produtos.
+- O cadastro público cria uma nova empresa com seu administrador; ele não inclui pessoas em empresas existentes nem aceita escolher um perfil para outra empresa. Colaboradores são provisionados pelo administrador autenticado.
+- Bloqueios de compliance são registrados em uma transação independente; aprovações, mudanças bancárias e pagamentos usam locks e conferência de estado para impedir aplicação repetida.
 - O POS grava venda, pagamento informado pelo operador e baixa de estoque na mesma transação. Uma `chaveOperacao` permite verificar novamente uma venda sem duplicá-la.
 - Carrinhos guardados no POS não reservam estoque. A venda exige conexão com o servidor.
 - Pix e cartão são confirmados fora do sistema. Não há integração de cobrança nem emissão fiscal.
@@ -80,4 +101,4 @@ Todas as rotas abaixo usam o prefixo `/api`. Exceto cadastro, login e segundo fa
 mvn clean verify
 ```
 
-Os testes usam PostgreSQL temporário e não precisam da base compartilhada. Para gerar o JAR, use `mvn clean package`. Mais detalhes de uso: [POS](POS-README.md), [IA](IA-ASSISTENTE-README.md) e [inventário físico](docs/integracao/INVENTARIO-FISICO.md).
+Os testes usam PostgreSQL temporário e não precisam da base compartilhada. Para gerar o JAR, use `mvn clean package`. Mais detalhes de uso: [POS](POS-README.md), [IA](IA-ASSISTENTE-README.md), [estoque](README.md#estoque-perecíveis-e-sincronização) e [compliance](README.md#compliance-contratos-aprovações-e-equipe).

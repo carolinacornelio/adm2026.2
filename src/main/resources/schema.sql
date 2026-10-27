@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS empresas (
     nome_fantasia VARCHAR(150) NOT NULL,
     documento VARCHAR(20) UNIQUE,
     plano_assinatura VARCHAR(20) DEFAULT 'BASE',
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS usuarios (
@@ -20,14 +20,14 @@ CREATE TABLE IF NOT EXISTS usuarios (
     resposta_seguranca_hash_2 VARCHAR(255),
     pergunta_seguranca_3 VARCHAR(50),
     resposta_seguranca_hash_3 VARCHAR(255),
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS categorias (
     id SERIAL PRIMARY KEY,
     empresa_id INTEGER REFERENCES empresas(id) ON DELETE CASCADE,
     nome VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS produtos (
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS produtos (
     categoria_id INTEGER REFERENCES categorias(id) ON DELETE SET NULL,
     descricao TEXT,
     ativo BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE (empresa_id, codigo)
 );
 
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS clientes (
     empresa_id INTEGER REFERENCES empresas(id) ON DELETE CASCADE,
     nome VARCHAR(150) NOT NULL,
     documento VARCHAR(20), telefone VARCHAR(20), email VARCHAR(150), endereco VARCHAR(255),
-    created_at TIMESTAMP DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE (empresa_id, documento)
 );
 
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS fornecedores (
     empresa_id INTEGER REFERENCES empresas(id) ON DELETE CASCADE,
     nome VARCHAR(150) NOT NULL,
     documento VARCHAR(20), telefone VARCHAR(20), email VARCHAR(150),
-    created_at TIMESTAMP DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE (empresa_id, documento)
 );
 
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS estoque (
     quantidade INTEGER NOT NULL DEFAULT 0,
     estoque_minimo INTEGER DEFAULT 0,
     local VARCHAR(100) DEFAULT 'padrao',
-    updated_at TIMESTAMP DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS movimentacoes_estoque (
@@ -80,14 +80,14 @@ CREATE TABLE IF NOT EXISTS movimentacoes_estoque (
     tipo VARCHAR(10) NOT NULL,
     quantidade INTEGER NOT NULL,
     motivo VARCHAR(255),
-    data TIMESTAMP DEFAULT NOW()
+    data TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS vendas (
     id SERIAL PRIMARY KEY,
     empresa_id INTEGER REFERENCES empresas(id) ON DELETE CASCADE,
     cliente_id INTEGER REFERENCES clientes(id), usuario_id INTEGER REFERENCES usuarios(id),
-    status VARCHAR(20) DEFAULT 'aberta', total NUMERIC(10,2) DEFAULT 0, data TIMESTAMP DEFAULT NOW()
+    status VARCHAR(20) DEFAULT 'aberta', total NUMERIC(10,2) DEFAULT 0, data TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS itens_venda (
@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS compras (
     id SERIAL PRIMARY KEY,
     empresa_id INTEGER REFERENCES empresas(id) ON DELETE CASCADE,
     fornecedor_id INTEGER REFERENCES fornecedores(id), usuario_id INTEGER REFERENCES usuarios(id),
-    status VARCHAR(20) DEFAULT 'aberta', total NUMERIC(10,2) DEFAULT 0, data TIMESTAMP DEFAULT NOW()
+    status VARCHAR(20) DEFAULT 'aberta', total NUMERIC(10,2) DEFAULT 0, data TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS itens_compra (
@@ -171,16 +171,18 @@ CREATE TABLE IF NOT EXISTS estoque_lotes (
     validade DATE,
     quantidade INTEGER NOT NULL CHECK (quantidade >= 0),
     legado BOOLEAN NOT NULL DEFAULT false,
-    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_lote_legado ON estoque_lotes(estoque_id) WHERE legado=true;
 CREATE INDEX IF NOT EXISTS idx_lotes_empresa_produto_validade ON estoque_lotes(empresa_id,produto_id,validade,id);
+CREATE INDEX IF NOT EXISTS idx_lotes_estoque_validade ON estoque_lotes(estoque_id,validade,id);
 CREATE TABLE IF NOT EXISTS venda_lotes (
     id SERIAL PRIMARY KEY,
     venda_id INTEGER NOT NULL REFERENCES vendas(id) ON DELETE CASCADE,
     lote_id INTEGER NOT NULL REFERENCES estoque_lotes(id),
     quantidade INTEGER NOT NULL CHECK (quantidade > 0)
 );
+CREATE INDEX IF NOT EXISTS idx_venda_lotes_venda ON venda_lotes(venda_id);
 INSERT INTO estoque_lotes(empresa_id,produto_id,estoque_id,codigo,quantidade,legado)
 SELECT e.empresa_id,e.produto_id,e.id,'LEGADO-'||e.id,e.quantidade,true FROM estoque e
 WHERE e.quantidade>0 AND NOT EXISTS (SELECT 1 FROM estoque_lotes l WHERE l.estoque_id=e.id);
@@ -210,8 +212,8 @@ CREATE TABLE IF NOT EXISTS inventarios_fisicos (
     aprovado_por INTEGER REFERENCES usuarios(id),
     status VARCHAR(20) NOT NULL DEFAULT 'EM_CONTAGEM' CHECK (status IN ('EM_CONTAGEM','CONCLUIDO')),
     observacao VARCHAR(500) NOT NULL DEFAULT '',
-    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    concluido_em TIMESTAMP
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    concluido_em TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_inventarios_fisicos_empresa_data ON inventarios_fisicos(empresa_id, criado_em DESC);
 CREATE TABLE IF NOT EXISTS inventario_fisico_itens (
@@ -221,10 +223,10 @@ CREATE TABLE IF NOT EXISTS inventario_fisico_itens (
     produto_id INTEGER NOT NULL REFERENCES produtos(id),
     quantidade_sistema INTEGER NOT NULL CHECK (quantidade_sistema >= 0),
     quantidade_contada INTEGER CHECK (quantidade_contada >= 0),
-    estoque_atualizado_em TIMESTAMP,
+    estoque_atualizado_em TIMESTAMPTZ,
     preco_unitario NUMERIC(12,2) NOT NULL DEFAULT 0,
     observacao VARCHAR(500) NOT NULL DEFAULT '',
-    contado_em TIMESTAMP,
+    contado_em TIMESTAMPTZ,
     contado_por INTEGER REFERENCES usuarios(id),
     UNIQUE(inventario_id, produto_id)
 );
@@ -238,7 +240,7 @@ CREATE TABLE IF NOT EXISTS inventario_fisico_ajuste_lotes (
     lote_id INTEGER NOT NULL REFERENCES estoque_lotes(id),
     quantidade INTEGER NOT NULL CHECK (quantidade > 0),
     tipo VARCHAR(10) NOT NULL CHECK (tipo IN ('SOBRA','FALTA')),
-    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_inventario_fisico_ajustes_lotes ON inventario_fisico_ajuste_lotes(empresa_id,inventario_id);
 
@@ -254,3 +256,78 @@ CREATE TABLE IF NOT EXISTS chamados (
     criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_chamados_empresa ON chamados(empresa_id);
+
+-- Compliance: adições compatíveis com compras e fornecedores existentes.
+ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS contrato_social_url VARCHAR(500);
+ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS banco VARCHAR(50);
+ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS agencia VARCHAR(20);
+ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS conta VARCHAR(30);
+ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS chave_pix VARCHAR(100);
+ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS dados_bancarios_bloqueados BOOLEAN NOT NULL DEFAULT false;
+CREATE TABLE IF NOT EXISTS contratos_fornecedores (
+ id SERIAL PRIMARY KEY, empresa_id INTEGER NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+ fornecedor_id INTEGER NOT NULL REFERENCES fornecedores(id), numero_contrato VARCHAR(50) NOT NULL,
+ objeto VARCHAR(255) NOT NULL DEFAULT '', valor_total NUMERIC(12,2) NOT NULL CHECK(valor_total>0),
+ status VARCHAR(30) NOT NULL DEFAULT 'APROVADO', arquivo_url VARCHAR(500) NOT NULL,
+ data_inicio DATE, data_fim DATE, criado_por INTEGER NOT NULL REFERENCES usuarios(id),
+ aprovador_id INTEGER REFERENCES usuarios(id), created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ UNIQUE(empresa_id,numero_contrato), CHECK(data_fim IS NULL OR data_inicio IS NULL OR data_fim>=data_inicio)
+);
+CREATE INDEX IF NOT EXISTS idx_contratos_empresa_fornecedor ON contratos_fornecedores(empresa_id,fornecedor_id);
+ALTER TABLE contratos_fornecedores ADD COLUMN IF NOT EXISTS criado_por INTEGER REFERENCES usuarios(id);
+UPDATE contratos_fornecedores c SET criado_por=COALESCE(c.aprovador_id,(SELECT MIN(u.id) FROM usuarios u WHERE u.empresa_id=c.empresa_id)) WHERE c.criado_por IS NULL;
+CREATE TABLE IF NOT EXISTS fornecedores_alteracoes_pendentes (
+ id SERIAL PRIMARY KEY, empresa_id INTEGER NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+ fornecedor_id INTEGER NOT NULL REFERENCES fornecedores(id), solicitante_id INTEGER NOT NULL REFERENCES usuarios(id),
+ banco VARCHAR(50) NOT NULL DEFAULT '', agencia VARCHAR(20) NOT NULL DEFAULT '', conta VARCHAR(30) NOT NULL DEFAULT '',
+ chave_pix VARCHAR(100) NOT NULL DEFAULT '', arquivo_comprobatorio_url VARCHAR(500) NOT NULL,
+ status VARCHAR(20) NOT NULL DEFAULT 'PENDENTE', aprovador_id INTEGER REFERENCES usuarios(id),
+ data_solicitacao TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, data_decisao TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_fornecedor_alteracao_pendente ON fornecedores_alteracoes_pendentes(empresa_id,fornecedor_id) WHERE status='PENDENTE';
+ALTER TABLE compras ADD COLUMN IF NOT EXISTS aprovador_nivel_1 INTEGER REFERENCES usuarios(id);
+ALTER TABLE compras ADD COLUMN IF NOT EXISTS aprovador_nivel_2 INTEGER REFERENCES usuarios(id);
+ALTER TABLE compras ADD COLUMN IF NOT EXISTS data_aprovacao_n1 TIMESTAMPTZ;
+ALTER TABLE compras ADD COLUMN IF NOT EXISTS data_aprovacao_n2 TIMESTAMPTZ;
+ALTER TABLE compras ADD COLUMN IF NOT EXISTS contrato_id INTEGER REFERENCES contratos_fornecedores(id);
+ALTER TABLE compras ADD COLUMN IF NOT EXISTS nota_fiscal VARCHAR(100) NOT NULL DEFAULT '';
+ALTER TABLE compras ADD COLUMN IF NOT EXISTS tipo_documento VARCHAR(20) NOT NULL DEFAULT 'MERCADORIA';
+ALTER TABLE compras ADD COLUMN IF NOT EXISTS objeto_servico VARCHAR(255) NOT NULL DEFAULT '';
+ALTER TABLE compras ADD COLUMN IF NOT EXISTS entrada_efetivada BOOLEAN NOT NULL DEFAULT true;
+UPDATE compras SET entrada_efetivada=false WHERE entrada_efetivada=true AND UPPER(status) IN ('PENDENTE_APROVACAO','AGUARDANDO_NIVEL_2','PENDENTE_CALCULO');
+ALTER TABLE itens_compra ADD COLUMN IF NOT EXISTS lote_codigo VARCHAR(100) NOT NULL DEFAULT '';
+ALTER TABLE itens_compra ADD COLUMN IF NOT EXISTS validade DATE;
+ALTER TABLE contas_pagar ADD COLUMN IF NOT EXISTS usuario_liquidacao_id INTEGER REFERENCES usuarios(id);
+CREATE INDEX IF NOT EXISTS idx_compras_empresa_status ON compras(empresa_id,status,id DESC);
+CREATE INDEX IF NOT EXISTS idx_compras_contrato ON compras(contrato_id) WHERE contrato_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_contas_pagar_compra ON contas_pagar(empresa_id,compra_id);
+CREATE TABLE IF NOT EXISTS compliance_alertas (
+ id BIGSERIAL PRIMARY KEY, empresa_id INTEGER NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+ usuario_id INTEGER REFERENCES usuarios(id), documento_referencia VARCHAR(100) NOT NULL,
+ valor_transacao NUMERIC(12,2) NOT NULL DEFAULT 0, motivo_alerta VARCHAR(100) NOT NULL,
+ nivel_severidade VARCHAR(20) NOT NULL, detalhes TEXT NOT NULL, status VARCHAR(20) NOT NULL DEFAULT 'PENDENTE',
+ data_hora TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, resolvido_por INTEGER REFERENCES usuarios(id),
+ resolvido_em TIMESTAMPTZ, justificativa VARCHAR(500)
+);
+CREATE INDEX IF NOT EXISTS idx_compliance_empresa_data ON compliance_alertas(empresa_id,id DESC);
+-- Compatibilidade com bancos onde o protótipo de compliance já foi executado.
+ALTER TABLE compliance_alertas ADD COLUMN IF NOT EXISTS documento_referencia VARCHAR(100);
+ALTER TABLE compliance_alertas ADD COLUMN IF NOT EXISTS valor_transacao NUMERIC(12,2) DEFAULT 0;
+ALTER TABLE compliance_alertas ADD COLUMN IF NOT EXISTS motivo_alerta VARCHAR(100);
+ALTER TABLE compliance_alertas ADD COLUMN IF NOT EXISTS nivel_severidade VARCHAR(20) DEFAULT 'ALTA';
+ALTER TABLE compliance_alertas ADD COLUMN IF NOT EXISTS detalhes TEXT;
+ALTER TABLE compliance_alertas ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'PENDENTE';
+ALTER TABLE compliance_alertas ADD COLUMN IF NOT EXISTS data_hora TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE compliance_alertas ADD COLUMN IF NOT EXISTS resolvido_por INTEGER REFERENCES usuarios(id);
+ALTER TABLE compliance_alertas ADD COLUMN IF NOT EXISTS resolvido_em TIMESTAMPTZ;
+ALTER TABLE compliance_alertas ADD COLUMN IF NOT EXISTS justificativa VARCHAR(500);
+ALTER TABLE compliance_alertas ADD COLUMN IF NOT EXISTS tipo_regra VARCHAR(100);
+ALTER TABLE compliance_alertas ADD COLUMN IF NOT EXISTS motivo_risco VARCHAR(255);
+ALTER TABLE compliance_alertas ALTER COLUMN tipo_regra DROP NOT NULL;
+ALTER TABLE compliance_alertas ALTER COLUMN motivo_risco DROP NOT NULL;
+UPDATE compliance_alertas SET motivo_alerta=COALESCE(motivo_alerta,tipo_regra,motivo_risco,'REGISTRO_LEGADO'),detalhes=COALESCE(detalhes,motivo_risco,''),documento_referencia=COALESCE(documento_referencia,'LEGADO'),status=COALESCE(status,'PENDENTE'),valor_transacao=COALESCE(valor_transacao,0) WHERE motivo_alerta IS NULL OR detalhes IS NULL OR documento_referencia IS NULL OR status IS NULL OR valor_transacao IS NULL;
+-- O primeiro usuário de empresas antigas assume a administração quando ainda não há administrador.
+UPDATE usuarios u SET perfil='admin'
+ WHERE COALESCE(u.perfil,'padrao')='padrao'
+   AND u.id=(SELECT MIN(x.id) FROM usuarios x WHERE x.empresa_id=u.empresa_id)
+   AND NOT EXISTS(SELECT 1 FROM usuarios x WHERE x.empresa_id=u.empresa_id AND LOWER(x.perfil) IN ('admin','administrador'));

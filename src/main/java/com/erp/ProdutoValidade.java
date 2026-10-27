@@ -10,13 +10,15 @@ public final class ProdutoValidade {
         EstoqueStatus.aplicar(produtos);
         if (produtos.isEmpty()) return produtos;
         var hoje = InventarioService.hoje();
+        boolean produtoUnico = produtos.size() == 1;
         var linhas = db.queryForList("""
             SELECT produto_id, COALESCE(SUM(quantidade),0) AS rastreado,
                    COALESCE(SUM(quantidade) FILTER (WHERE validade<?),0) AS vencidas,
                    COALESCE(SUM(quantidade) FILTER (WHERE validade IS NULL),0) AS sem_data,
                    MIN(validade) FILTER (WHERE validade>=?) AS proxima
-              FROM estoque_lotes WHERE empresa_id=? AND quantidade>0 GROUP BY produto_id
-            """, hoje, hoje, empresa);
+              FROM estoque_lotes WHERE empresa_id=? AND quantidade>0
+            """ + (produtoUnico ? " AND produto_id=?" : "") + " GROUP BY produto_id",
+                produtoUnico ? new Object[]{hoje, hoje, empresa, produtos.get(0).get("id")} : new Object[]{hoje, hoje, empresa});
         Map<Long,Map<String,Object>> porProduto = new HashMap<>();
         for(var linha:linhas) porProduto.put(((Number)linha.get("produto_id")).longValue(),linha);
         for(var p:produtos) {

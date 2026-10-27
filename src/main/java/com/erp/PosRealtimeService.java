@@ -26,7 +26,7 @@ public class PosRealtimeService {
         emitter.onTimeout(remover);
         emitter.onError(ignored -> remover.run());
         try { emitter.send(SseEmitter.event().name("conectado").data(Map.of("empresaId", empresa))); }
-        catch (IOException erro) { remover.run(); emitter.completeWithError(erro); }
+        catch (IOException | IllegalStateException erro) { encerrarComErro(empresa, emitter, erro); }
         return emitter;
     }
 
@@ -40,7 +40,7 @@ public class PosRealtimeService {
     public void manterConexoes() {
         clientesPorEmpresa.forEach((empresa,clientes)->clientes.forEach(emitter->{
             try { emitter.send(SseEmitter.event().comment("manter-conexao")); }
-            catch(IOException | IllegalStateException erro) { remover(empresa,emitter);emitter.completeWithError(erro); }
+            catch(IOException | IllegalStateException erro) { encerrarComErro(empresa,emitter,erro); }
         }));
     }
 
@@ -53,6 +53,14 @@ public class PosRealtimeService {
         } else publicar.run();
     }
 
+    private void encerrarComErro(int empresa, SseEmitter emitter, Exception erro) {
+        remover(empresa, emitter);
+        try { emitter.completeWithError(erro); }
+        catch (IllegalStateException ignored) {
+            // O Tomcat pode já ter liberado o contexto depois de a aba desconectar.
+        }
+    }
+
     private void publicar(int empresa, String evento) {
         var clientes = clientesPorEmpresa.get(empresa);
         if (clientes == null) return;
@@ -60,8 +68,7 @@ public class PosRealtimeService {
         for (var emitter : clientes) {
             try { emitter.send(SseEmitter.event().name(evento).data(dados)); }
             catch (IOException | IllegalStateException erro) {
-                remover(empresa,emitter);
-                emitter.completeWithError(erro);
+                encerrarComErro(empresa,emitter,erro);
             }
         }
     }

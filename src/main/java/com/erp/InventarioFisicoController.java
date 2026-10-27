@@ -86,14 +86,20 @@ public class InventarioFisicoController {
         if(sessao.isEmpty() || !"EM_CONTAGEM".equals(sessao.get(0).get("status")))
             throw new IllegalArgumentException("Inventário não encontrado ou já finalizado.");
         Object raw=body.get("quantidadeContada");
-        if(!(raw instanceof Number n) || n.doubleValue()<0 || n.doubleValue()!=Math.floor(n.doubleValue()) || n.doubleValue()>Integer.MAX_VALUE)
+        int quantidade;
+        try {
+            if (!(raw instanceof Number)) throw new NumberFormatException();
+            quantidade = new java.math.BigDecimal(raw.toString()).intValueExact();
+            if (quantidade < 0) throw new NumberFormatException();
+        } catch (ArithmeticException | NumberFormatException erro) {
             throw new IllegalArgumentException("Informe uma quantidade física inteira igual ou maior que zero.");
+        }
         String observacao=String.valueOf(body.getOrDefault("observacao", "")).trim();
         if(observacao.length()>500) throw new IllegalArgumentException("A observação deve ter até 500 caracteres.");
         if(db.update("""
             UPDATE inventario_fisico_itens x SET quantidade_contada=?,observacao=?,contado_em=CURRENT_TIMESTAMP,contado_por=?
               FROM inventarios_fisicos i WHERE x.id=? AND x.inventario_id=i.id AND x.inventario_id=? AND x.empresa_id=? AND i.empresa_id=? AND i.status='EM_CONTAGEM'
-            """,n.intValue(),observacao,usuario,itemId,id,empresa,empresa)!=1) throw new IllegalArgumentException("Item não encontrado ou inventário não está aberto para contagem.");
+            """,quantidade,observacao,usuario,itemId,id,empresa,empresa)!=1) throw new IllegalArgumentException("Item não encontrado ou inventário não está aberto para contagem.");
         return obterInterno(empresa,id);
     }
 

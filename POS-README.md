@@ -7,7 +7,7 @@ O POS registra vendas no balcão e usa o mesmo catálogo e estoque do ERP. Para 
 1. Entre no sistema e escolha **POS**. Use **Dashboard** para voltar ao ERP.
 2. Pesquise pelo nome ou código do produto. `F2` leva à busca.
 3. Adicione os produtos, ajuste quantidades e, se necessário, informe o cliente e o desconto.
-4. Escolha a forma de pagamento, confirme o recebimento e finalize. `F9` também finaliza a venda.
+4. Escolha a forma de pagamento e finalize. `F9` também inicia a finalização.
 5. Abra **Histórico de vendas** para consultar o comprovante e imprimir ou salvar em PDF.
 
 O sistema grava a venda e atualiza o estoque na mesma transação. Alterações de produtos e estoque chegam aos caixas conectados.
@@ -15,7 +15,8 @@ O sistema grava a venda e atualiza o estoque na mesma transação. Alterações 
 ## Pagamentos e comprovantes
 
 - **Dinheiro:** informe o valor recebido; o POS calcula o troco.
-- **Pix e cartão:** confirme o recebimento no banco ou na maquininha e marque a confirmação no POS. O sistema não gera cobranças.
+- **Pix:** confirme os itens para exibir o QR Code da empresa, confira o recebimento e pressione **Confirmar Pix recebido e finalizar venda**. O POS só registra a venda depois dessa confirmação manual; não acompanha a leitura do QR nem consulta o banco.
+- **Cartão:** confirme o recebimento na maquininha e marque a confirmação no POS. O sistema não gera cobranças.
 - O comprovante é informativo e não substitui NFC-e ou outro documento fiscal.
 - O histórico do POS mostra as 50 vendas mais recentes. O **Histórico de vendas** do ERP permite consultar vendas do ERP e POS por data.
 

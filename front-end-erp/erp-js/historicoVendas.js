@@ -1,6 +1,7 @@
 import { estaAutenticado } from './authService.js';
 import { listarVendas, buscarVenda } from './vendasService.js';
 import { escapeHtml } from './uiService.js';
+import { formatarData, formatarDataHora } from './timeUtils.js';
 
 const $ = (seletor) => document.querySelector(seletor);
 const moeda = (valor) => Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -8,11 +9,9 @@ let consultaAtual = 0;
 let detalheAtual = 0;
 
 function dataLocal(valor, origem) {
-    const data = new Date(valor);
-    if (Number.isNaN(data.getTime())) return 'Data indisponível';
     return origem === 'POS'
-        ? data.toLocaleString('pt-BR')
-        : data.toLocaleDateString('pt-BR');
+        ? formatarDataHora(valor, 'Data indisponível')
+        : formatarData(valor, 'Data indisponível');
 }
 
 function origemDaVenda(venda) {
