@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Financeiro | ERP</title>
+<script src="./erp-js/initialUi.js"></script>
+<link href="./css/tela.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+<div class="logo">ERP</div>
+<nav class="menu" aria-label="Navegação principal">
+<a href="dashboard.html">Dashboard</a>
+<a href="pos.html" data-troca-sistema="true">POS</a>
+<details class="menu-pasta" data-pasta="cadastros">
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Cadastros</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="pessoas-listagem.html">Pessoas</a>
+<a href="pessoas-cadastro.html">Cadastrar pessoa</a>
+<a href="produtos-listagem.html">Produtos</a>
+<a href="produtos-cadastro.html">Cadastrar produto</a>
+<a href="categorias.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Categorias</a>
+</div></details>
+<details class="menu-pasta" data-pasta="operacao" open>
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Operação</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="compras.html">Compras</a>
+<a href="vendas.html">Vendas</a>
+<a href="historico-vendas.html">Histórico de vendas</a>
+<a href="estoque.html">Estoque</a>
+<a href="financeiro.html" class="ativo" aria-current="page">Financeiro</a>
+</div></details>
+<details class="menu-pasta" data-pasta="ferramentas">
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Ferramentas</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Assistente IA</a>
+</div></details>
+</nav>
+</aside>
+<main class="conteudo">
+<header class="topo"><span class="usuario">👤 Usuário ▾</span><a href="atendimento.html" class="atalho-atendimento" title="Central de atendimento" aria-label="Central de atendimento"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="12" width="4" height="7" rx="2"/><rect x="17" y="12" width="4" height="7" rx="2"/><path d="M19 19v1a2 2 0 0 1-2 2h-4"/></svg></a><button class="botao secundario" data-logout="" type="button">Sair</button></header>
+<section class="pagina">
+<div class="titulo"><h1>Financeiro e integração com a fintech</h1><p>Gere cobranças Pix pela fintech e acompanhe a confirmação de pagamento em tempo real.</p></div>
+<div class="cartoes" id="resumoFinanceiro">
+<div class="cartao"><small>A liquidar</small><div class="indicador" id="cartaoPendente">—</div><small id="cartaoQtdPendentes">contas ainda não confirmadas pela fintech</small></div>
+<div class="cartao"><small>Liquidado hoje via fintech</small><div class="indicador" id="cartaoLiquidado">—</div><small>Pix confirmados</small></div>
+<div class="cartao"><small>Aguardando pagamento</small><div class="indicador" id="cartaoAguardando">—</div><small>cobranças Pix abertas</small></div>
+<div class="cartao"><small>Eventos rejeitados hoje</small><div class="indicador" id="cartaoRejeitados">—</div><small>falhas de segurança</small></div>
+</div>
+<div class="painel historico-painel">
+<div class="historico-topo"><h2>Contas a receber</h2><span id="estadoFinanceiro" role="status">Carregando...</span></div>
+<div class="historico-tabela-scroll"><table class="tabela"><thead><tr><th>Conta</th><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Situação</th><th>Cobrança Pix</th><th>Ação</th></tr></thead><tbody id="listaContas"><tr><td colspan="7" class="estado-vazio">Carregando...</td></tr></tbody></table></div>
+<p class="ajuda-campo" id="resultadoSimulacao" role="status"></p>
+<p class="ajuda-campo">A fintech é simulada: o botão “Simular fintech” faz o servidor chamar o webhook do ERP com assinatura correta ou com falhas propositais, para demonstrar as medidas de segurança.</p>
+</div>
+<div class="painel historico-painel">
+<div class="historico-topo"><h2>Trilha de auditoria da integração</h2>
+<div class="barra-listagem"><select id="filtroResultado" aria-label="Filtrar por resultado"><option value="">Todos os resultados</option><option value="rejeitado">Rejeitado</option><option value="duplicado">Duplicado</option><option value="aceito">Aceito</option><option value="criada">Criada</option></select><input id="filtroData" type="date" aria-label="Filtrar por data"/><button class="botao secundario" id="limparFiltros" type="button">Limpar filtros</button></div></div>
+<div class="historico-tabela-scroll"><table class="tabela"><thead><tr><th>Quando</th><th>Cobrança</th><th>Evento</th><th>Resultado</th><th>Detalhe</th></tr></thead><tbody id="listaAuditoria"><tr><td colspan="5" class="estado-vazio">Nenhum evento ainda.</td></tr></tbody></table></div>
+</div>
+</section>
+</main>
+</div>
+<script type="module" src="./erp-js/app.js"></script>
+<script type="module" src="./erp-js/financeiro.js"></script>
+</body>
+</html>
