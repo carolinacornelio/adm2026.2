@@ -132,3 +132,32 @@ CREATE INDEX IF NOT EXISTS idx_vendas_empresa_cliente ON vendas(empresa_id, clie
 CREATE INDEX IF NOT EXISTS idx_itens_venda_venda ON itens_venda(venda_id);
 CREATE INDEX IF NOT EXISTS idx_itens_compra_compra ON itens_compra(compra_id);
 CREATE INDEX IF NOT EXISTS idx_estoque_empresa_produto ON estoque(empresa_id, produto_id);
+
+-- Integração ERP x fintech (Desafio 8). 
+CREATE TABLE IF NOT EXISTS fintech_cobrancas (
+    id                  SERIAL PRIMARY KEY,
+    empresa_id          INTEGER      NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+    conta_receber_id    INTEGER      NOT NULL REFERENCES contas_receber(id) ON DELETE CASCADE,
+    codigo_externo      VARCHAR(40)  NOT NULL UNIQUE,      -- código da cobrança na fintech
+    valor               NUMERIC(10,2) NOT NULL,
+    status              VARCHAR(20)  NOT NULL DEFAULT 'pendente',   -- pendente | paga | cancelada
+    evento_pagamento_id VARCHAR(80),
+    criado_em           TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    pago_em             TIMESTAMPTZ
+);
+
+-- No máximo uma cobrança pendente por conta (evita cobrança duplicada)
+CREATE UNIQUE INDEX IF NOT EXISTS ux_fintech_cobranca_aberta
+    ON fintech_cobrancas (conta_receber_id) WHERE status = 'pendente';
+
+CREATE TABLE IF NOT EXISTS fintech_auditoria (
+    id               SERIAL PRIMARY KEY,
+    empresa_id       INTEGER REFERENCES empresas(id) ON DELETE SET NULL,
+    evento_id        VARCHAR(80),
+    cobranca_codigo  VARCHAR(40),
+    resultado        VARCHAR(20) NOT NULL,   -- criada | aceito | duplicado | rejeitado
+    motivo           VARCHAR(255),
+    recebido_em      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_fintech_auditoria_empresa ON fintech_auditoria (empresa_id, id DESC);

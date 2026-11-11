@@ -1,4 +1,4 @@
-** financeiro.html: contas a receber, cobranças Pix pela fintech (simulada), cartões de resumo e trilha de auditoria. */
+/** financeiro.html: contas a receber, cobranças Pix pela fintech (simulada), cartões de resumo e trilha de auditoria. */
 import { apiService } from './apiService.js';
 import { estaAutenticado } from './authService.js';
 import { escapeHtml as e, iniciarCarregando, pararCarregando } from './uiService.js';
