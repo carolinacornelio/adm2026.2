@@ -20,6 +20,5 @@ export const produtosService = {
     criarProduto,
     atualizarProduto,
     removerProduto,
-    ajustarEstoque,
 };
 
