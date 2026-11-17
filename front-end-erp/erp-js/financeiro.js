@@ -2,7 +2,7 @@
 import { apiService } from './apiService.js';
 import { estaAutenticado } from './authService.js';
 import { escapeHtml as e, iniciarCarregando, pararCarregando } from './uiService.js';
- 
+
 const $ = (seletor) => document.querySelector(seletor);
 const moeda = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const dataBr = (v) => (v ? new Date(`${String(v).slice(0, 10)}T12:00:00`).toLocaleDateString('pt-BR') : '—');
@@ -15,11 +15,11 @@ const MODOS = [
     ['valor-divergente', 'Valor divergente'],
     ['timestamp-antigo', 'Carimbo antigo (replay)'],
 ];
- 
+
 let carregando = false;
 let repetir = false;
 const controller = new AbortController();
- 
+
 function linhaConta(c) {
     const status = String(c.statusConta || '').toLowerCase();
     const paga = status === 'pago';
@@ -41,11 +41,11 @@ function linhaConta(c) {
         + `<td>${dataBr(c.vencimento)}</td><td><span class="status ${paga ? 'normal' : 'baixo'}">${rotulo}</span></td>`
         + `<td>${cobranca}</td><td>${acao}</td></tr>`;
 }
- 
+
 const linhaAuditoria = (a) => `<tr><td>${e(quando(a.recebidoEm))}</td><td>${e(a.codigo || '—')}</td>`
     + `<td>${e(a.eventoId || '—')}</td><td><span class="status ${CLASSE_RESULTADO[a.resultado] || 'baixo'}">${e(a.resultado)}</span></td>`
     + `<td>${e(a.motivo || '')}</td></tr>`;
- 
+
 function consultaAuditoria() {
     const parametros = new URLSearchParams();
     const resultado = $('#filtroResultado')?.value;
@@ -55,7 +55,7 @@ function consultaAuditoria() {
     const texto = parametros.toString();
     return `/financeiro/auditoria${texto ? `?${texto}` : ''}`;
 }
- 
+
 function desenharResumo(r) {
     $('#cartaoPendente').textContent = moeda(r.pendente);
     $('#cartaoQtdPendentes').textContent = `${r.qtdPendentes} conta(s) ainda não confirmadas pela fintech`;
@@ -63,7 +63,7 @@ function desenharResumo(r) {
     $('#cartaoAguardando').textContent = String(r.aguardando);
     $('#cartaoRejeitados').textContent = String(r.rejeitadosHoje);
 }
- 
+
 async function carregar() {
     if (carregando) { repetir = true; return; }
     carregando = true;
@@ -89,7 +89,7 @@ async function carregar() {
         if (repetir) { repetir = false; void carregar(); }
     }
 }
- 
+
 async function aoClicar(evento) {
     const gerar = evento.target.closest('[data-gerar]');
     const simular = evento.target.closest('[data-simular]');
@@ -115,7 +115,7 @@ async function aoClicar(evento) {
         pararCarregando(botao);
     }
 }
- 
+
 async function acompanhar() {
     while (!controller.signal.aborted) {
         try {
@@ -130,7 +130,7 @@ async function acompanhar() {
         if (!controller.signal.aborted) await new Promise((resolve) => setTimeout(resolve, 1500));
     }
 }
- 
+
 document.addEventListener('DOMContentLoaded', () => {
     if (!estaAutenticado()) return;
     $('#listaContas').addEventListener('click', aoClicar);
@@ -146,4 +146,3 @@ document.addEventListener('DOMContentLoaded', () => {
     void carregar();
     void acompanhar();
 });
- 
