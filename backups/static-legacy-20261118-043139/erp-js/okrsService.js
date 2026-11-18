@@ -1,0 +1,13 @@
+import { apiService } from './apiService.js';
+const qs = (p = {}) => { const s = new URLSearchParams(Object.entries(p).filter(([, v]) => v !== '' && v != null)).toString(); return s ? `?${s}` : ''; };
+export const listarObjetivos = (filtros) => apiService.get(`/okrs/objetivos${qs(filtros)}`);
+export const buscarObjetivo = (id) => apiService.get(`/okrs/objetivos/${id}`);
+export const criarObjetivo = (d) => apiService.post('/okrs/objetivos', d);
+export const atualizarObjetivo = (id, d) => apiService.put(`/okrs/objetivos/${id}`, d);
+export const arquivarObjetivo = (id) => apiService.delete(`/okrs/objetivos/${id}`);
+export const criarResultado = (objetivoId, d) => apiService.post(`/okrs/objetivos/${objetivoId}/resultados`, d);
+export const atualizarResultado = (id, d) => apiService.put(`/okrs/resultados/${id}`, d);
+export const cancelarResultado = (id) => apiService.delete(`/okrs/resultados/${id}`);
+export const atualizarProgresso = (id, valorAtual, comentario) => apiService.put(`/okrs/resultados/${id}/progresso`, { valorAtual, comentario });
+export const historicoResultado = (id) => apiService.get(`/okrs/resultados/${id}/historico`);
+export const resumoOkrs = () => apiService.get('/okrs/progresso');

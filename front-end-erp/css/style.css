@@ -2064,3 +2064,61 @@ body.modal-open {
     grid-column: 2;
   }
 }
+
+
+/* Design system ERP: camada aditiva, preserva seletores consumidos pelo JS. */
+:root {
+  --erp-bg: #f5f7fb; --erp-surface: #fff; --erp-text: #172033; --erp-muted: #64748b;
+  --erp-primary: #3157d5; --erp-primary-hover: #2446b8; --erp-border: #e2e8f0;
+  --erp-success: #15803d; --erp-warning: #b45309; --erp-danger: #b91c1c;
+  --erp-radius: 12px; --erp-radius-sm: 8px; --erp-shadow: 0 8px 24px rgba(15,23,42,.07);
+  --erp-space-1: 4px; --erp-space-2: 8px; --erp-space-3: 12px; --erp-space-4: 16px; --erp-space-6: 24px;
+  --erp-font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+html { color-scheme: light; }
+body { font-family: var(--erp-font); color: var(--erp-text); background: var(--erp-bg); }
+button, input, select, textarea { font: inherit; }
+button, .botao, [role="button"] { transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgba(49,87,213,.25); outline-offset: 2px; }
+button:disabled, input:disabled, select:disabled, textarea:disabled { opacity: .58; cursor: not-allowed; }
+input, select, textarea { border-radius: var(--erp-radius-sm); border-color: var(--erp-border); }
+input:focus, select:focus, textarea:focus { border-color: var(--erp-primary); box-shadow: 0 0 0 3px rgba(49,87,213,.12); }
+.card, .indicador, .acao, .painel, .secao, .modal-conteudo { border-radius: var(--erp-radius); box-shadow: var(--erp-shadow); }
+.acao { background: var(--erp-surface); border: 1px solid var(--erp-border); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.acao:hover { transform: translateY(-2px); border-color: #c7d2fe; box-shadow: 0 12px 28px rgba(15,23,42,.10); }
+.acao .icone-imagem { width: 100%; max-height: 112px; object-fit: contain; display: block; }
+.icone-imagem-fallback { min-height: 88px; display: grid; place-items: center; color: var(--erp-primary); font-size: 2.25rem; background: #eef2ff; border-radius: var(--erp-radius-sm); }
+.menu a, .menu button { border-radius: var(--erp-radius-sm); transition: background .16s ease, color .16s ease; }
+.menu a.ativo, .menu a[aria-current="page"] { background: #e9efff; color: var(--erp-primary); font-weight: 650; }
+.tabela { width: 100%; border-collapse: collapse; background: var(--erp-surface); border-radius: var(--erp-radius); overflow: hidden; }
+.tabela th { background: #f1f5f9; color: #475569; font-size: .78rem; text-transform: uppercase; letter-spacing: .035em; }
+.tabela th, .tabela td { padding: 12px 14px; border-bottom: 1px solid var(--erp-border); text-align: left; }
+.badge, .status-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 9px; font-size: .78rem; font-weight: 650; }
+@media (max-width: 760px) { .tabela { display: block; overflow-x: auto; white-space: nowrap; } .acao .icone-imagem { max-height: 84px; } }
+
+
+/* Acabamento visual compartilhado das telas públicas (login e cadastro). */
+:root {
+  --public-primary: #3157d5;
+  --public-border: #e2e8f0;
+  --public-muted: #64748b;
+  --public-radius: 14px;
+}
+body { color: #172033; }
+button, input, select, textarea { font: inherit; }
+input, select, textarea {
+  border: 1px solid var(--public-border);
+  border-radius: 10px;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--public-primary);
+  box-shadow: 0 0 0 3px rgba(49, 87, 213, .12);
+}
+button, .btn, .btn-primary { transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 3px solid rgba(49, 87, 213, .25);
+  outline-offset: 2px;
+}
+button:disabled, input:disabled, select:disabled, textarea:disabled { opacity: .58; cursor: not-allowed; }

@@ -1,75 +1,53 @@
-# Alteração do Assistente IA
+# Assistente de IA
 
-Esta versão mantém o ERP existente e altera somente o módulo do Assistente IA.
+O assistente responde perguntas analíticas sobre os dados da empresa. Ele usa **Gemma 3 4B pelo Ollama** e está disponível no plano PLUS. O ERP continua funcionando sem a IA.
 
-## O que mudou
+## Preparar o modelo
 
-- `POST /api/ia/perguntar` continua sendo o mesmo endpoint.
-- A pergunta deixou de depender de apenas quatro `if/else` fixos.
-- O backend passa a montar um plano de consulta com ferramentas permitidas.
-- O Ollama pode interpretar a pergunta e escolher quais dados são necessários.
-- O backend executa as consultas e sempre filtra pela `empresa_id` do usuário autenticado.
-- O Ollama recebe somente o contexto necessário para escrever a resposta.
-- O frontend envia até 8 mensagens recentes para permitir perguntas de acompanhamento.
-- Se o Ollama estiver indisponível, existe um fallback determinístico para as principais análises.
-
-## Fluxo
-
-`pergunta -> planejador -> ferramentas permitidas -> PostgreSQL -> contexto -> Ollama -> resposta`
-
-A IA não recebe credenciais do banco e não recebe acesso direto ao PostgreSQL.
-
-## Ollama local
-
-Instale o Ollama e baixe o modelo configurado por padrão:
+1. Instale o [Ollama](https://ollama.com/download) no computador que executa o backend.
+2. Baixe o modelo uma vez:
 
 ```powershell
-ollama pull qwen2.5:3b
+ollama pull gemma3:4b
 ```
 
-Deixe o Ollama em execução. O padrão usado pelo Spring Boot é:
+3. Inicie o ERP pela [instrução principal](README.md#executar-o-erp) e abra **Ferramentas → Assistente IA**.
 
-- URL: `http://localhost:11434`
-- Modelo: `qwen2.5:3b`
+O padrão é `http://localhost:11434`. No Windows, o ERP tenta iniciar o Ollama instalado no local padrão quando uma pergunta é enviada. Se ele não estiver instalado nesse local, inicie-o manualmente. A primeira resposta pode demorar enquanto o modelo carrega.
 
-É possível trocar sem alterar o código:
+Para usar outra instalação, configure `erp.ia.ollama.url`, `erp.ia.ollama.model` e `erp.ia.ollama.enabled` em `application-local.properties`. Edite somente essas linhas, preservando a configuração de banco já existente. A URL também pode ser definida por `OLLAMA_URL`; veja [a arquitetura](IA-ARQUITETURA-GEMMA.md) para detalhes.
 
-```properties
-erp.ia.ollama.enabled=true
-erp.ia.ollama.url=http://localhost:11434
-erp.ia.ollama.model=qwen2.5:3b
-```
+## Exemplos de perguntas
 
-Essas propriedades podem ficar no `application-local.properties` da máquina, que já é importado pelo projeto.
+| Tema | Pergunta de exemplo |
+| --- | --- |
+| Vendas | Quais produtos venderam menos neste mês, incluindo os sem vendas? |
+| Estoque | Quais produtos estão no mínimo ou abaixo dele? |
+| Validade | Quais lotes vencem nos próximos 15 dias? |
+| Compras | Quanto compramos neste mês? |
+| Faturamento | Compare o faturamento deste mês com o anterior. |
+| Inventário físico | Quantos inventários foram concluídos neste mês? |
+| Divergências | Quais produtos tiveram faltas ou sobras nas contagens deste mês? |
+| Atendimento | Quantos chamados estão abertos por prioridade? |
 
-## Arquivos novos
+Vendas, compras, inventário físico e chamados usam o mês atual quando você não informa um período. Estoque e validade mostram a situação atual. Nas contagens físicas, divergências são estimativas e sessões diferentes podem incluir os mesmos produtos.
 
-- `src/main/java/com/erp/IAService.java`
-- `src/main/java/com/erp/IATool.java`
-- `src/main/java/com/erp/IAPlano.java`
-- `src/main/java/com/erp/IAPerguntaRequest.java`
-- `src/main/java/com/erp/IAHistoricoItem.java`
-- `src/main/java/com/erp/OllamaClient.java`
+## Dados e limites
 
-## Arquivos alterados
+- A pergunta e o histórico recente são enviados ao modelo configurado. Por padrão, o Ollama roda localmente no computador do backend; se você configurar outra URL, os dados seguem para esse endereço. Evite digitar senhas ou outros dados sigilosos na pergunta.
+- As consultas são limitadas à empresa autenticada. A IA não recebe credenciais, senhas de usuários, documentos, telefones, e-mails ou endereços da base.
+- Para chamados, a IA consulta somente números, prioridade, situação e datas. Ela não recebe o nome do cliente, o título ou a descrição do chamado.
+- Para inventário físico, os nomes dos responsáveis e as observações livres não são enviados. As consultas podem incluir nomes de produtos, quantidades e valores necessários à resposta.
+- A IA não abre nem altera chamados, não salva contagens e não aprova ajustes. Ela pode interpretar os resultados incorretamente; confira as telas do ERP antes de tomar decisões importantes.
+- Listas extensas podem ser limitadas para caber no contexto do modelo. A resposta informa quando isso ocorre.
 
-- `src/main/java/com/erp/IAController.java`
-- `src/main/resources/static/erp-js/ia.js`
-- `src/main/resources/static/erp-js/iaService.js`
-- `src/main/resources/static/ia.html`
-- `src/main/resources/static/css/tela.css`
-- `src/main/resources/application.properties`
+## Solução de problemas
 
-Nenhum controller de produtos, compras, vendas, estoque, dashboard ou cadastro foi alterado.
+| Sintoma | O que fazer |
+| --- | --- |
+| Modelo não encontrado | Execute `ollama list`; se faltar `gemma3:4b`, execute `ollama pull gemma3:4b`. |
+| Ollama indisponível | Abra o Ollama ou execute `ollama serve`. |
+| Resposta lenta | A primeira pergunta pode carregar o modelo. Verifique memória disponível com `ollama ps`. |
+| Pergunta falhou | Tente novamente; erros de conexão, timeout ou resposta inválida são exibidos sem inventar uma resposta alternativa. |
 
-## Exemplos para testar
-
-- `Quanto vendi este mês?`
-- `Como estão minhas vendas este mês comparadas ao mês passado?`
-- `Quais produtos estão com estoque baixo?`
-- `Qual produto vendeu mais?`
-- `Quais produtos estão com baixa saída?`
-- `Estou vendendo bem e quais produtos estão ajudando nisso?`
-- `Como estão minhas compras nos últimos 30 dias?`
-- `Tenho estoque suficiente para os produtos que mais vendo?`
-- Depois de perguntar `Quanto vendi este mês?`, pergunte `E comparado ao mês passado?` para testar o contexto da conversa.
+Após alterar o código, reinicie o ERP. Logs do Ollama iniciado automaticamente no Windows ficam em `%LOCALAPPDATA%/ADM-ERP/logs/ollama-local.log`.

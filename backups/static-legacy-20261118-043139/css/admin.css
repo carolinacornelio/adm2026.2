@@ -1,0 +1,14 @@
+/* Telas administrativas: complementa tela.css sem alterar a identidade visual. */
+.progresso{height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden;min-width:90px}
+.progresso span{display:block;height:100%;background:#2563eb}
+.chips{display:flex;flex-wrap:wrap;gap:6px 14px}.chip{display:inline-flex;gap:6px;align-items:center;font-size:.9rem}
+.dialogo-form{max-width:560px;width:calc(100% - 32px);max-height:90vh;overflow:auto}
+.dialogo-form .botoes{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.grade-filtros{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:12px}
+.grade-filtros .campo{min-width:150px;flex:1}
+.tabela-rolavel{overflow-x:auto}
+.detalhe-lista{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
+.detalhe-lista div small{display:block;color:#6b7280}
+.abas{display:flex;gap:6px;margin-bottom:12px}.abas button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.mensagem-formulario[data-tipo="erro"]{color:#b91c1c}
+@media (max-width:720px){.grade-filtros .campo{min-width:100%}}

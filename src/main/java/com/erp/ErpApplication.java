@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * Controllers e configura o DataSource/JdbcTemplate.
  */
 @SpringBootApplication
+@org.springframework.scheduling.annotation.EnableScheduling
 public class ErpApplication {
     public static void main(String[] args) {
         SpringApplication.run(ErpApplication.class, args);

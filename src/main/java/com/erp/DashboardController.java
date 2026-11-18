@@ -85,7 +85,7 @@ public class DashboardController {
     }
 
     private YearMonth lerMes(String valor) {
-        if (valor == null || valor.isBlank()) return YearMonth.now();
+        if (valor == null || valor.isBlank()) return YearMonth.from(InventarioService.hoje());
         try {
             return YearMonth.parse(valor);
         } catch (RuntimeException erro) {

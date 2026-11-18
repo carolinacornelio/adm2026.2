@@ -15,8 +15,9 @@
  * ---------------------------------------------------------------------------
  */
 
-import { estaAutenticado, getUsuarioLogado, logout } from './authService.js';
+import { estaAutenticado, getUsuarioLogado, logout } from './authService.js?v=20261118-submetas-v3';
 import { aplicarControlePlanos, temAcesso, nomePlano } from './planService.js';
+import { carregarPermissoes, aplicarPermissoesNaInterface, protegerPaginaPorPermissao } from './permissoesService.js?v=20261118-submetas-v3';
 
 const PAGINAS_PUBLICAS = ['login.html', 'cadastro.html', 'index.html', ''];
 
@@ -28,14 +29,14 @@ function protegerPaginaInterna() {
     if (PAGINAS_PUBLICAS.includes(nomeDaPaginaAtual())) return;
 
     if (!estaAutenticado()) {
-        window.location.href = 'login.html';
+        window.location.href = '/login.html';
         return;
     }
 
     const planoMinimo = document.body?.dataset?.planoMinimo;
     if (planoMinimo && !temAcesso(planoMinimo)) {
         window.alert(`Esta página está disponível no ${nomePlano(planoMinimo)}.`);
-        window.location.href = 'dashboard.html';
+        window.location.href = '/dashboard.html';
     }
 }
 
@@ -45,12 +46,16 @@ function exibirUsuarioLogado() {
     if (usuario && elementoUsuario) {
         elementoUsuario.textContent = `👤 ${usuario.nome} ▾`;
     }
+    const atalho = document.querySelector('.topo .atalho-atendimento');
+    if (atalho && nomeDaPaginaAtual() === 'atendimento.html') {
+        atalho.setAttribute('aria-current', 'page');
+    }
 }
 
 function configurarBotaoLogout() {
     const botaoLogout = document.querySelector('[data-logout]');
     if (botaoLogout) {
-        botaoLogout.addEventListener('click', () => logout());
+        botaoLogout.addEventListener('click', () => { botaoLogout.disabled=true; void logout(); });
     }
 }
 
@@ -64,8 +69,15 @@ function configurarBotaoLogout() {
 // tempo em que uma tela protegida fica "montada" sem usuário logado.
 protegerPaginaInterna();
 
+// O nome fica disponível no sessionStorage desde o login. Atualizá-lo já no
+// início do módulo evita mostrar o rótulo provisório até DOMContentLoaded.
+exibirUsuarioLogado();
+
 document.addEventListener('DOMContentLoaded', () => {
-    exibirUsuarioLogado();
     configurarBotaoLogout();
     aplicarControlePlanos();
+    // Só conveniência visual: o backend recusa (403) qualquer operação sem permissão.
+    if (estaAutenticado() && !PAGINAS_PUBLICAS.includes(nomeDaPaginaAtual())) {
+        carregarPermissoes().then((info) => { if (protegerPaginaPorPermissao(info)) aplicarPermissoesNaInterface(info); }).catch(() => {});
+    }
 });

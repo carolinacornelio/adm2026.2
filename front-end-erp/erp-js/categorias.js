@@ -4,6 +4,7 @@ import { listarCategorias, criarCategoria, atualizarCategoria, removerCategoria 
 import { escapeHtml, iniciarCarregando, pararCarregando } from './uiService.js';
 
 let categoriaEmEdicao = null;
+let ultimaCarga = 0;
 
 function elementos() {
     return {
@@ -31,10 +32,24 @@ function sairDaEdicao() {
     cancelar.hidden = true;
 }
 
+function resumoSituacao(categoria) {
+    if (Number(categoria.quantidade_produtos ?? categoria.quantidadeProdutos ?? 0) === 0) return '<span class="status status-neutro">Sem produtos</span>';
+    const estados = [
+        [categoria.estoqueOk, 'com estoque OK', 'normal'],
+        [categoria.proximosMinimo, 'próximos do mínimo', 'baixo'],
+        [categoria.noMinimo, 'no mínimo', 'estoque-minimo'],
+        [categoria.abaixoMinimo, 'abaixo do mínimo', 'estoque-minimo'],
+        [categoria.esgotados, 'esgotados', 'estoque-esgotado'],
+    ];
+    return estados.filter(([quantidade]) => Number(quantidade) > 0)
+        .map(([quantidade, texto, classe]) => `<span class="status ${classe}">${Number(quantidade)} ${texto}</span>`).join(' ')
+        + `<small class="status-detalhe">${Number(categoria.validadeEmAlerta) || 0} produto(s) com alerta de validade</small>`;
+}
+
 function renderizar(categorias) {
     const { lista } = elementos();
     if (!categorias.length) {
-        lista.innerHTML = '<tr><td class="estado-vazio" colspan="3">Nenhuma categoria cadastrada.</td></tr>';
+        lista.innerHTML = '<tr><td class="estado-vazio" colspan="4">Nenhuma categoria cadastrada.</td></tr>';
         return;
     }
 
@@ -42,6 +57,7 @@ function renderizar(categorias) {
         <tr>
             <td>${escapeHtml(categoria.nome)}</td>
             <td>${escapeHtml(categoria.quantidade_produtos ?? categoria.quantidadeProdutos ?? 0)}</td>
+            <td>${resumoSituacao(categoria)}</td>
             <td><div class="acoes-tabela">
                 <button class="acao-mini" data-editar="${escapeHtml(categoria.id)}" type="button">Editar</button>
                 <button class="acao-mini excluir" data-excluir="${escapeHtml(categoria.id)}" type="button">Excluir</button>
@@ -50,13 +66,17 @@ function renderizar(categorias) {
     `).join('');
 }
 
-async function carregarCategorias() {
+async function carregarCategorias(silencioso = false) {
     const { lista } = elementos();
+    const consulta = ++ultimaCarga;
     try {
-        lista.innerHTML = '<tr><td class="estado-vazio" colspan="3">Carregando categorias...</td></tr>';
-        renderizar(await listarCategorias());
+        if (!silencioso) lista.innerHTML = '<tr><td class="estado-vazio" colspan="4">Carregando categorias...</td></tr>';
+        const categorias = await listarCategorias();
+        if (consulta === ultimaCarga) renderizar(categorias);
     } catch (erro) {
-        lista.innerHTML = `<tr><td class="estado-vazio" colspan="3">${escapeHtml(erro.message || 'Não foi possível carregar as categorias.')}</td></tr>`;
+        if (consulta !== ultimaCarga) return;
+        if (silencioso) { mostrarMensagem('Não foi possível atualizar a situação das categorias. Os dados exibidos podem estar desatualizados.'); return; }
+        lista.innerHTML = `<tr><td class="estado-vazio" colspan="4">${escapeHtml(erro.message || 'Não foi possível carregar as categorias.')}</td></tr>`;
     }
 }
 
@@ -125,4 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarFormulario();
     configurarAcoes();
     carregarCategorias();
+    const atualizar = () => { if (!document.hidden) carregarCategorias(true); };
+    window.setInterval(atualizar, 30000);
+    window.addEventListener('focus', atualizar);
+    document.addEventListener('visibilitychange', atualizar);
 });

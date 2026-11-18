@@ -1,0 +1,96 @@
+{
+  "data": "2026-10-16",
+  "ambiente": "PostgreSQL temporário, sem uso da base normal do ERP",
+  "testes": 17,
+  "falhas": 0,
+  "erros": 0,
+  "ignorados": 0,
+  "duracaoSegundos": 25.927,
+  "casos": [
+    {
+      "nome": "rejectsForeignTenantProductAndReceipt",
+      "duracaoSegundos": 1.552,
+      "aprovado": true
+    },
+    {
+      "nome": "concurrentRetriesReturnOneSale",
+      "duracaoSegundos": 0.331,
+      "aprovado": true
+    },
+    {
+      "nome": "migrationPreservesLegacyStockAndCanRunAgainWithoutDuplicatingLots",
+      "duracaoSegundos": 0.331,
+      "aprovado": true
+    },
+    {
+      "nome": "purchasesRequireExpiryAndCreateTraceableLotsAtomically",
+      "duracaoSegundos": 0.354,
+      "aprovado": true
+    },
+    {
+      "nome": "committedSaleReachesAnOpenPosInUnderTwoSeconds",
+      "duracaoSegundos": 0.393,
+      "aprovado": true
+    },
+    {
+      "nome": "salePersistsPaymentReceiptAndStockInErp",
+      "duracaoSegundos": 0.331,
+      "aprovado": true
+    },
+    {
+      "nome": "repeatedRequestDoesNotDuplicateSaleOrStock",
+      "duracaoSegundos": 0.342,
+      "aprovado": true
+    },
+    {
+      "nome": "requiresAuthentication",
+      "duracaoSegundos": 0.29,
+      "aprovado": true
+    },
+    {
+      "nome": "concurrentCashiersCannotSellSameLastUnits",
+      "duracaoSegundos": 0.331,
+      "aprovado": true
+    },
+    {
+      "nome": "rejectsPriceChangesInvalidQuantitiesAndUnconfirmedPayment",
+      "duracaoSegundos": 0.335,
+      "aprovado": true
+    },
+    {
+      "nome": "invalidLastItemRollsBackEverything",
+      "duracaoSegundos": 0.31,
+      "aprovado": true
+    },
+    {
+      "nome": "zeroStockCannotCreateSaleOrFinancialEntry",
+      "duracaoSegundos": 0.288,
+      "aprovado": true
+    },
+    {
+      "nome": "posUsesFefoAndNeverSellsExpiredLots",
+      "duracaoSegundos": 0.32,
+      "aprovado": true
+    },
+    {
+      "nome": "erpHistoryIncludesEverySaleAndFiltersDatesWithoutExposingOtherCompanies",
+      "duracaoSegundos": 0.588,
+      "aprovado": true
+    },
+    {
+      "nome": "inventoryReportClassifiesExpiryAndValidatesAlertWindow",
+      "duracaoSegundos": 0.316,
+      "aprovado": true
+    },
+    {
+      "nome": "erpSalesAlsoUseLotsAndExposePrintableReceiptData",
+      "duracaoSegundos": 0.309,
+      "aprovado": true
+    },
+    {
+      "nome": "legacyExpiryCanBeRegularizedOnlyByItsCompanyAndOnlyOnce",
+      "duracaoSegundos": 0.557,
+      "aprovado": true
+    }
+  ]
+}

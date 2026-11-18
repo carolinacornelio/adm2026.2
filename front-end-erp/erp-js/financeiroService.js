@@ -1,0 +1,11 @@
+import { apiService } from './apiService.js';
+const qs = (p = {}) => { const s = new URLSearchParams(Object.entries(p).filter(([, v]) => v !== '' && v != null)).toString(); return s ? `?${s}` : ''; };
+export const resumoFinanceiro = () => apiService.get('/financeiro/resumo');
+export const listarLancamentos = (tipo, filtros) => apiService.get(`/financeiro/${tipo}${qs(filtros)}`);
+export const buscarLancamento = (tipo, id) => apiService.get(`/financeiro/${tipo}/${id}`);
+export const criarLancamento = (tipo, d) => apiService.post(`/financeiro/${tipo}`, d);
+export const atualizarLancamento = (tipo, id, d) => apiService.put(`/financeiro/${tipo}/${id}`, d);
+export const liquidarLancamento = (tipo, id, data) => apiService.post(`/financeiro/${tipo}/${id}/pagamento`, data ? { data } : {});
+export const cancelarLancamento = (tipo, id, motivo) => apiService.post(`/financeiro/${tipo}/${id}/cancelamento`, { motivo });
+export const listarCategoriasFinanceiras = (tipo) => apiService.get(`/financeiro/categorias${qs({ tipo })}`);
+export const criarCategoriaFinanceira = (d) => apiService.post('/financeiro/categorias', d);

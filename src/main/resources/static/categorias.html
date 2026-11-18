@@ -3,34 +3,53 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="erp-ui-version" content="2026.11.18-modulos-v2"/>
 <title>Categorias | ERP</title>
-<link href="./css/tela.css" rel="stylesheet"/>
+<script src="/erp-js/initialUi.js"></script>
+<link href="/css/tela.css?v=20261118-modulos-v2" rel="stylesheet"/>
+<link href="/css/modulos.css?v=20261118-modulos-v2" rel="stylesheet"/>
 </head>
 <body data-plano-minimo="PLUS">
 <div class="layout">
 <aside class="sidebar">
 <div class="logo">ERP</div>
-<nav class="menu">
-<a href="dashboard.html">🏠 Dashboard</a>
-<a href="pessoas-listagem.html">👥 Pessoas</a>
-<a class="sub" href="pessoas-cadastro.html">↳ Cadastro</a>
-<a class="sub" href="pessoas-listagem.html">↳ Listagem</a>
-<a href="produtos-listagem.html">📦 Produtos</a>
-<a class="sub" href="produtos-cadastro.html">↳ Cadastro</a>
-<a class="sub" href="produtos-listagem.html">↳ Listagem</a>
-<a class="sub ativo" href="categorias.html">↳ Categorias</a>
-<a href="compras.html">🛒 Compras</a>
-<a href="vendas.html">💰 Vendas</a>
-<a href="estoque.html">📊 Estoque</a>
-<a href="ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">🤖 Assistente IA</a>
+<nav class="menu" aria-label="Navegação principal">
+<a href="/dashboard.html">Dashboard</a>
+<a href="/pos.html" data-troca-sistema="true">POS</a>
+<details class="menu-pasta" data-pasta="cadastros" open>
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Cadastros</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="/pessoas-listagem.html">Pessoas</a>
+<a href="/pessoas-cadastro.html">Cadastrar pessoa</a>
+<a href="/produtos-listagem.html">Produtos</a>
+<a href="/produtos-cadastro.html">Cadastrar produto</a>
+<a href="/categorias.html?ui=20261118-modulos-v2" class="ativo" aria-current="page" data-plano-minimo="PLUS" data-plano-ocultar="true">Categorias</a>
+</div></details>
+<details class="menu-pasta" data-pasta="operacao">
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Operação</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="/compras.html?ui=20261118-modulos-v2">Compras</a>
+<a href="/vendas.html?ui=20261118-modulos-v2">Vendas</a>
+<a href="/historico-vendas.html">Histórico de vendas</a>
+<a href="/estoque.html">Estoque</a>
+</div></details>
+<details class="menu-pasta" data-pasta="ferramentas">
+<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Ferramentas</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
+<div class="menu-pasta-itens">
+<a href="/ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Assistente IA</a>
+</div></details>
 </nav>
 </aside>
 <main class="conteudo">
-<header class="topo"><span class="usuario">👤 Usuário ▾</span><button class="botao secundario" data-logout="" type="button">Sair</button></header>
-<section class="pagina">
-<div class="titulo"><h1>Categorias de produtos</h1><p>Crie e organize categorias como Celular, Computador, Periférico ou Acessório.</p></div>
-<div class="painel">
-<form class="formulario" id="formCategoria">
+<header class="topo"><span class="usuario">👤 Usuário ▾</span><a href="/atendimento.html" class="atalho-atendimento" title="Central de atendimento" aria-label="Central de atendimento"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="12" width="4" height="7" rx="2"/><rect x="17" y="12" width="4" height="7" rx="2"/><path d="M19 19v1a2 2 0 0 1-2 2h-4"/></svg></a><button class="botao secundario" data-logout="" type="button">Sair</button></header>
+<section class="pagina modulo-pagina modulo-categorias" data-modulo="categorias">
+<div class="modulo-cabecalho">
+<div class="modulo-cabecalho-icone" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h4L12 6.5h6.5A1.5 1.5 0 0 1 20 8v10.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z"/><path d="M4.5 9h15"/></svg></div>
+<div class="modulo-cabecalho-texto"><div class="modulo-trilha">Cadastros <span>/</span> Organização</div><h1>Categorias de produtos</h1><p>Organize o catálogo e acompanhe os produtos vinculados a cada categoria.</p></div>
+</div>
+<div class="painel painel-modulo painel-categoria-form">
+<div class="painel-modulo-cabecalho"><div><h2>Nova categoria</h2><p>Cadastre uma categoria para organizar seus produtos.</p></div><span class="modulo-etiqueta">Cadastro</span></div>
+<form class="formulario formulario-modulo" id="formCategoria">
 <div class="linha">
 <div class="campo"><label for="nomeCategoria">Nome da categoria</label><input id="nomeCategoria" maxlength="100" name="nome" placeholder="Ex.: Celular" required type="text"/></div>
 <div class="botoes categoria-botoes"><button class="botao secundario" id="cancelarEdicaoCategoria" type="button" hidden>Cancelar</button><button class="botao primario" id="salvarCategoria" type="submit">Criar categoria</button></div>
@@ -38,13 +57,14 @@
 </form>
 <div id="mensagemCategoria" class="mensagem-formulario" hidden></div>
 </div>
-<div class="painel categoria-lista-painel">
-<table class="tabela"><thead><tr><th>Categoria</th><th>Produtos vinculados</th><th>Ações</th></tr></thead><tbody id="listaCategorias"></tbody></table>
+<div class="painel painel-modulo categoria-lista-painel">
+<div class="painel-modulo-cabecalho"><div><h2>Categorias cadastradas</h2><p>Consulte os vínculos e a situação do estoque.</p></div></div>
+<div class="tabela-responsiva"><table class="tabela tabela-modulo"><thead><tr><th>Categoria</th><th>Produtos vinculados</th><th>Situação dos produtos</th><th>Ações</th></tr></thead><tbody id="listaCategorias"></tbody></table></div>
 </div>
 </section>
 </main>
 </div>
-<script type="module" src="./erp-js/app.js"></script>
-<script type="module" src="./erp-js/categorias.js"></script>
+<script type="module" src="/erp-js/app.js?v=20261118-modulos-v2"></script>
+<script type="module" src="/erp-js/categorias.js?v=20261118-modulos-v2"></script>
 </body>
 </html>

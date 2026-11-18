@@ -8,6 +8,11 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/ia")
 public class IAController {
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public org.springframework.http.ResponseEntity<Map<String, String>> falhaIA(org.springframework.web.server.ResponseStatusException erro) {
+        return org.springframework.http.ResponseEntity.status(erro.getStatusCode())
+                .body(Map.of("message", erro.getReason() == null ? "Não foi possível consultar a IA." : erro.getReason()));
+    }
     private final CurrentUser user;
     private final PlanService plans;
     private final IAService iaService;
@@ -24,6 +29,6 @@ public class IAController {
             @RequestHeader("Authorization") String authorization) {
         int empresaId = user.empresa(authorization);
         plans.exigir(empresaId, "PLUS");
-        return Map.of("resposta", iaService.responder(empresaId, dados));
+        return Map.of("resposta", iaService.responder(empresaId, user.usuario(authorization), dados));
     }
 }

@@ -1,0 +1,134 @@
+/* ERP UI v2 — telas de Categorias, Compras e Vendas. */
+.modulo-pagina {
+  width: min(100%, 1440px);
+  padding: clamp(22px, 3vw, 38px);
+}
+.modulo-cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 0 0 26px;
+  padding: 0 2px 22px;
+  border-bottom: 1px solid #e4e9f1;
+}
+.modulo-cabecalho-icone {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  border: 1px solid #dbe6ff;
+  border-radius: 17px;
+  color: #3157d5;
+  background: linear-gradient(145deg, #f0f4ff 0%, #e4ecff 100%);
+  box-shadow: 0 7px 18px rgba(49, 87, 213, .09);
+}
+.modulo-cabecalho-icone svg { width: 29px; height: 29px; fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; }
+.modulo-cabecalho-texto { min-width: 0; }
+.modulo-trilha { margin-bottom: 5px; color: #718096; font-size: 11px; font-weight: 750; letter-spacing: .075em; text-transform: uppercase; }
+.modulo-trilha span { padding: 0 5px; color: #a0aec0; }
+.modulo-cabecalho h1 { margin: 0; color: #172033; font-size: clamp(24px, 2.2vw, 30px); font-weight: 760; letter-spacing: -.035em; line-height: 1.2; }
+.modulo-cabecalho p { margin-top: 7px; color: #667085; font-size: 14px; }
+.painel-modulo {
+  margin-bottom: 20px;
+  padding: clamp(18px, 2.2vw, 26px);
+  border: 1px solid #e5eaf2;
+  border-radius: 17px;
+  background: #fff;
+  box-shadow: 0 8px 26px rgba(16, 36, 59, .055);
+}
+.painel-modulo-cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.painel-modulo-cabecalho h2 { color: #1d2939; font-size: 16px; font-weight: 730; letter-spacing: -.015em; }
+.painel-modulo-cabecalho p { margin-top: 4px; color: #667085; font-size: 12px; }
+.modulo-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 27px;
+  padding: 5px 10px;
+  border: 1px solid #dbe6ff;
+  border-radius: 999px;
+  color: #3157b7;
+  background: #f1f5ff;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .035em;
+  white-space: nowrap;
+}
+.modulo-etiqueta-venda { color: #087a5b; border-color: #c8f0df; background: #edfbf5; }
+.formulario-modulo { gap: 19px; }
+.modulo-pagina .campo { gap: 8px; }
+.modulo-pagina .campo label { color: #344054; font-size: 12px; font-weight: 700; }
+.modulo-pagina input:not([type="checkbox"]):not([type="radio"]),
+.modulo-pagina select,
+.modulo-pagina textarea {
+  min-height: 44px;
+  padding: 10px 13px;
+  border: 1px solid #d8e0eb;
+  border-radius: 10px;
+  color: #1d2939;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .025);
+}
+.modulo-pagina input:focus,
+.modulo-pagina select:focus,
+.modulo-pagina textarea:focus {
+  border-color: #7996ed;
+  outline: 3px solid rgba(49, 87, 213, .12);
+  box-shadow: none;
+}
+.modulo-pagina .botao { min-height: 42px; padding: 10px 17px; border-radius: 10px; font-weight: 700; }
+.modulo-pagina .botao.primario { background: linear-gradient(135deg, #3157d5, #2548bb); box-shadow: 0 5px 12px rgba(49,87,213,.16); }
+.modulo-pagina .botao.primario:hover { background: #2446b8; box-shadow: 0 7px 16px rgba(49,87,213,.22); transform: translateY(-1px); }
+.modulo-pagina .botao.secundario { border: 1px solid #dce3ed; color: #344054; background: #f8fafc; }
+.modulo-pagina .botao.secundario:hover { background: #eef2f7; }
+.modulo-pagina .botao:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+.modulo-pagina .tabela-responsiva,
+.modulo-pagina .produtos-compra-modulo { width: 100%; overflow-x: auto; border: 1px solid #e8edf4; border-radius: 12px; }
+.modulo-pagina .tabela-modulo { min-width: 680px; border: 0; border-collapse: separate; border-spacing: 0; font-size: 12px; }
+.modulo-pagina .tabela-modulo thead th { padding: 13px 15px; border-bottom: 1px solid #e4e9f1; color: #667085; background: #f7f9fc; font-size: 10px; font-weight: 800; letter-spacing: .055em; text-transform: uppercase; white-space: nowrap; }
+.modulo-pagina .tabela-modulo tbody td { padding: 14px 15px; border-bottom: 1px solid #eef1f5; color: #344054; vertical-align: middle; }
+.modulo-pagina .tabela-modulo tbody tr:last-child td { border-bottom: 0; }
+.modulo-pagina .tabela-modulo tbody tr:hover td { background: #fafbfe; }
+.modulo-pagina .tabela-modulo tbody input,
+.modulo-pagina .tabela-modulo tbody select { min-width: 100px; min-height: 38px; padding: 7px 9px; border-radius: 8px; font-size: 12px; }
+.modulo-pagina .acoes-tabela { flex-wrap: wrap; }
+.modulo-pagina .acao-mini { min-height: 31px; padding: 7px 10px; border: 1px solid #dce5f2; border-radius: 8px; color: #3157b7; background: #f3f6ff; font-size: 11px; font-weight: 700; }
+.modulo-pagina .acao-mini.excluir { border-color: #f3d2d2; color: #b42318; background: #fff5f5; }
+.modulo-pagina .total { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 18px; padding: 15px 17px; border: 1px solid #e5eaf2; border-radius: 12px; color: #475467; background: #f8fafc; font-size: 14px; }
+.modulo-pagina .total span { color: #172033; font-size: 22px; font-weight: 800; letter-spacing: -.025em; }
+.modulo-pagina .ajuda-campo { margin: 0 0 4px; padding: 10px 12px; border: 1px solid #f4e4bd; border-radius: 9px; color: #8a5b12; background: #fffbeb; font-size: 11px; line-height: 1.5; }
+.modulo-pagina .alerta { padding: 12px 14px; border: 1px solid #f4e4bd; border-radius: 10px; color: #8a5b12; background: #fffbeb; }
+.modulo-pagina .mensagem-formulario { margin-top: 12px; border: 1px solid #f3d2d2; border-radius: 10px; }
+.modulo-pagina .mensagem-formulario[data-tipo="sucesso"] { border-color: #c8f0df; }
+.modulo-pagina .estado-vazio { padding: 30px 16px !important; color: #8490a2 !important; }
+.modulo-categorias .painel-categoria-form .linha { align-items: end; }
+.modulo-categorias .categoria-botoes { margin: 0; }
+.modulo-categorias .categoria-lista-painel { padding-bottom: 17px; }
+.modulo-operacao .linha { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.modulo-operacao .produtos-compra-modulo { margin-top: 2px; padding: 0; }
+.modulo-operacao .produtos-compra-modulo > .botao,
+.modulo-operacao .produtos-compra-modulo > button { margin: 12px; }
+.modulo-operacao .botoes { align-items: center; margin-top: 20px; }
+@media (max-width: 900px) {
+  .modulo-pagina { padding: 22px 18px; }
+  .modulo-pagina .tabela-modulo { min-width: 720px; }
+}
+@media (max-width: 650px) {
+  .modulo-cabecalho { align-items: flex-start; gap: 12px; margin-bottom: 19px; }
+  .modulo-cabecalho-icone { width: 46px; height: 46px; flex-basis: 46px; border-radius: 13px; }
+  .modulo-cabecalho-icone svg { width: 24px; height: 24px; }
+  .modulo-cabecalho p { font-size: 12px; }
+  .painel-modulo-cabecalho { flex-direction: column; gap: 9px; }
+  .modulo-operacao .linha { grid-template-columns: 1fr; }
+  .modulo-categorias .painel-categoria-form .linha { grid-template-columns: 1fr; }
+  .modulo-categorias .categoria-botoes { justify-content: stretch; }
+  .modulo-categorias .categoria-botoes .botao { flex: 1; }
+  .modulo-pagina .botoes { flex-wrap: wrap; }
+  .modulo-pagina .total { align-items: flex-start; flex-direction: column; }
+}

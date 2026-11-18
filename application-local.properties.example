@@ -1,0 +1,4 @@
+# Copie este arquivo para application-local.properties e informe os dados do seu PostgreSQL.
+spring.datasource.url=jdbc:postgresql://localhost:5432/neondb
+spring.datasource.username=postgres
+spring.datasource.password=COLOQUE_SUA_SENHA_AQUI

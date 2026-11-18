@@ -1,0 +1,59 @@
+/* Telas administrativas: complementa tela.css sem alterar a identidade visual. */
+.progresso{height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden;min-width:90px}
+.progresso span{display:block;height:100%;background:#2563eb}
+.chips{display:flex;flex-wrap:wrap;gap:6px 14px}.chip{display:inline-flex;gap:6px;align-items:center;font-size:.9rem}
+.dialogo-form{max-width:560px;width:calc(100% - 32px);max-height:90vh;overflow:auto}
+.dialogo-form .botoes{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.grade-filtros{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:12px}
+.grade-filtros .campo{min-width:150px;flex:1}
+.tabela-rolavel{overflow-x:auto}
+.detalhe-lista{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
+.detalhe-lista div small{display:block;color:#6b7280}
+.abas{display:flex;gap:6px;margin-bottom:12px}.abas button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.mensagem-formulario[data-tipo="erro"]{color:#b91c1c}
+@media (max-width:720px){.grade-filtros .campo{min-width:100%}}
+
+/* OKRs: sub-metas, modos de acompanhamento e cartões de resultados */
+.okr-resultados-lista{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:16px;margin-top:14px}
+.okr-resultado-card{min-width:0;padding:18px;border:1px solid var(--borda,#e2e8f0);border-radius:14px;background:var(--superficie,#fff);box-shadow:0 4px 16px rgba(15,23,42,.045)}
+.okr-resultado-topo{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.okr-resultado-titulo{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.okr-resultado-titulo h3{margin:0;font-size:1.02rem}
+.okr-resultado-topo p{margin:7px 0 0;color:var(--texto-secundario,#64748b);font-size:.9rem;white-space:pre-wrap}
+.okr-modo{flex:0 0 auto;padding:5px 9px;border-radius:999px;background:var(--superficie-secundaria,#f1f5f9);color:var(--texto-secundario,#475569);font-size:.75rem;font-weight:650}
+.okr-progresso-linha{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;margin:17px 0 14px}
+.okr-progresso-linha>strong{font-size:1.05rem;font-variant-numeric:tabular-nums}
+.okr-dados-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:12px 0;border-top:1px solid var(--borda,#e2e8f0)}
+.okr-dados-grid>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.okr-dados-grid small,.okr-submetas-cabecalho small{color:var(--texto-secundario,#64748b);font-size:.78rem}
+.okr-dados-grid strong{font-size:.9rem;overflow-wrap:anywhere}
+.okr-submetas{margin-top:8px;padding:13px;border-radius:11px;background:var(--superficie-secundaria,#f8fafc);border:1px solid var(--borda,#e2e8f0)}
+.okr-submetas-cabecalho{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px}
+.okr-submetas-cabecalho>div{display:flex;flex-direction:column;gap:2px}
+.okr-submetas-lista{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px}
+.okr-submetas-lista li{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;background:var(--superficie,#fff);border:1px solid var(--borda,#e2e8f0)}
+.okr-submetas-lista li>label{display:flex;align-items:flex-start;gap:9px;flex:1;min-width:0;cursor:pointer}
+.okr-submetas-lista input[type=checkbox]{width:17px;height:17px;flex:0 0 auto;margin:2px 0 0;accent-color:var(--cor-primaria,#2563eb)}
+.okr-submetas-lista label span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.okr-submetas-lista label strong{font-size:.88rem;overflow-wrap:anywhere}
+.okr-submetas-lista label small{color:var(--texto-secundario,#64748b);font-size:.78rem;white-space:pre-wrap}
+.okr-submetas-lista li.concluida label strong{text-decoration:line-through;color:var(--texto-secundario,#64748b)}
+.okr-submeta-status{flex:0 0 auto}
+.okr-resultado-acoes{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px;padding-top:12px;border-top:1px solid var(--borda,#e2e8f0)}
+@media(max-width:600px){.okr-resultado-card{padding:13px}.okr-resultado-topo{flex-direction:column}.okr-modo{align-self:flex-start}.okr-submetas-lista li{flex-wrap:wrap}.okr-submeta-status{margin-left:26px}.okr-submetas-cabecalho{align-items:flex-start}}
+
+/* Sub-metas: ações evidentes, checklist acessível e feedback de permissão. */
+.okr-submetas-progresso{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;margin:10px 0 13px}
+.okr-submetas-progresso strong{font-size:.95rem;font-variant-numeric:tabular-nums}
+.okr-adicionar-submeta{white-space:nowrap;min-height:36px}
+.okr-submeta-item{display:flex;align-items:flex-start;gap:10px;flex:1;min-width:0;cursor:pointer}
+.okr-submeta-item input[type=checkbox]{width:19px;height:19px;margin:1px 0 0;cursor:pointer}
+.okr-submeta-item input[type=checkbox]:disabled{cursor:not-allowed;opacity:.65}
+.okr-submetas-vazio{padding:14px;border:1px dashed var(--borda,#cbd5e1);border-radius:10px;background:var(--superficie,#fff)}
+.okr-submetas-vazio strong{display:block;margin-bottom:4px}
+.okr-submetas-vazio p,.okr-permissao-ajuda{margin:0;color:var(--texto-secundario,#64748b);font-size:.84rem;line-height:1.5}
+.okr-permissao-ajuda{margin:8px 0 12px;padding:10px 12px;border-radius:8px;background:#fff7ed;color:#9a3412}
+@media(max-width:600px){.okr-submetas-cabecalho{flex-direction:column;align-items:stretch}.okr-adicionar-submeta{width:100%}}
+
+/* Campos condicionais do formulário (atributo hidden precisa prevalecer sobre display:flex). */
+.campo[hidden]{display:none!important}

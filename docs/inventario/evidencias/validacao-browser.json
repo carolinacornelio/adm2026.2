@@ -1,0 +1,18 @@
+{
+  "data": "2026-10-16T11:48:06.405Z",
+  "ambiente": "PostgreSQL temporário / Edge headless / localhost",
+  "ok": true,
+  "latenciaVendaAteInventarioMs": 24,
+  "casos": [
+    "compra com dois lotes e DTO de validade",
+    "opções de compra sem duplicação",
+    "alertas de vencido e a vencer",
+    "atualização visual automática após venda POS",
+    "CSV",
+    "impressão do inventário",
+    "venda ERP com FEFO",
+    "comprovante ERP e impressão",
+    "layout móvel"
+  ],
+  "errosJavaScript": []
+}

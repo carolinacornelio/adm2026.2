@@ -1,0 +1,12 @@
+bin/
+target/
+*.class
+*.log
+.env
+.env.*
+!.env.example
+.m2/
+# Nunca versionar credenciais locais do banco de dados.
+/application-local.properties
+/db.properties
+!/application-local.properties.example

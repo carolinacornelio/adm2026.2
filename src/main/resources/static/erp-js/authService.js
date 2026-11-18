@@ -11,7 +11,7 @@
  * ---------------------------------------------------------------------------
  */
 
-import { apiService } from './apiService.js';
+import { apiService } from './apiService.js?v=20261118-submetas-v3';
 
 /**
  * Cria um novo usuário/empresa.
@@ -45,26 +45,36 @@ export async function verificarSegundoFator(dados) {
 }
 
 /** Encerra a sessão do usuário atual e o redireciona para o login. */
-export function logout() {
-    sessionStorage.removeItem('authToken');
-    sessionStorage.removeItem('usuario');
-
-    window.location.href = 'login.html';
+export async function logout() {
+    try { await apiService.post('/auth/logout', {}, { timeoutMs: 3000 }); }
+    catch (_) { /* A saída local continua disponível sem conexão. */ }
+    finally {
+        sessionStorage.removeItem('authToken');
+        sessionStorage.removeItem('usuario');
+        sessionStorage.removeItem('permissoesUsuario');
+        sessionStorage.removeItem('permissoesUsuarioV2');
+        window.location.href = '/login.html';
+    }
 }
 
 /** Devolve os dados do usuário logado (ou null). */
 export function getUsuarioLogado() {
     const valor = sessionStorage.getItem('usuario');
-    return valor ? JSON.parse(valor) : null;
+    try {
+        const usuario=valor ? JSON.parse(valor) : null;
+        return usuario && typeof usuario==='object' && !Array.isArray(usuario) ? usuario : null;
+    } catch (_) { return null; }
 }
 
 /** Verifica se existe uma sessão ativa. */
 export function estaAutenticado() {
-    return Boolean(sessionStorage.getItem('authToken'));
+    return Boolean(sessionStorage.getItem('authToken') && getUsuarioLogado());
 }
 
 /** Guarda o token devolvido pelo backend; o tenant vem associado ao usuário. */
 function salvarSessao(resposta) {
+    sessionStorage.removeItem('permissoesUsuario');
+        sessionStorage.removeItem('permissoesUsuarioV2');
     sessionStorage.setItem('authToken', resposta.token);
     sessionStorage.setItem('usuario', JSON.stringify(resposta.usuario));
 }
