@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Desafio 10 - Gráficos de Desempenho e Escalabilidade (Medição Antes)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f4f6f9; color: #2c3e50; padding: 30px 20px; }
+    .container { max-width: 1000px; margin: 0 auto; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 35px; }
+    h1 { font-size: 24px; font-weight: 700; color: #1e3a8a; margin-bottom: 8px; }
+    .subtitulo { font-size: 14px; color: #64748b; margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 30px; }
+    .metric-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px 20px; }
+    .metric-card h3 { font-size: 12px; text-transform: uppercase; color: #64748b; margin-bottom: 6px; letter-spacing: 0.5px; }
+    .metric-card .valor { font-size: 24px; font-weight: 700; color: #0f172a; }
+    .metric-card .detalhe { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+    
+    .grafico-box { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 25px; margin-bottom: 30px; }
+    .grafico-box h2 { font-size: 17px; color: #1e293b; margin-bottom: 6px; font-weight: 600; }
+    .grafico-box p { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+    
+    .chart-container { position: relative; width: 100%; height: 280px; }
+    
+    .tabela-resumo { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+    .tabela-resumo th { background: #f1f5f9; color: #334155; text-align: left; padding: 10px 12px; font-weight: 600; border: 1px solid #cbd5e1; }
+    .tabela-resumo td { padding: 9px 12px; border: 1px solid #e2e8f0; color: #475569; }
+    .tabela-resumo tr:nth-child(even) { background-color: #f8fafc; }
+    
+    .badge-gargalo { display: inline-block; background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge-ok { display: inline-block; background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Desafio 10: Análise de Desempenho e Escalabilidade</h1>
+    <div class="subtitulo">
+      Medição Inicial (Baseline) realizada em 18/11/2026, 22:00:18 | ERP CodeScript
+    </div>
+
+    <div class="card-grid">
+      <div class="metric-card">
+        <h3>Pool de Conexões</h3>
+        <div class="valor">5 conexões</div>
+        <div class="detalhe">HikariCP (Gargalo em consultas simultâneas)</div>
+      </div>
+      <div class="metric-card">
+        <h3>Autenticação</h3>
+        <div class="valor">Em Memória</div>
+        <div class="detalhe">Tokens locais (Impede escala horizontal)</div>
+      </div>
+      <div class="metric-card">
+        <h3>Ponto Crítico de Latência</h3>
+        <div class="valor">Dashboard</div>
+        <div class="detalhe">4 consultas COUNT(*) simultâneas no banco</div>
+      </div>
+      <div class="metric-card">
+        <h3>Ponto Crítico de CPU</h3>
+        <div class="valor">Login / Senha</div>
+        <div class="detalhe">Custo computacional do algoritmo BCrypt</div>
+      </div>
+    </div>
+
+    <div class="grafico-box">
+      <h2>1. Tempo de Resposta p95 (ms) sob Concorrência Crescente</h2>
+      <p>Mede o tempo em que 95% das requisições são atendidas. Quanto menor, melhor.</p>
+      <div class="chart-container">
+        <canvas id="chartLatencia"></canvas>
+      </div>
+    </div>
+
+    <div class="grafico-box">
+      <h2>2. Vazão do Sistema: Requisições por Segundo (RPS)</h2>
+      <p>Capacidade de atendimento contínuo por tela sob carga moderada (30 conexões concorrentes).</p>
+      <div class="chart-container">
+        <canvas id="chartVazao"></canvas>
+      </div>
+    </div>
+
+    <div class="grafico-box">
+      <h2>3. Quadro Comparativo das Telas Avaliadas</h2>
+      <p>Síntese do comportamento operacional de cada tela antes da implementação da arquitetura escalável.</p>
+      <table class="tabela-resumo">
+        <thead>
+          <tr>
+            <th>Tela / Camada Avaliada</th>
+            <th>Rota HTTP</th>
+            <th>Principal Recurso Estressado</th>
+            <th>Classificação</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Tela de Login (Web)</strong></td>
+            <td><code>GET /login.html</code></td>
+            <td>Threads HTTP / Tomcat</td>
+            <td><span class="badge-ok">Estável</span></td>
+          </tr>
+          <tr>
+            <td><strong>Processamento de Login</strong></td>
+            <td><code>POST /api/auth/login</code></td>
+            <td>Processador (CPU - BCrypt)</td>
+            <td><span class="badge-gargalo">CPU Bound</span></td>
+          </tr>
+          <tr>
+            <td><strong>Tela de Dashboard</strong></td>
+            <td><code>GET /api/dashboard/indicadores</code></td>
+            <td>Banco de Dados (HikariCP / Queries)</td>
+            <td><span class="badge-gargalo">Database Bound</span></td>
+          </tr>
+          <tr>
+            <td><strong>Produtos e Estoque</strong></td>
+            <td><code>GET /api/produtos</code></td>
+            <td>Relacionamentos SQL e Cálculo de Lotes</td>
+            <td><span class="badge-gargalo">I/O Bound</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const ctxLatencia = document.getElementById('chartLatencia').getContext('2d');
+    new Chart(ctxLatencia, {
+      type: 'bar',
+      data: {
+        labels: ["Login (HTML)","Processamento Login","Dashboard","Produtos e Estoque"],
+        datasets: [
+          {
+            label: 'Carga Leve (10 conexões)',
+            data: [28.6,168.5,988.8,214],
+            backgroundColor: '#93c5fd'
+          },
+          {
+            label: 'Carga Moderada (30 conexões)',
+            data: [74.6,412.6,5439,426.8],
+            backgroundColor: '#3b82f6'
+          },
+          {
+            label: 'Pico de Estresse (60 conexões)',
+            data: [37.5,811.2,9476.4,835.7],
+            backgroundColor: '#1d4ed8'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'Latência p95 em milissegundos (ms)' }
+          },
+          x: {
+            title: { display: true, text: 'Telas do ERP' }
+          }
+        }
+      }
+    });
+
+    const ctxVazao = document.getElementById('chartVazao').getContext('2d');
+    new Chart(ctxVazao, {
+      type: 'bar',
+      data: {
+        labels: ["Login (HTML)","Processamento Login","Dashboard","Produtos e Estoque"],
+        datasets: [
+          {
+            label: 'Vazão Média (Requisições por Segundo - RPS)',
+            data: [944.4,75.5,15,74.3],
+            backgroundColor: ['#0284c7', '#38bdf8', '#7dd3fc', '#0ea5e9'],
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'Requisições por segundo (RPS)' }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
