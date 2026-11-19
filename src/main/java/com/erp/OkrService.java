@@ -388,8 +388,7 @@ public class OkrService {
                    r.prazo, r.status, r.modo_acompanhamento AS "modoAcompanhamento", r.progresso_manual AS "progressoManual",
                    (SELECT COUNT(*) FROM submetas_resultados_chave sm WHERE sm.resultado_id=r.id AND sm.empresa_id=r.empresa_id) AS "totalSubMetas",
                    (SELECT COUNT(*) FROM submetas_resultados_chave sm WHERE sm.resultado_id=r.id AND sm.empresa_id=r.empresa_id AND sm.concluida) AS "subMetasConcluidas",
-                   """ + progressoSql("r") + """
-            AS progresso
+                   """ + progressoSql("r") + " AS progresso\n" + """
               FROM resultados_chave r LEFT JOIN usuarios u ON u.id = r.responsavel_id AND u.empresa_id = r.empresa_id
             """;
 
