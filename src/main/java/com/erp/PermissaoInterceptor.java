@@ -31,6 +31,7 @@ public class PermissaoInterceptor implements HandlerInterceptor {
     }
 
     static final List<Regra> REGRAS = List.of(
+        r("GET", "/api/health", PUBLICA),
         r("*", "/api/auth/login", PUBLICA), r("*", "/api/auth/cadastro", PUBLICA),
         r("*", "/api/auth/segundo-fator", PUBLICA), r("*", "/api/auth/logout", PUBLICA),
         r("*", "/api/auth/**", AUTENTICADA),

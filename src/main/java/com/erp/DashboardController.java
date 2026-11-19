@@ -26,16 +26,23 @@ public class DashboardController {
         this.plans = plans;
     }
 
-    /** Totais usados nos quatro cartões principais do dashboard. */
+    /** Totais usados nos quatro cartões principais do dashboard em uma única consulta SQL. */
     @GetMapping("/indicadores")
     public Map<String, Object> indicadores(@RequestHeader("Authorization") String authorization) {
         int empresaId = user.empresa(authorization);
+        Map<String, Object> row = db.queryForMap("""
+                SELECT
+                    (SELECT COUNT(*) FROM clientes WHERE empresa_id=?) +
+                    (SELECT COUNT(*) FROM fornecedores WHERE empresa_id=?) AS total_pessoas,
+                    (SELECT COUNT(*) FROM produtos WHERE empresa_id=? AND ativo=true) AS total_produtos,
+                    (SELECT COUNT(*) FROM compras WHERE empresa_id=?) AS total_compras,
+                    (SELECT COUNT(*) FROM vendas WHERE empresa_id=?) AS total_vendas
+                """, empresaId, empresaId, empresaId, empresaId, empresaId);
         return Map.of(
-                "totalPessoas", count("SELECT COUNT(*) FROM clientes WHERE empresa_id=?", empresaId)
-                        + count("SELECT COUNT(*) FROM fornecedores WHERE empresa_id=?", empresaId),
-                "totalProdutos", count("SELECT COUNT(*) FROM produtos WHERE empresa_id=? AND ativo=true", empresaId),
-                "totalCompras", count("SELECT COUNT(*) FROM compras WHERE empresa_id=?", empresaId),
-                "totalVendas", count("SELECT COUNT(*) FROM vendas WHERE empresa_id=?", empresaId));
+                "totalPessoas", ((Number) row.get("total_pessoas")).longValue(),
+                "totalProdutos", ((Number) row.get("total_produtos")).longValue(),
+                "totalCompras", ((Number) row.get("total_compras")).longValue(),
+                "totalVendas", ((Number) row.get("total_vendas")).longValue());
     }
 
     /**

@@ -1,0 +1,79 @@
+services:
+  erp-1:
+    build: .
+    container_name: erp-instancia-1
+    environment:
+      HOSTNAME: erp-1
+      DATABASE_URL: ${DATABASE_URL:-jdbc:postgresql://host.docker.internal:5432/neondb?sslmode=require}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-20}
+      JWT_SECRET: ${JWT_SECRET:-CodeScript-ERP-JWT-Secret-Key-2026-Escalabilidade}
+      OLLAMA_ENABLED: ${OLLAMA_ENABLED:-false}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    restart: unless-stopped
+
+  erp-2:
+    build: .
+    container_name: erp-instancia-2
+    environment:
+      HOSTNAME: erp-2
+      DATABASE_URL: ${DATABASE_URL:-jdbc:postgresql://host.docker.internal:5432/neondb?sslmode=require}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-20}
+      JWT_SECRET: ${JWT_SECRET:-CodeScript-ERP-JWT-Secret-Key-2026-Escalabilidade}
+      OLLAMA_ENABLED: ${OLLAMA_ENABLED:-false}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    restart: unless-stopped
+
+  erp-3:
+    build: .
+    container_name: erp-instancia-3
+    environment:
+      HOSTNAME: erp-3
+      DATABASE_URL: ${DATABASE_URL:-jdbc:postgresql://host.docker.internal:5432/neondb?sslmode=require}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-20}
+      JWT_SECRET: ${JWT_SECRET:-CodeScript-ERP-JWT-Secret-Key-2026-Escalabilidade}
+      OLLAMA_ENABLED: ${OLLAMA_ENABLED:-false}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: erp-load-balancer
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      erp-1:
+        condition: service_healthy
+      erp-2:
+        condition: service_healthy
+      erp-3:
+        condition: service_healthy
+    restart: unless-stopped

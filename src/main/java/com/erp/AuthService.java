@@ -1,20 +1,31 @@
 package com.erp;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.text.Normalizer;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Autenticação atual. A senha é armazenada com BCrypt e o token aleatório fica
- * em memória. É adequado para desenvolvimento; para produção, substituir por JWT.
+ * Autenticação stateless com JWT (HS256) para suportar múltiplas instâncias
+ * atrás de balanceador de carga. Senhas são armazenadas com BCrypt.
  */
 @Service
 public class AuthService {
+    private static final long TOKEN_TTL_SECONDS = 43200L;
+    private static final String JWT_HEADER = Base64.getUrlEncoder().withoutPadding()
+            .encodeToString("{\"alg\":\"HS256\",\"typ\":\"JWT\"}".getBytes(StandardCharsets.UTF_8));
     private static final Set<String> PERGUNTAS_SEGURANCA = Set.of(
             "AMIGO_INFANCIA", "EMPREGO_SONHOS", "CIDADE_PAIS",
             "PRIMEIRA_ESCOLA", "ANIMAL_ESTIMACAO", "RUA_INFANCIA");
@@ -27,9 +38,19 @@ public class AuthService {
             "RUA_INFANCIA", "Em qual rua você morou na infância?");
     private final JdbcTemplate db;
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-    private final Map<String, Sessao> sessoes = new ConcurrentHashMap<>();
+    private final ObjectMapper json = new ObjectMapper();
+    private final byte[] jwtSecretBytes;
+    private final Map<String, Instant> tokensRevogados = new ConcurrentHashMap<>();
+    private final Map<Integer, Long> revogadoAntesDe = new ConcurrentHashMap<>();
     private final Map<String, SegundoFatorPendente> segundosFatores = new ConcurrentHashMap<>();
-    public AuthService(JdbcTemplate db) { this.db = db; }
+
+    @Autowired
+    public AuthService(
+            JdbcTemplate db,
+            @Value("${erp.auth.jwt-secret:CodeScript-ERP-JWT-Secret-Key-2026-Escalabilidade}") String jwtSecret) {
+        this.db = db;
+        this.jwtSecretBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+    }
 
     /** Cria a empresa e o primeiro usuário; a senha é salva somente como hash BCrypt. */
     @Transactional
@@ -143,19 +164,40 @@ public class AuthService {
         }
     }
     public Map<String,Object> usuario(String token) {
-        Sessao sessao=sessoes.get(token);
-        if(sessao==null || !Instant.now().isBefore(sessao.expiraEm())) {
-            if(sessao!=null)sessoes.remove(token,sessao);
+        if (token == null || token.isBlank()) throw new SecurityException("Sessão inválida ou expirada.");
+        Map<String, Object> claims = validarJwt(token);
+        String jti = String.valueOf(claims.get("jti"));
+        Instant revExp = tokensRevogados.get(jti);
+        if (revExp != null) throw new SecurityException("Sessão inválida ou expirada.");
+        int userId = ((Number) claims.get("id")).intValue();
+        long iat = ((Number) claims.get("iat")).longValue();
+        Long corte = revogadoAntesDe.get(userId);
+        if (corte != null && iat <= corte) {
             throw new SecurityException("Sessão inválida ou expirada.");
         }
-        return sessao.usuario();
+        return Map.of(
+                "id", userId,
+                "empresaId", ((Number) claims.get("empresaId")).intValue(),
+                "nome", String.valueOf(claims.get("nome")),
+                "email", String.valueOf(claims.get("email")),
+                "plano", String.valueOf(claims.get("plano")),
+                "proprietario", Boolean.TRUE.equals(claims.get("proprietario")));
     }
     public void sair(String authorization) {
-        if(authorization!=null && authorization.startsWith("Bearer "))sessoes.remove(authorization.substring(7));
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring(7);
+            try {
+                Map<String, Object> claims = validarJwt(token);
+                String jti = String.valueOf(claims.get("jti"));
+                long exp = ((Number) claims.get("exp")).longValue();
+                tokensRevogados.put(jti, Instant.ofEpochSecond(exp));
+            } catch (RuntimeException ignored) {
+            }
+        }
     }
     /** Encerra na hora todas as sessões e verificações pendentes de um usuário (desativação, troca de senha). */
     public void revogarSessoesDoUsuario(int usuarioId) {
-        sessoes.entrySet().removeIf(e -> ((Number) e.getValue().usuario().get("id")).intValue() == usuarioId);
+        revogadoAntesDe.put(usuarioId, Instant.now().getEpochSecond());
         segundosFatores.entrySet().removeIf(e -> e.getValue().usuarioId() == usuarioId);
     }
     /** Troca a própria senha exigindo a atual; encerra as outras sessões do usuário. */
@@ -166,7 +208,7 @@ public class AuthService {
         String hash = db.queryForObject("SELECT senha_hash FROM usuarios WHERE id=?", String.class, usuarioId);
         if (!encoder.matches(atual, hash)) throw new IllegalArgumentException("A senha atual está incorreta.");
         db.update("UPDATE usuarios SET senha_hash=?, updated_at=NOW() WHERE id=?", encoder.encode(nova), usuarioId);
-        sessoes.entrySet().removeIf(e -> ((Number) e.getValue().usuario().get("id")).intValue() == usuarioId && !e.getKey().equals(tokenAtual));
+        revogadoAntesDe.put(usuarioId, Instant.now().getEpochSecond());
     }
     private void exigirContaAtiva(int usuarioId, int empresaId) {
         Boolean ativa = db.queryForObject("SELECT u.ativo AND e.status='ATIVA' FROM usuarios u JOIN empresas e ON e.id=u.empresa_id WHERE u.id=? AND u.empresa_id=?", Boolean.class, usuarioId, empresaId);
@@ -175,7 +217,7 @@ public class AuthService {
     @org.springframework.scheduling.annotation.Scheduled(fixedDelay=300000)
     public void limparExpirados() {
         Instant agora=Instant.now();
-        sessoes.entrySet().removeIf(e->!agora.isBefore(e.getValue().expiraEm()));
+        tokensRevogados.entrySet().removeIf(e->!agora.isBefore(e.getValue()));
         segundosFatores.entrySet().removeIf(e->!agora.isBefore(e.getValue().expiraEm()));
     }
     private String planoDaEmpresa(int empresaId) {
@@ -184,7 +226,73 @@ public class AuthService {
                 String.class,
                 empresaId));
     }
-    private Map<String,Object> loginPorId(int id,int empresa,String nome,String email,String plano) { String token=UUID.randomUUID().toString(); boolean proprietario=Boolean.TRUE.equals(db.queryForObject("SELECT proprietario FROM usuarios WHERE id=?",Boolean.class,id)); Map<String,Object> u=Map.of("id",id,"empresaId",empresa,"nome",nome,"email",email,"plano",PlanService.normalizar(plano),"proprietario",proprietario); sessoes.put(token,new Sessao(u,Instant.now().plusSeconds(43200))); return Map.of("token",token,"usuario",u); }
+    private Map<String,Object> loginPorId(int id,int empresa,String nome,String email,String plano) {
+        boolean proprietario=Boolean.TRUE.equals(db.queryForObject("SELECT proprietario FROM usuarios WHERE id=?",Boolean.class,id));
+        String planoNormalizado = PlanService.normalizar(plano);
+        Map<String,Object> u=Map.of("id",id,"empresaId",empresa,"nome",nome,"email",email,"plano",planoNormalizado,"proprietario",proprietario);
+        long iat = Instant.now().getEpochSecond();
+        Map<String, Object> claims = new LinkedHashMap<>(u);
+        claims.put("iat", iat);
+        claims.put("exp", iat + TOKEN_TTL_SECONDS);
+        claims.put("jti", UUID.randomUUID().toString());
+        String token = gerarJwt(claims);
+        return Map.of("token",token,"usuario",u);
+    }
+
+    private String gerarJwt(Map<String, Object> claims) {
+        try {
+            String payload = Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(json.writeValueAsBytes(claims));
+            String conteudo = JWT_HEADER + "." + payload;
+            String assinatura = assinarHmac(conteudo);
+            return conteudo + "." + assinatura;
+        } catch (Exception e) {
+            throw new IllegalStateException("Erro ao gerar token JWT.", e);
+        }
+    }
+
+    private Map<String, Object> validarJwt(String token) {
+        String[] partes = token.split("\\.");
+        if (partes.length != 3) throw new SecurityException("Sessão inválida ou expirada.");
+        String conteudo = partes[0] + "." + partes[1];
+        byte[] esperada = assinarHmacBytes(conteudo);
+        byte[] recebida;
+        try {
+            recebida = Base64.getUrlDecoder().decode(partes[2]);
+        } catch (IllegalArgumentException e) {
+            throw new SecurityException("Sessão inválida ou expirada.");
+        }
+        if (!MessageDigest.isEqual(esperada, recebida)) {
+            throw new SecurityException("Sessão inválida ou expirada.");
+        }
+        try {
+            byte[] payloadBytes = Base64.getUrlDecoder().decode(partes[1]);
+            Map<String, Object> claims = json.readValue(payloadBytes, new TypeReference<>() {});
+            long exp = ((Number) claims.get("exp")).longValue();
+            if (Instant.now().getEpochSecond() >= exp) {
+                throw new SecurityException("Sessão inválida ou expirada.");
+            }
+            return claims;
+        } catch (SecurityException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new SecurityException("Sessão inválida ou expirada.");
+        }
+    }
+
+    private String assinarHmac(String conteudo) {
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(assinarHmacBytes(conteudo));
+    }
+
+    private byte[] assinarHmacBytes(String conteudo) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(jwtSecretBytes, "HmacSHA256"));
+            return mac.doFinal(conteudo.getBytes(StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            throw new IllegalStateException("Erro ao assinar JWT.", e);
+        }
+    }
     private Map<String,Object> iniciarSegundoFator(Map<String,Object> u) {
         List<String> perguntas = List.of(
                 valorOuVazio(u.get("pergunta_seguranca_1")),
@@ -242,5 +350,4 @@ public class AuthService {
     private record SegundoFatorPendente(int usuarioId, int empresaId, String nome, String email,
                                         String plano, List<String> perguntas, List<String> respostasHash,
                                         boolean configuracaoNecessaria, Instant expiraEm,java.util.concurrent.atomic.AtomicInteger tentativas) {}
-    private record Sessao(Map<String,Object> usuario,Instant expiraEm) {}
 }
