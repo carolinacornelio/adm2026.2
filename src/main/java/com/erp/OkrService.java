@@ -58,9 +58,17 @@ public class OkrService {
         if (r.isEmpty()) throw new NaoEncontradoException("Objetivo não encontrado.");
         Map<String, Object> o = r.get(0);
         List<Map<String, Object>> resultados = db.queryForList(SELECT_RESULTADO + " WHERE r.empresa_id = ? AND r.objetivo_id = ? ORDER BY r.prazo, r.id", empresa, id);
-        for (Map<String, Object> resultado : resultados) {
-            resultado.put("subMetas", db.queryForList(SELECT_SUBMETA + " WHERE sm.empresa_id = ? AND sm.resultado_id = ? ORDER BY sm.ordem, sm.id",
-                    empresa, ((Number) resultado.get("id")).intValue()));
+        if (!resultados.isEmpty()) {
+            Map<Integer, List<Map<String, Object>>> porResultado = new HashMap<>();
+            for (Map<String, Object> subMeta : db.queryForList(SELECT_SUBMETA + """
+                    JOIN resultados_chave r ON r.id = sm.resultado_id AND r.empresa_id = sm.empresa_id
+                    WHERE sm.empresa_id = ? AND r.objetivo_id = ? ORDER BY sm.ordem, sm.id
+                    """, empresa, id)) {
+                porResultado.computeIfAbsent((Integer) subMeta.get("resultadoId"), chave -> new ArrayList<>()).add(subMeta);
+            }
+            for (Map<String, Object> resultado : resultados) {
+                resultado.put("subMetas", porResultado.getOrDefault((Integer) resultado.get("id"), List.of()));
+            }
         }
         o.put("resultados", resultados);
         return o;
@@ -81,6 +89,7 @@ public class OkrService {
 
     @Transactional
     public Map<String, Object> atualizarObjetivo(int empresa, int id, Map<String, Object> d) {
+        travarObjetivo(empresa, id);
         Map<String, Object> atual = buscarObjetivo(empresa, id);
         if ("ARQUIVADO".equals(atual.get("status"))) throw new IllegalArgumentException("Objetivo arquivado não pode ser alterado.");
         String titulo = d.containsKey("titulo") ? Dados.texto(d, "titulo", 150, true) : (String) atual.get("titulo");
@@ -99,7 +108,7 @@ public class OkrService {
     /** "Excluir" arquivando: resultados e histórico permanecem consultáveis. */
     @Transactional
     public Map<String, Object> arquivarObjetivo(int empresa, int id) {
-        buscarObjetivo(empresa, id);
+        travarObjetivo(empresa, id);
         db.update("UPDATE objetivos SET status='ARQUIVADO', updated_at=NOW() WHERE id=? AND empresa_id=?", id, empresa);
         return buscarObjetivo(empresa, id);
     }
@@ -108,8 +117,8 @@ public class OkrService {
 
     @Transactional
     public Map<String, Object> criarResultado(Autorizacao.Contexto c, int objetivoId, Map<String, Object> d) {
-        Map<String, Object> obj = buscarObjetivo(c.empresaId(), objetivoId);
-        if ("ARQUIVADO".equals(obj.get("status"))) throw new IllegalArgumentException("Não é possível adicionar resultados a um objetivo arquivado.");
+        if ("ARQUIVADO".equals(travarObjetivo(c.empresaId(), objetivoId)))
+            throw new IllegalArgumentException("Não é possível adicionar resultados a um objetivo arquivado.");
         String modo = modo(d.get("modoAcompanhamento"), "METRICA");
         BigDecimal inicial, meta, atual, percentual;
         if ("METRICA".equals(modo)) {
@@ -144,8 +153,7 @@ public class OkrService {
 
     @Transactional
     public Map<String, Object> atualizarResultado(int empresa, int id, Map<String, Object> d) {
-        Map<String, Object> atual = buscarResultado(empresa, id);
-        exigirEditavel(empresa, atual);
+        Map<String, Object> atual = buscarResultadoParaEdicao(empresa, id);
         String modoAtual = String.valueOf(atual.get("modoAcompanhamento"));
         String modo = d.containsKey("modoAcompanhamento") ? modo(d.get("modoAcompanhamento"), modoAtual) : modoAtual;
         BigDecimal inicial = (BigDecimal) atual.get("valorInicial");
@@ -185,22 +193,18 @@ public class OkrService {
     /** Atualiza uma métrica numérica legada ou o percentual de um acompanhamento manual. */
     @Transactional
     public Map<String, Object> atualizarProgresso(Autorizacao.Contexto c, int id, Map<String, Object> d) {
-        List<Map<String, Object>> travado = db.queryForList("SELECT valor_atual, progresso_manual, modo_acompanhamento, responsavel_id, objetivo_id, status FROM resultados_chave WHERE id=? AND empresa_id=? FOR UPDATE", id, c.empresaId());
-        if (travado.isEmpty()) throw new NaoEncontradoException("Resultado-chave não encontrado.");
-        Map<String, Object> linha = travado.get(0);
-        Map<String, Object> atual = buscarResultado(c.empresaId(), id);
-        exigirEditavel(c.empresaId(), atual);
-        if (!podeAtuarNoResultado(c, linha))
+        Map<String, Object> atual = buscarResultadoParaEdicao(c.empresaId(), id);
+        if (!podeAtuarNoResultado(c, atual))
             throw new AcessoNegadoException("Para atualizar este resultado, você precisa ser gestor de OKRs ou ter a permissão de atualização e estar definido como responsável.");
-        String modo = String.valueOf(linha.get("modo_acompanhamento"));
+        String modo = (String) atual.get("modoAcompanhamento");
         BigDecimal anterior, novo;
         if ("MANUAL".equals(modo)) {
-            anterior = (BigDecimal) linha.get("progresso_manual");
+            anterior = (BigDecimal) atual.get("progressoManual");
             novo = validarPercentual(Dados.decimal(d, "percentual", true));
-            if (novo.compareTo(anterior) == 0) throw new IllegalArgumentException("O percentual informado é igual ao atual.");
+            if (novo.compareTo(anterior) == 0) return atual;
             db.update("UPDATE resultados_chave SET progresso_manual=?, updated_at=NOW() WHERE id=? AND empresa_id=?", novo, id, c.empresaId());
         } else if ("METRICA".equals(modo)) {
-            anterior = (BigDecimal) linha.get("valor_atual");
+            anterior = (BigDecimal) atual.get("valorAtual");
             novo = Dados.decimal(d, "valorAtual", true);
             if (novo.compareTo(anterior) == 0) throw new IllegalArgumentException("O valor informado é igual ao valor atual.");
             db.update("UPDATE resultados_chave SET valor_atual=?, updated_at=NOW() WHERE id=? AND empresa_id=?", novo, id, c.empresaId());
@@ -215,13 +219,14 @@ public class OkrService {
 
     @Transactional
     public Map<String, Object> criarSubMeta(Autorizacao.Contexto c, int resultadoId, Map<String, Object> d) {
-        Map<String, Object> resultado = buscarResultado(c.empresaId(), resultadoId);
-        exigirEditavel(c.empresaId(), resultado);
+        Map<String, Object> resultado = buscarResultadoParaEdicao(c.empresaId(), resultadoId);
         exigirModoSubMetas(resultado);
-        Map<String, Object> responsavel = linhaResponsabilidade(c.empresaId(), resultadoId);
-        if (!podeAtuarNoResultado(c, responsavel))
+        if (!podeAtuarNoResultado(c, resultado))
             throw new AcessoNegadoException("Para adicionar sub-metas, você precisa ser gestor de OKRs ou ter a permissão de atualização e estar definido como responsável.");
-        int ordem = Optional.ofNullable(Dados.inteiro(d, "ordem", false)).orElse(0);
+        Integer ordem = Dados.inteiro(d, "ordem", false);
+        if (ordem == null) ordem = db.queryForObject("""
+                SELECT COALESCE(MAX(ordem), 0) + 1 FROM submetas_resultados_chave WHERE empresa_id=? AND resultado_id=?
+                """, Integer.class, c.empresaId(), resultadoId);
         int id = db.queryForObject("""
                 INSERT INTO submetas_resultados_chave(empresa_id, resultado_id, titulo, descricao, ordem)
                 VALUES (?,?,?,?,?) RETURNING id
@@ -232,24 +237,18 @@ public class OkrService {
 
     @Transactional
     public Map<String, Object> atualizarConclusaoSubMeta(Autorizacao.Contexto c, int subMetaId, Map<String, Object> d) {
-        List<Map<String, Object>> rows = db.queryForList("""
-                SELECT sm.id, sm.resultado_id, sm.empresa_id, sm.concluida, r.responsavel_id, r.objetivo_id, r.status AS resultado_status
-                  FROM submetas_resultados_chave sm JOIN resultados_chave r ON r.id=sm.resultado_id AND r.empresa_id=sm.empresa_id
-                 WHERE sm.id=? AND sm.empresa_id=? FOR UPDATE OF sm, r
-                """, subMetaId, c.empresaId());
-        if (rows.isEmpty()) throw new NaoEncontradoException("Sub-meta não encontrada.");
-        Map<String, Object> linha = rows.get(0);
-        int resultadoId = ((Number) linha.get("resultado_id")).intValue();
-        Map<String, Object> resultado = buscarResultado(c.empresaId(), resultadoId);
-        exigirEditavel(c.empresaId(), resultado);
+        int resultadoId = resultadoDaSubMeta(c.empresaId(), subMetaId);
+        Map<String, Object> resultado = buscarResultadoParaEdicao(c.empresaId(), resultadoId);
         exigirModoSubMetas(resultado);
-        if (!podeAtuarNoResultado(c, linha))
+        if (!podeAtuarNoResultado(c, resultado))
             throw new AcessoNegadoException("Para marcar sub-metas, você precisa ser gestor de OKRs ou ter a permissão de atualização e estar definido como responsável.");
         Object valor = d.get("concluida");
-        if (valor == null) throw new IllegalArgumentException("Informe se a sub-meta está concluída.");
-        boolean concluida = valor instanceof Boolean b ? b : Boolean.parseBoolean(valor.toString());
-        boolean anterior = Boolean.TRUE.equals(linha.get("concluida"));
-        if (anterior == concluida) return buscarSubMeta(c.empresaId(), subMetaId);
+        if (!(valor instanceof Boolean) && !(valor instanceof String texto
+                && ("true".equalsIgnoreCase(texto) || "false".equalsIgnoreCase(texto))))
+            throw new IllegalArgumentException("Informe se a sub-meta está concluída (true ou false).");
+        boolean concluida = Boolean.parseBoolean(valor.toString());
+        Map<String, Object> subMeta = buscarSubMeta(c.empresaId(), subMetaId);
+        if (Boolean.valueOf(concluida).equals(subMeta.get("concluida"))) return subMeta;
         db.update("""
                 UPDATE submetas_resultados_chave SET concluida=?, concluida_em=CASE WHEN ? THEN NOW() ELSE NULL END,
                        concluida_por=CASE WHEN ? THEN ? ELSE NULL END, updated_at=NOW()
@@ -261,11 +260,9 @@ public class OkrService {
 
     @Transactional
     public Map<String, Object> atualizarSubMeta(Autorizacao.Contexto c, int subMetaId, Map<String, Object> d) {
+        int resultadoId = resultadoDaSubMeta(c.empresaId(), subMetaId);
+        exigirModoSubMetas(buscarResultadoParaEdicao(c.empresaId(), resultadoId));
         Map<String, Object> sm = buscarSubMeta(c.empresaId(), subMetaId);
-        int resultadoId = ((Number) sm.get("resultadoId")).intValue();
-        Map<String, Object> resultado = buscarResultado(c.empresaId(), resultadoId);
-        exigirEditavel(c.empresaId(), resultado);
-        exigirModoSubMetas(resultado);
         String titulo = d.containsKey("titulo") ? Dados.texto(d, "titulo", 150, true) : (String) sm.get("titulo");
         String descricao = d.containsKey("descricao") ? Dados.texto(d, "descricao", 500, false) : (String) sm.get("descricao");
         db.update("UPDATE submetas_resultados_chave SET titulo=?, descricao=?, updated_at=NOW() WHERE id=? AND empresa_id=?", titulo, descricao, subMetaId, c.empresaId());
@@ -274,12 +271,10 @@ public class OkrService {
 
     @Transactional
     public Map<String, Object> removerSubMeta(Autorizacao.Contexto c, int subMetaId) {
-        Map<String, Object> sm = buscarSubMeta(c.empresaId(), subMetaId);
-        int resultadoId = ((Number) sm.get("resultadoId")).intValue();
-        Map<String, Object> resultado = buscarResultado(c.empresaId(), resultadoId);
-        exigirEditavel(c.empresaId(), resultado);
-        exigirModoSubMetas(resultado);
-        db.update("DELETE FROM submetas_resultados_chave WHERE id=? AND empresa_id=?", subMetaId, c.empresaId());
+        int resultadoId = resultadoDaSubMeta(c.empresaId(), subMetaId);
+        exigirModoSubMetas(buscarResultadoParaEdicao(c.empresaId(), resultadoId));
+        if (db.update("DELETE FROM submetas_resultados_chave WHERE id=? AND empresa_id=?", subMetaId, c.empresaId()) == 0)
+            throw new NaoEncontradoException("Sub-meta não encontrada.");
         reavaliarStatus(c.empresaId(), resultadoId);
         return buscarResultado(c.empresaId(), resultadoId);
     }
@@ -290,8 +285,10 @@ public class OkrService {
         return rows.get(0);
     }
 
-    private Map<String, Object> linhaResponsabilidade(int empresa, int resultadoId) {
-        return db.queryForMap("SELECT responsavel_id, objetivo_id FROM resultados_chave WHERE id=? AND empresa_id=?", resultadoId, empresa);
+    private int resultadoDaSubMeta(int empresa, int subMetaId) {
+        return db.queryForList("SELECT resultado_id FROM submetas_resultados_chave WHERE id=? AND empresa_id=?",
+                Integer.class, subMetaId, empresa).stream().findFirst()
+                .orElseThrow(() -> new NaoEncontradoException("Sub-meta não encontrada."));
     }
 
     private static void exigirModoSubMetas(Map<String, Object> resultado) {
@@ -313,7 +310,8 @@ public class OkrService {
     /** "Excluir" cancelando: o resultado e seu histórico continuam disponíveis para consulta. */
     @Transactional
     public Map<String, Object> cancelarResultado(int empresa, int id) {
-        Map<String, Object> atual = buscarResultado(empresa, id);
+        Map<String, Object> atual = buscarResultadoComBloqueio(empresa, id);
+        if ("CANCELADO".equals(atual.get("status"))) return atual;
         db.update("UPDATE resultados_chave SET status='CANCELADO', updated_at=NOW() WHERE id=? AND empresa_id=?", id, empresa);
         sincronizarObjetivo(empresa, ((Number) atual.get("objetivoId")).intValue());
         return buscarResultado(empresa, id);
@@ -346,7 +344,7 @@ public class OkrService {
                 """, empresa, empresa, empresa, InventarioService.hoje(), empresa, empresa);
         List<Map<String, Object>> porSquad = db.queryForList("""
                 SELECT s.id, s.nome, COUNT(DISTINCT o.id) AS objetivos, COALESCE(ROUND(AVG(""" + prog + """
-                ), 2), 0) AS progresso
+                ) FILTER (WHERE r.id IS NOT NULL), 2), 0) AS progresso
                   FROM squads s
                   LEFT JOIN objetivos o ON o.squad_id = s.id AND o.empresa_id = s.empresa_id AND o.status <> 'ARQUIVADO'
                   LEFT JOIN resultados_chave r ON r.objetivo_id = o.id AND r.empresa_id = o.empresa_id AND r.status <> 'CANCELADO'
@@ -375,7 +373,8 @@ public class OkrService {
             ), 2) FROM resultados_chave r WHERE r.objetivo_id = o.id AND r.empresa_id = o.empresa_id AND r.status <> 'CANCELADO'), 0) AS progresso,
                    (SELECT COUNT(*) FROM resultados_chave r WHERE r.objetivo_id = o.id AND r.empresa_id = o.empresa_id AND r.status <> 'CANCELADO') AS "totalResultados",
                    (SELECT COUNT(*) FROM submetas_resultados_chave sm JOIN resultados_chave r ON r.id=sm.resultado_id AND r.empresa_id=sm.empresa_id
-                     WHERE r.objetivo_id=o.id AND r.empresa_id=o.empresa_id AND r.status <> 'CANCELADO') AS "totalSubMetas",
+                     WHERE r.objetivo_id=o.id AND r.empresa_id=o.empresa_id AND r.status <> 'CANCELADO'
+                       AND r.modo_acompanhamento = 'SUBMETAS') AS "totalSubMetas",
                    (o.status = 'ATIVO' AND o.periodo_fim < ?) AS atrasado
               FROM objetivos o
               LEFT JOIN squads s ON s.id = o.squad_id AND s.empresa_id = o.empresa_id
@@ -388,10 +387,9 @@ public class OkrService {
                    r.prazo, r.status, r.modo_acompanhamento AS "modoAcompanhamento", r.progresso_manual AS "progressoManual",
                    (SELECT COUNT(*) FROM submetas_resultados_chave sm WHERE sm.resultado_id=r.id AND sm.empresa_id=r.empresa_id) AS "totalSubMetas",
                    (SELECT COUNT(*) FROM submetas_resultados_chave sm WHERE sm.resultado_id=r.id AND sm.empresa_id=r.empresa_id AND sm.concluida) AS "subMetasConcluidas",
-                   """ + progressoSql("r") + """
-            AS progresso
+                   %s AS progresso
               FROM resultados_chave r LEFT JOIN usuarios u ON u.id = r.responsavel_id AND u.empresa_id = r.empresa_id
-            """;
+            """.formatted(progressoSql("r"));
 
     private static final String SELECT_SUBMETA = """
             SELECT sm.id, sm.resultado_id AS "resultadoId", sm.titulo, sm.descricao, sm.concluida, sm.ordem,
@@ -407,16 +405,33 @@ public class OkrService {
     }
 
     private boolean isResponsavel(Autorizacao.Contexto c, Map<String, Object> linha) {
-        Object resp = linha.get("responsavel_id");
-        if (resp != null && ((Number) resp).intValue() == c.usuarioId()) return true;
-        Integer objResp = db.queryForList("SELECT responsavel_id FROM objetivos WHERE id=? AND empresa_id=?", Integer.class, linha.get("objetivo_id"), c.empresaId()).stream().findFirst().orElse(null);
-        return objResp != null && objResp == c.usuarioId();
+        if (Objects.equals(linha.get("responsavelId"), c.usuarioId())) return true;
+        Integer objResp = db.queryForObject("SELECT responsavel_id FROM objetivos WHERE id=? AND empresa_id=?",
+                Integer.class, linha.get("objetivoId"), c.empresaId());
+        return Objects.equals(objResp, c.usuarioId());
     }
 
-    private void exigirEditavel(int empresa, Map<String, Object> resultado) {
-        if ("CANCELADO".equals(resultado.get("status"))) throw new IllegalArgumentException("Resultado-chave cancelado não pode ser alterado.");
-        String statusObjetivo = db.queryForObject("SELECT status FROM objetivos WHERE id=? AND empresa_id=?", String.class, resultado.get("objetivoId"), empresa);
-        if ("ARQUIVADO".equals(statusObjetivo)) throw new IllegalArgumentException("O objetivo está arquivado.");
+    // Serializa alterações no mesmo objetivo, inclusive quando atualizam resultados diferentes.
+    private String travarObjetivo(int empresa, int id) {
+        return db.queryForList("SELECT status FROM objetivos WHERE id=? AND empresa_id=? FOR UPDATE",
+                String.class, id, empresa).stream().findFirst()
+                .orElseThrow(() -> new NaoEncontradoException("Objetivo não encontrado."));
+    }
+
+    private Map<String, Object> buscarResultadoParaEdicao(int empresa, int id) {
+        Map<String, Object> resultado = buscarResultadoComBloqueio(empresa, id);
+        if ("CANCELADO".equals(resultado.get("status")))
+            throw new IllegalArgumentException("Resultado-chave cancelado não pode ser alterado.");
+        return resultado;
+    }
+
+    private Map<String, Object> buscarResultadoComBloqueio(int empresa, int id) {
+        int objetivoId = db.queryForList("SELECT objetivo_id FROM resultados_chave WHERE id=? AND empresa_id=?",
+                Integer.class, id, empresa).stream().findFirst()
+                .orElseThrow(() -> new NaoEncontradoException("Resultado-chave não encontrado."));
+        if ("ARQUIVADO".equals(travarObjetivo(empresa, objetivoId)))
+            throw new IllegalArgumentException("O objetivo está arquivado.");
+        return buscarResultado(empresa, id);
     }
 
     /** Resultado concluído quando o progresso chega a 100%; volta a andamento se a meta ou o valor mudarem. */

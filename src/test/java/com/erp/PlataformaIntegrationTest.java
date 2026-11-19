@@ -12,6 +12,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
@@ -233,6 +236,11 @@ class PlataformaIntegrationTest {
         okrs.atualizarConclusaoSubMeta(aut.contexto("A"), c, Map.of("concluida", false));
         assertEquals(0, new BigDecimal("66.67").compareTo((BigDecimal) okrs.buscarResultado(empA, resultadoId).get("progresso")));
         assertEquals("ATIVO", okrs.buscarObjetivo(empA, objetivoId).get("status"));
+        var resultados = (List<?>) okrs.buscarObjetivo(empA, objetivoId).get("resultados");
+        var etapas = (List<?>) ((Map<?, ?>) resultados.getFirst()).get("subMetas");
+        assertEquals(List.of(a, b, c), etapas.stream().map(etapa -> ((Map<?, ?>) etapa).get("id")).toList());
+        okrs.removerSubMeta(aut.contexto("A"), c);
+        assertEquals("CONCLUIDO", okrs.buscarObjetivo(empA, objetivoId).get("status"));
     }
 
     @Test void responsavelComPermissaoDeAtualizacaoPodeGerenciarSubMetasDoSeuResultado() {
@@ -256,8 +264,12 @@ class PlataformaIntegrationTest {
     }
 
     @Test void percentualManualPermiteAcompanhamentoIntuitivoEValidaLimites() {
+        int squadId = (Integer) squads.criar(aut.contexto("A"), Map.of("nome", "Atendimento")).get("id");
         Map<String, Object> o = okrs.criarObjetivo(aut.contexto("A"), Map.of("titulo", "Melhorar atendimento",
+                "squadId", squadId,
                 "periodoInicio", LocalDate.now().minusDays(1).toString(), "periodoFim", LocalDate.now().plusDays(20).toString()));
+        okrs.criarObjetivo(aut.contexto("A"), Map.of("titulo", "Objetivo em planejamento", "squadId", squadId,
+                "periodoInicio", LocalDate.now().toString(), "periodoFim", LocalDate.now().plusDays(20).toString()));
         int objetivoId = ((Number) o.get("id")).intValue();
         Map<String, Object> kr = okrs.criarResultado(aut.contexto("A"), objetivoId, Map.of("titulo", "Qualidade percebida",
                 "modoAcompanhamento", "MANUAL", "progressoManual", "42.5", "prazo", LocalDate.now().plusDays(10).toString()));
@@ -265,7 +277,10 @@ class PlataformaIntegrationTest {
         assertEquals(0, new BigDecimal("42.50").compareTo((BigDecimal) kr.get("progresso")));
         Map<String, Object> atualizado = okrs.atualizarProgresso(aut.contexto("A"), resultadoId, Map.of("percentual", "78.25", "comentario", "Avaliação do gestor"));
         assertEquals(0, new BigDecimal("78.25").compareTo((BigDecimal) atualizado.get("progresso")));
+        okrs.atualizarProgresso(aut.contexto("A"), resultadoId, Map.of("percentual", "78.25"));
         assertEquals(1, okrs.historico(empA, resultadoId).size());
+        var porSquad = (List<?>) okrs.resumo(empA).get("porSquad");
+        assertEquals(0, new BigDecimal("78.25").compareTo((BigDecimal) ((Map<?, ?>) porSquad.getFirst()).get("progresso")));
         assertThrows(IllegalArgumentException.class, () -> okrs.atualizarProgresso(aut.contexto("A"), resultadoId, Map.of("percentual", 101)));
     }
 
@@ -274,6 +289,27 @@ class PlataformaIntegrationTest {
         assertThrows(IllegalArgumentException.class, () -> okrs.criarResultado(aut.contexto("A"), ((Number) o.get("id")).intValue(),
                 Map.of("titulo", "K", "valorInicial", 10, "meta", 10, "prazo", "2026-12-01")));
         assertEquals(0, new BigDecimal("0").compareTo(OkrService.progresso(BigDecimal.TEN, BigDecimal.TEN, BigDecimal.ONE)));
+    }
+
+    @Test void atualizacoesSimultaneasConcluemObjetivoComDoisResultados() throws Exception {
+        var gestor = aut.contexto("A");
+        int objetivo = (Integer) okrs.criarObjetivo(gestor, Map.of("titulo", "Objetivo demonstrativo",
+                "periodoInicio", "2026-11-01", "periodoFim", "2026-12-31")).get("id");
+        int primeiro = (Integer) okrs.criarResultado(gestor, objetivo, Map.of("titulo", "Primeiro",
+                "modoAcompanhamento", "MANUAL", "prazo", "2026-12-31")).get("id");
+        int segundo = (Integer) okrs.criarResultado(gestor, objetivo, Map.of("titulo", "Segundo",
+                "modoAcompanhamento", "MANUAL", "prazo", "2026-12-31")).get("id");
+
+        var iniciar = new CountDownLatch(1);
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var resultados = List.of(primeiro, segundo).stream().map(id -> executor.submit(() -> {
+                iniciar.await();
+                return okrs.atualizarProgresso(gestor, id, Map.of("percentual", 100));
+            })).toList();
+            iniciar.countDown();
+            for (var resultado : resultados) assertEquals("CONCLUIDO", resultado.get(10, TimeUnit.SECONDS).get("status"));
+        }
+        assertEquals("CONCLUIDO", okrs.buscarObjetivo(empA, objetivo).get("status"));
     }
     @Test void okrIsolaEmpresasEExigeResponsavelParaQuemSoAtualiza() {
         Map<String, Object> kr = objetivoComResultado(aut.contexto("A"), "0", "10");

@@ -2,6 +2,7 @@
 import { listarProdutos, criarProduto, removerProduto } from './produtosService.js';
 import { listarCategorias, criarCategoria } from './categoriasService.js';
 import { estaAutenticado } from './authService.js';
+import { temAcesso } from './planService.js';
 import { toProdutoDTO, fromProdutoDTO } from './dto.js';
 import {
     formParaObjeto,
@@ -38,12 +39,16 @@ function preencherSelectCategorias(selectElement, permitirTodas = false) {
 
 async function carregarCategorias(selectElement, permitirTodas = false) {
     if (!selectElement) return;
+    if (!temAcesso('PLUS')) {
+        selectElement.options[0].textContent = 'Plano Intermediário necessário';
+        return;
+    }
     try {
         categoriasDisponiveis = await listarCategorias();
         preencherSelectCategorias(selectElement, permitirTodas);
     } catch (erro) {
         console.error('Não foi possível carregar categorias:', erro);
-        selectElement.innerHTML = '<option value="">Plano Intermediário necessário</option>';
+        selectElement.innerHTML = '<option value="">Categorias indisponíveis</option>';
     }
 }
 
@@ -148,12 +153,12 @@ async function carregarListagemProdutos(tbody, termoBusca = '', categoriaId = ''
     }
 }
 
-async function configurarListagem(tbody) {
+function configurarListagem(tbody) {
     const campoPesquisa = document.getElementById('pesquisaProdutos');
     const filtroCategoria = document.getElementById('filtroCategoria');
-    await carregarCategorias(filtroCategoria, true);
     const recarregar = () => carregarListagemProdutos(tbody, campoPesquisa?.value || '', filtroCategoria?.value || '');
     recarregar();
+    void carregarCategorias(filtroCategoria, true);
     campoPesquisa?.addEventListener('input', recarregar);
     filtroCategoria?.addEventListener('change', recarregar);
     // A listagem não pode manter o saldo/status da abertura após uma venda em outra tela.

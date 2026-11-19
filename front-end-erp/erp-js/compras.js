@@ -169,7 +169,9 @@ async function inicializarTelaCompras(form) {
 
     // Prepara a primeira linha e a guarda (limpa) como molde das próximas.
     const primeiraLinha = tbody.rows[0];
-    popularSelectProdutos(primeiraLinha.querySelector('[name="produto"]'), produtosDisponiveis);
+    const selectProduto = primeiraLinha.querySelector('[name="produto"]');
+    popularSelectProdutos(selectProduto, produtosDisponiveis);
+    [selectFornecedor, selectProduto, botaoAdicionar, botaoFinalizar].forEach((controle) => { controle.disabled = false; });
     aplicarControleValidade(primeiraLinha, null);
     modeloLinha = primeiraLinha.cloneNode(true);
 
@@ -246,5 +248,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!estaAutenticado()) return;
 
     const form = document.getElementById('formCompra');
-    if (form) inicializarTelaCompras(form);
+    if (form) inicializarTelaCompras(form).catch((erro) => {
+        form.querySelectorAll('select:disabled option').forEach((opcao) => { opcao.textContent = 'Lista indisponível'; });
+        mostrarErro(form, erro.message || 'Não foi possível carregar fornecedores e produtos.');
+    });
 });

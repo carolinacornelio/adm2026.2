@@ -10,9 +10,9 @@ Cada resultado-chave possui um modo de acompanhamento:
 
 ## Fluxo de uso
 
-1. Abra OKRs e entre no objetivo.
-2. Crie ou edite um resultado-chave e selecione o modo de acompanhamento.
-3. No modo `SUBMETAS`, use **Adicionar sub-meta** e marque cada etapa concluída. O percentual atualiza automaticamente.
+1. Em **Squads**, abra a equipe e selecione **Novo objetivo** para vinculá-lo automaticamente. Para acessar um objetivo existente, clique no título. Também é possível criar e abrir objetivos pela página **OKRs**.
+2. Na página do objetivo, selecione **Novo resultado-chave** e escolha o modo de acompanhamento.
+3. No modo `SUBMETAS`, use **Adicionar etapa** e marque cada etapa concluída. O percentual atualiza automaticamente.
 4. No modo `MANUAL`, use **Definir percentual** para informar o avanço avaliado.
 5. Os indicadores do objetivo e da Squad usam o progresso calculado de cada resultado-chave.
 
@@ -20,13 +20,6 @@ Cada resultado-chave possui um modo de acompanhamento:
 
 O `schema.sql` adiciona `modo_acompanhamento` e `progresso_manual` em `resultados_chave` e cria `submetas_resultados_chave`. A alteração é idempotente. Os registros antigos recebem `METRICA` como padrão e continuam utilizando a fórmula anterior.
 
-As rotas de marcação de sub-metas exigem `okrs.update`; criação, edição e remoção das etapas seguem a permissão de gerenciamento de OKRs. O backend também valida empresa, objetivo/resultado ativo, modo do resultado e responsabilidade do usuário.
+## Permissões
 
-
-## Correção de visibilidade e autorização da interface (18/11/2026)
-
-A interface de detalhes do objetivo agora identifica o usuário autenticado a partir de `/api/auth/me`. O botão de adicionar etapa e os checkboxes são exibidos/ativados para gestores (`okrs.manage`) e para responsáveis atribuídos ao objetivo/resultado que possuam `okrs.update`. Usuários somente de consulta recebem orientação explícita sobre a permissão e a atribuição necessárias.
-
-As rotas de progresso e de criação/conclusão de sub-metas exigem sessão no interceptor e aplicam a autorização granular no `OkrService`: gestor ou usuário com `okrs.update` que esteja atribuído como responsável. A edição e remoção de sub-metas continuam restritas a `okrs.manage`.
-
-Na tela de Squads, cada objetivo possui uma ação explícita para abrir a gestão de OKRs e etapas. O formulário de resultado-chave também exibe apenas os campos pertinentes ao modo selecionado (métrica, sub-metas ou percentual manual).
+Gestores de OKRs (`okrs.manage`) podem criar objetivos e resultados-chave e editar ou remover etapas. Para adicionar etapas, marcar sua conclusão ou atualizar o percentual, basta ser gestor ou ter `okrs.update` e estar atribuído como responsável ao objetivo ou ao resultado-chave. O backend valida a empresa, a situação do objetivo e do resultado, e o modo de acompanhamento.

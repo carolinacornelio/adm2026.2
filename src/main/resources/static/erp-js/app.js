@@ -1,83 +1,50 @@
-/**
- * app.js
- * ---------------------------------------------------------------------------
- * Script "global", carregado em TODAS as páginas internas do ERP (dashboard,
- * pessoas, produtos, compras, vendas, estoque). Responsável por três coisas:
- *
- *   1) Proteger as páginas internas: se não houver usuário logado, redireciona
- *      para o login (isso é o que o passo de teste do README descreve:
- *      "Faça logout e tente acessar uma tela do ERP: deverá voltar ao login").
- *   2) Exibir o nome do usuário logado no cabeçalho.
- *   3) Ligar o botão "Sair" (data-logout) ao authService.logout().
- *
- * As páginas de autenticação (login.html, cadastro.html) NÃO usam este guard,
- * pois nelas ainda não existe usuário logado.
- * ---------------------------------------------------------------------------
- */
-
-import { estaAutenticado, getUsuarioLogado, logout } from './authService.js?v=20261118-submetas-v3';
+import { estaAutenticado, logout } from './authService.js';
 import { aplicarControlePlanos, temAcesso, nomePlano } from './planService.js';
-import { carregarPermissoes, aplicarPermissoesNaInterface, protegerPaginaPorPermissao } from './permissoesService.js?v=20261118-submetas-v3';
+import { carregarPermissoes, aplicarPermissoesNaInterface, protegerPaginaPorPermissao } from './permissoesService.js';
 
-const PAGINAS_PUBLICAS = ['login.html', 'cadastro.html', 'index.html', ''];
+const PAGINAS_PUBLICAS = new Set(['login.html', 'cadastro.html', 'index.html', '']);
 
-function nomeDaPaginaAtual() {
-    return window.location.pathname.split('/').pop();
-}
-
-function protegerPaginaInterna() {
-    if (PAGINAS_PUBLICAS.includes(nomeDaPaginaAtual())) return;
-
+async function iniciar() {
+    const pagina = location.pathname.split('/').pop();
+    if (PAGINAS_PUBLICAS.has(pagina)) return;
     if (!estaAutenticado()) {
-        window.location.href = '/login.html';
+        location.replace('/login.html');
         return;
     }
 
-    const planoMinimo = document.body?.dataset?.planoMinimo;
-    if (planoMinimo && !temAcesso(planoMinimo)) {
-        window.alert(`Esta página está disponível no ${nomePlano(planoMinimo)}.`);
-        window.location.href = '/dashboard.html';
+    const minimo = document.body.dataset.planoMinimo;
+    if (minimo && !temAcesso(minimo)) {
+        window.alert(`Esta página está disponível no ${nomePlano(minimo)}.`);
+        location.replace('/dashboard.html');
+        return;
     }
-}
-
-function exibirUsuarioLogado() {
-    const usuario = getUsuarioLogado();
-    const elementoUsuario = document.querySelector('.usuario');
-    if (usuario && elementoUsuario) {
-        elementoUsuario.textContent = `👤 ${usuario.nome} ▾`;
-    }
-    const atalho = document.querySelector('.topo .atalho-atendimento');
-    if (atalho && nomeDaPaginaAtual() === 'atendimento.html') {
-        atalho.setAttribute('aria-current', 'page');
-    }
-}
-
-function configurarBotaoLogout() {
-    const botaoLogout = document.querySelector('[data-logout]');
-    if (botaoLogout) {
-        botaoLogout.addEventListener('click', () => { botaoLogout.disabled=true; void logout(); });
-    }
-}
-
-// SEGURANÇA: chamamos a proteção de página AGORA, fora de qualquer listener,
-// como código de nível superior do módulo. Scripts com type="module" (como
-// este) já executam depois que o HTML foi interpretado, mas ANTES do evento
-// "DOMContentLoaded" ser disparado. Isso significa que, se o usuário não
-// estiver autenticado, o redirecionamento para login.html começa a ser
-// processado antes mesmo dos outros scripts da página (dashboard.js,
-// pessoas.js...) começarem a buscar dados — reduzindo ao mínimo a janela de
-// tempo em que uma tela protegida fica "montada" sem usuário logado.
-protegerPaginaInterna();
-
-// O nome fica disponível no sessionStorage desde o login. Atualizá-lo já no
-// início do módulo evita mostrar o rótulo provisório até DOMContentLoaded.
-exibirUsuarioLogado();
-
-document.addEventListener('DOMContentLoaded', () => {
-    configurarBotaoLogout();
     aplicarControlePlanos();
-    // Só conveniência visual: o backend recusa (403) qualquer operação sem permissão.
-    if (estaAutenticado() && !PAGINAS_PUBLICAS.includes(nomeDaPaginaAtual())) {
-        carregarPermissoes().then((info) => { if (protegerPaginaPorPermissao(info)) aplicarPermissoesNaInterface(info); }).catch(() => {});
+    const sair = document.querySelector('[data-logout]');
+    sair?.addEventListener('click', () => { sair.disabled = true; void logout(); });
+    try {
+        const info = await carregarPermissoes();
+        if (!protegerPaginaPorPermissao(info)) return;
+        aplicarPermissoesNaInterface(info);
+        document.documentElement.dataset.uiPermissoes = 'conhecidas';
+    } catch (erro) {
+        if (erro.status === 401) {
+            location.replace('/login.html');
+            return;
+        }
+        if (document.documentElement.dataset.uiPermissoes !== 'pendentes') return;
+
+        const aviso = document.createElement('p');
+        aviso.className = 'aviso-navegacao';
+        aviso.setAttribute('role', 'alert');
+        aviso.textContent = 'Não foi possível carregar os acessos. ';
+        const tentar = document.createElement('button');
+        tentar.type = 'button';
+        tentar.className = 'botao secundario';
+        tentar.textContent = 'Tentar novamente';
+        tentar.addEventListener('click', () => location.reload());
+        aviso.append(tentar);
+        document.querySelector('.topo')?.after(aviso);
     }
-});
+}
+
+void iniciar();

@@ -8,10 +8,11 @@ import { aoMovimentar } from './estoqueSync.js';
 const $ = s => document.querySelector(s);
 let produtos = [], lotes = [], filtrados = [], carregando = false, repetir = false;
 let conectado = false;
+let consultado = false;
 const data = value => value ? new Date(String(value).slice(0,10)+'T12:00:00').toLocaleDateString('pt-BR') : 'Não informada';
 function desenhar() {
+    if (!consultado) return;
     const termo = $('#pesquisaEstoque').value.trim().toLowerCase();
-    produtos = produtos.map(p => ({ ...p, situacao: fromProdutoDTO(p).situacao }));
     $('#listaEstoque').innerHTML = produtos.filter(p => p.nome.toLowerCase().includes(termo)).map(p => `<tr><td>${e(p.nome)}</td><td>${e(p.quantidadeTotal)}</td><td><span class="status ${classeStatusEstoque(p.situacao)}">${e(p.quantidadeEstoque)} · ${e(p.situacao)}</span></td><td>${e(p.estoqueMinimo)}</td><td>${badgeValidade(p)}<button class="acao-mini" data-controle="${e(p.id)}">${p.controlaValidade ? 'Obrigatória' : 'Opcional'} — alterar</button></td></tr>`).join('') || '<tr><td colspan="5" class="estado-vazio">Nenhum produto encontrado.</td></tr>';
     const busca = $('#buscaLote').value.trim().toLowerCase();
     const situacao = $('#situacaoLote').value, de = $('#validadeDe').value, ate = $('#validadeAte').value;
@@ -27,12 +28,17 @@ async function carregar() {
     $('#exportarInventario').disabled=true; $('#imprimirInventario').disabled=true;
     try {
         [produtos,lotes] = await Promise.all([apiService.get('/estoque'),apiService.get(`/inventario/lotes?dias=${encodeURIComponent($('#diasAlerta').value)}`)]);
+        produtos = produtos.map(p => ({ ...p, situacao: fromProdutoDTO(p).situacao }));
+        consultado = true;
         desenhar();
         $('#estadoInventario').textContent = conectado ? 'Atualização automática conectada' : 'Dados consultados';
         $('#exportarInventario').disabled=false; $('#imprimirInventario').disabled=false;
     } catch(erro) {
         $('#estadoInventario').textContent = erro.message;
-        $('#listaLotes').innerHTML='<tr><td colspan="6" class="estado-vazio">Não foi possível consultar o inventário.</td></tr>';
+        if (!consultado) {
+            $('#listaEstoque').innerHTML = '<tr><td colspan="5" class="estado-vazio">Não foi possível consultar o estoque.</td></tr>';
+            $('#listaLotes').innerHTML = '<tr><td colspan="6" class="estado-vazio">Não foi possível consultar o inventário.</td></tr>';
+        }
     } finally { carregando=false; if(repetir) {repetir=false;void carregar();} }
 }
 async function acompanhar() {

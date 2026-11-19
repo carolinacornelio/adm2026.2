@@ -1,11 +1,12 @@
 import * as api from './okrsService.js';
 import { listarSquads } from './squadsService.js';
-import { listarFuncionarios } from './funcionariosService.js';
 import { carregarPermissoes, pode } from './permissoesService.js';
-import { esc, data, numero, mensagem, carregando, vazio, selo, barra, abrirFormulario } from './adminUi.js';
+import { esc, data, numero, mensagem, carregando, vazio, selo, barra } from './adminUi.js?v=okrs-4';
+import { funcionariosParaOkrs, novoObjetivo } from './objetivoForm.js';
 
 const msg = document.getElementById('msg'), conteudo = document.getElementById('conteudo'), acoes = document.getElementById('acoesPagina');
 let info, squads = [], funcs = [];
+let busca = 0;
 conteudo.innerHTML = `<div id="resumo"></div>
  <div class="grade-filtros">
   <div class="campo"><label for="fStatus">Situação</label><select id="fStatus"><option value="">Em aberto</option><option value="ATIVO">Ativos</option><option value="CONCLUIDO">Concluídos</option><option value="ARQUIVADO">Arquivados</option></select></div>
@@ -32,31 +33,34 @@ async function resumo() {
 }
 
 async function listar() {
+    const atual = ++busca;
     carregando($('lista'));
     try {
         const lista = await api.listarObjetivos({ status: $('fStatus').value, squadId: $('fSquad').value, responsavelId: $('fResp').value, de: $('fDe').value, ate: $('fAte').value });
+        if (atual !== busca) return;
         if (!lista.length) return vazio($('lista'), 'Nenhum objetivo encontrado para os filtros.');
         $('lista').innerHTML = `<h2>Objetivos</h2><div class="tabela-rolavel"><table class="tabela"><thead><tr><th>Objetivo</th><th>Squad</th><th>Responsável</th><th>Período</th><th>Progresso</th><th>Situação</th></tr></thead><tbody>${lista.map((o) => `
           <tr><td><a href="/objetivo-detalhes.html?id=${encodeURIComponent(o.id)}">${esc(o.titulo)}</a><br><small>${esc(o.totalResultados)} resultado(s)-chave</small></td>
           <td>${esc(o.squadNome || '—')}</td><td>${esc(o.responsavelNome || '—')}</td><td>${data(o.periodoInicio)} a ${data(o.periodoFim)}</td><td>${barra(o.progresso)}</td>
           <td>${o.atrasado ? selo('Atrasado', 'erro') : selo(o.status === 'ATIVO' ? 'Ativo' : o.status === 'CONCLUIDO' ? 'Concluído' : 'Arquivado', o.status === 'ATIVO' ? 'ok' : 'neutro')}</td></tr>`).join('')}</tbody></table></div>`;
-    } catch (e) { mensagem(msg, e.message); $('lista').innerHTML = ''; }
+    } catch (e) {
+        if (atual !== busca) return;
+        mensagem(msg, e.message);
+        $('lista').innerHTML = '';
+    }
 }
 
 async function criar() {
-    const ok = await abrirFormulario({ titulo: 'Novo objetivo', textoSalvar: 'Criar', campos: [
-        { nome: 'titulo', rotulo: 'Título', obrigatorio: true }, { nome: 'descricao', rotulo: 'Descrição', tipo: 'textarea' },
-        { nome: 'squadId', rotulo: 'Squad responsável', tipo: 'select', opcoes: [{ valor: '', rotulo: 'Nenhuma' }, ...squads.map((s) => ({ valor: s.id, rotulo: s.nome }))] },
-        { nome: 'responsavelId', rotulo: 'Responsável', tipo: 'select', opcoes: [{ valor: '', rotulo: 'Nenhum' }, ...funcs.map((f) => ({ valor: f.id, rotulo: f.nome }))] },
-        { nome: 'periodoInicio', rotulo: 'Início do período', tipo: 'date', obrigatorio: true }, { nome: 'periodoFim', rotulo: 'Fim do período', tipo: 'date', obrigatorio: true }],
-        salvar: (v) => api.criarObjetivo({ ...v, squadId: v.squadId ? Number(v.squadId) : null, responsavelId: v.responsavelId ? Number(v.responsavelId) : null }) });
-    if (ok) { mensagem(msg, 'Objetivo criado.', 'sucesso'); resumo(); listar(); }
+    const objetivo = await novoObjetivo({ squads, funcionarios: funcs });
+    if (objetivo) location.assign(`/objetivo-detalhes.html?id=${encodeURIComponent(objetivo.id)}`);
 }
 
 (async () => {
     info = await carregarPermissoes();
-    try { squads = await listarSquads(); } catch { squads = []; }
-    try { funcs = await listarFuncionarios({ status: 'ativos' }); } catch { funcs = []; }
+    [squads, funcs] = await Promise.all([
+        pode(info, 'squads.view') ? listarSquads().catch(() => []) : [],
+        funcionariosParaOkrs(info).catch(() => []),
+    ]);
     $('fSquad').innerHTML += squads.map((s) => `<option value="${esc(s.id)}">${esc(s.nome)}</option>`).join('');
     $('fResp').innerHTML += funcs.map((f) => `<option value="${esc(f.id)}">${esc(f.nome)}</option>`).join('');
     ['fStatus', 'fSquad', 'fResp', 'fDe', 'fAte'].forEach((i) => $(i).addEventListener('change', listar));

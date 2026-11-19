@@ -5,6 +5,8 @@ import { escapeHtml, iniciarCarregando, pararCarregando } from './uiService.js';
 
 let categoriaEmEdicao = null;
 let ultimaCarga = 0;
+let carregando = false;
+let categoriasAtuais = [];
 
 function elementos() {
     return {
@@ -47,6 +49,7 @@ function resumoSituacao(categoria) {
 }
 
 function renderizar(categorias) {
+    categoriasAtuais = categorias;
     const { lista } = elementos();
     if (!categorias.length) {
         lista.innerHTML = '<tr><td class="estado-vazio" colspan="4">Nenhuma categoria cadastrada.</td></tr>';
@@ -67,16 +70,23 @@ function renderizar(categorias) {
 }
 
 async function carregarCategorias(silencioso = false) {
+    if (silencioso && carregando) return;
     const { lista } = elementos();
     const consulta = ++ultimaCarga;
+    carregando = true;
+    lista.setAttribute('aria-busy', 'true');
     try {
-        if (!silencioso) lista.innerHTML = '<tr><td class="estado-vazio" colspan="4">Carregando categorias...</td></tr>';
         const categorias = await listarCategorias();
         if (consulta === ultimaCarga) renderizar(categorias);
     } catch (erro) {
         if (consulta !== ultimaCarga) return;
-        if (silencioso) { mostrarMensagem('Não foi possível atualizar a situação das categorias. Os dados exibidos podem estar desatualizados.'); return; }
+        if (silencioso || categoriasAtuais.length) { mostrarMensagem('Não foi possível atualizar a lista de categorias.'); return; }
         lista.innerHTML = `<tr><td class="estado-vazio" colspan="4">${escapeHtml(erro.message || 'Não foi possível carregar as categorias.')}</td></tr>`;
+    } finally {
+        if (consulta === ultimaCarga) {
+            carregando = false;
+            lista.removeAttribute('aria-busy');
+        }
     }
 }
 
@@ -117,7 +127,7 @@ function configurarAcoes() {
         const excluir = evento.target.closest('[data-excluir]');
 
         if (editar) {
-            const categoria = (await listarCategorias()).find((item) => String(item.id) === editar.dataset.editar);
+            const categoria = categoriasAtuais.find((item) => String(item.id) === editar.dataset.editar);
             if (!categoria) return;
             const { nome, salvar, cancelar } = elementos();
             categoriaEmEdicao = categoria.id;

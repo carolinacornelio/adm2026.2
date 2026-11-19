@@ -41,6 +41,7 @@ function iniciar() {
                 mais.hidden = carregados >= dados.total;
             }
             if (estado) estado.textContent = dados.novos.length ? `${dados.novos.length} notificação(ões) não lida(s).` : 'Nenhuma notificação não lida.';
+            return true;
         } catch (erro) {
             if (estado) estado.textContent = erro.message || 'Não foi possível consultar as notificações.';
         } finally {
@@ -79,7 +80,7 @@ function iniciar() {
     mais?.addEventListener('click', () => carregar(false, true));
     // A leitura permanece no servidor por usuário; cada entrada recupera as pendências.
     // Histórico já gravado deve aparecer mesmo se a verificação de novos alertas falhar.
-    carregar().then(() => carregar(true));
+    carregar(true).then((ok) => { if (!ok) void carregar(); });
     // Revalida estoque e validade sem exigir recarregar a tela e sem fechar o histórico aberto.
     const atualizarPendencias = () => {
         if (!document.hidden && estaAutenticado() && !leituraEmAndamento) carregar(true, false, true);

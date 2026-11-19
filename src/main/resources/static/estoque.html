@@ -5,49 +5,26 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Controle de Estoque | ERP</title>
-<script src="/erp-js/initialUi.js"></script>
-<link href="/css/tela.css?v=20261118-modulos-v2" rel="stylesheet"/>
+<script src="/erp-js/initialUi.js?v=erp-ui-1"></script>
+<link href="/css/tela.css?v=erp-ui-1" rel="stylesheet"/>
 </head>
 <body>
 <div class="layout">
 <aside class="sidebar">
 <div class="logo">ERP</div>
-<nav class="menu" aria-label="Navegação principal">
-<a href="/dashboard.html">Dashboard</a>
-<a href="/pos.html" data-troca-sistema="true">POS</a>
-<details class="menu-pasta" data-pasta="cadastros">
-<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Cadastros</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
-<div class="menu-pasta-itens">
-<a href="/pessoas-listagem.html">Pessoas</a>
-<a href="/pessoas-cadastro.html">Cadastrar pessoa</a>
-<a href="/produtos-listagem.html">Produtos</a>
-<a href="/produtos-cadastro.html">Cadastrar produto</a>
-<a href="/categorias.html?ui=20261118-modulos-v2" data-plano-minimo="PLUS" data-plano-ocultar="true">Categorias</a>
-</div></details>
-<details class="menu-pasta" data-pasta="operacao" open>
-<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Operação</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
-<div class="menu-pasta-itens">
-<a href="/compras.html?ui=20261118-modulos-v2">Compras</a>
-<a href="/vendas.html?ui=20261118-modulos-v2">Vendas</a>
-<a href="/historico-vendas.html">Histórico de vendas</a>
-<a href="/estoque.html" class="ativo" aria-current="page">Estoque</a>
-</div></details>
-<details class="menu-pasta" data-pasta="ferramentas">
-<summary><span class="menu-pasta-icone" aria-hidden="true"></span><span>Ferramentas</span><span class="menu-pasta-seta" aria-hidden="true"></span></summary>
-<div class="menu-pasta-itens">
-<a href="/ia.html" data-plano-minimo="PLUS" data-plano-ocultar="true">Assistente IA</a>
-</div></details>
-</nav>
+<nav class="menu" data-menu-erp="principal" aria-label="Navegação principal"><a href="/dashboard.html">Dashboard</a></nav>
 </aside>
 <main class="conteudo">
-<header class="topo"><span class="usuario">👤 Usuário ▾</span><a href="/atendimento.html" class="atalho-atendimento" title="Central de atendimento" aria-label="Central de atendimento"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="12" width="4" height="7" rx="2"/><rect x="17" y="12" width="4" height="7" rx="2"/><path d="M19 19v1a2 2 0 0 1-2 2h-4"/></svg></a><button class="botao secundario" data-logout="" type="button">Sair</button></header>
+<header class="topo"><span class="usuario"><svg class="erp-icone" aria-hidden="true" focusable="false"><use href="/assets/erp-icons.svg#user"></use></svg><span class="usuario-nome"></span></span><a href="/atendimento.html" class="atalho-atendimento" aria-label="Central de atendimento" title="Central de atendimento" hidden><svg class="erp-icone" aria-hidden="true" focusable="false"><use href="/assets/erp-icons.svg#headset"></use></svg></a><button class="botao secundario" data-logout="" type="button">Sair</button></header>
+<script>window.erpUi?.renderizar();</script>
+
 <section class="pagina">
-<div class="titulo"><h1>Controle de Estoque</h1><p>Acompanhe a quantidade e os alertas dos produtos.</p></div>
+<div class="titulo pagina-titulo"><span class="erp-icone-bloco"><svg class="erp-icone" aria-hidden="true" focusable="false"><use href="/assets/erp-icons.svg#boxes"></use></svg></span><div class="pagina-titulo-texto"><h1>Controle de Estoque</h1><p>Acompanhe a quantidade e os alertas dos produtos.</p></div></div>
 <div class="painel" id="estoqueResumoPainel">
 <div class="barra-listagem"><input id="pesquisaEstoque" placeholder="Pesquisar produto..." type="search"/></div>
 <table class="tabela">
 <thead><tr><th>Produto</th><th>Total físico</th><th>Disponível para venda</th><th>Mínimo</th><th>Validade</th></tr></thead>
-<tbody id="listaEstoque"></tbody></table>
+<tbody id="listaEstoque"><tr><td colspan="5" class="estado-vazio">Carregando estoque…</td></tr></tbody></table>
 </div>
 <section class="painel inventario-relatorio" id="relatorioInventario" aria-labelledby="tituloInventario">
 <div class="historico-topo"><h2 id="tituloInventario">Inventário por lote e validade</h2><span id="estadoInventario" role="status">Carregando...</span></div>
@@ -62,7 +39,7 @@
 <p class="recurso-aviso" id="alertasInventario" role="status"></p>
 <p class="ajuda-campo" id="periodoRelatorio"></p>
 <div class="inventario-acoes"><button class="botao secundario" id="exportarInventario" type="button" disabled>Exportar CSV</button><button class="botao secundario" id="imprimirInventario" type="button" disabled>Imprimir / salvar PDF</button></div>
-<div class="historico-tabela-scroll"><table class="tabela"><thead><tr><th>Produto</th><th>Lote</th><th>Validade</th><th>Saldo</th><th>Situação</th><th class="inventario-acoes">Ação</th></tr></thead><tbody id="listaLotes"></tbody></table></div>
+<div class="historico-tabela-scroll"><table class="tabela"><thead><tr><th>Produto</th><th>Lote</th><th>Validade</th><th>Saldo</th><th>Situação</th><th class="inventario-acoes">Ação</th></tr></thead><tbody id="listaLotes"><tr><td colspan="6" class="estado-vazio">Carregando lotes…</td></tr></tbody></table></div>
 <p class="ajuda-campo">O total físico inclui vencidos. A venda usa somente lotes válidos, em ordem de vencimento. Produtos com validade obrigatória e data pendente ficam bloqueados.</p>
 </section>
 <section class="painel inventario-relatorio" id="inventarioFisicoPainel" aria-labelledby="tituloInventarioFisico">
@@ -78,5 +55,6 @@
 </main>
 </div>
 <dialog class="historico-dialog" id="regularizarLote" aria-labelledby="tituloRegularizar"><h2 id="tituloRegularizar">Informar validade do lote</h2><form id="formRegularizar" class="formulario"><input id="loteId" type="hidden"/><div class="campo"><label for="codigoLote">Lote</label><input id="codigoLote" maxlength="100" required/></div><div class="campo"><label for="dataLote">Validade real da mercadoria</label><input id="dataLote" type="date" required/></div><p class="ajuda-campo">Confira a embalagem antes de informar a data. Uma validade já registrada não poderá ser alterada por esta tela.</p><p id="erroLote" role="alert"></p><div class="botoes"><button class="botao secundario" id="cancelarLote" type="button">Cancelar</button><button class="botao primario" type="submit">Salvar</button></div></form></dialog>
-<script type="module" src="/erp-js/app.js"></script><script type="module" src="/erp-js/estoque.js"></script><script type="module" src="/erp-js/inventarioFisico.js"></script></body>
+
+<script type="module" src="/erp-js/app.js?v=erp-ui-1"></script><script type="module" src="/erp-js/estoque.js?v=erp-ui-1"></script><script type="module" src="/erp-js/inventarioFisico.js"></script></body>
 </html>

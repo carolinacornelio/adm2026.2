@@ -132,7 +132,9 @@ async function inicializarTelaVendas(form) {
     produtosDisponiveis = produtos.map(fromProdutoDTO);
 
     popularSelectClientes(selectCliente, clientes);
-    popularSelectProdutos(tbody.querySelector('[name="produto"]'));
+    const selectProduto = tbody.querySelector('[name="produto"]');
+    popularSelectProdutos(selectProduto);
+    [selectCliente, selectProduto, botaoAdicionar, botaoFinalizar].forEach((controle) => { controle.disabled = false; });
 
     // Quando o produto de uma linha muda, busca o preço de venda automaticamente.
     tbody.addEventListener('change', (evento) => {
@@ -190,5 +192,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!estaAutenticado()) return;
 
     const form = document.getElementById('formVenda');
-    if (form) inicializarTelaVendas(form);
+    if (form) inicializarTelaVendas(form).catch((erro) => {
+        form.querySelectorAll('select:disabled option').forEach((opcao) => { opcao.textContent = 'Lista indisponível'; });
+        mostrarErro(form, erro.message || 'Não foi possível carregar clientes e produtos.');
+    });
 });
